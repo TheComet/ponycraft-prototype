@@ -1,0 +1,171 @@
+rem ---------------------------------------------------------------------------
+rem Magic Missile ability
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant MagicMissileSpeed         0.6
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type MagicMissileVT
+	logging                          as integer
+	CurrentMax								as integer
+endtype
+
+type MagicMissileAT
+	Active                           as integer
+	pos                              as vec3
+	dest                             as vec3
+	Obj                              as word
+	life                             as integer
+	UnitID                           as integer
+	FollowID                         as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitMagicMissile()
+
+	rem debug
+	DebugOutput( 0 , "Initialising Magic Missile" , DEBUG_NORMAL )
+
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+   rem ---------------------------------------------------------------------------
+
+	global uMagicMissile              as MagicMissileVT
+
+	rem ---------------------------------------------------------------------------
+	rem Global Arrays
+	rem ---------------------------------------------------------------------------
+
+	global dim MagicMissile() 			as MagicMissileAT
+	
+	rem initial values
+	uMagicMissile.CurrentMax = -1
+
+endfunction
+
+function CreateMagicMissile( UnitID , x# , y# , z# , UnitFollowID )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uMagicMissile.logging = 1 then AddTextToConsole( 0 , "CreateMagicMissile " + str$(UnitID) + "," + str$(x#) + "," + str$(y#) + "," + str$(z#) + "," + str$(destx#) + "," + str$(desty#) + "," + str$(destz#) )
+	
+	rem find free slot
+	for n = 0 to uMagicMissile.CurrentMax
+		if MagicMissile( n ).Active < 2 then exit
+	next n
+	
+	rem no free slot found, create
+	if n = uMagicMissile.CurrentMax + 1
+		array insert at bottom MagicMissile()
+		inc uMagicMissile.CurrentMax
+	endif
+	
+	rem load
+	if MagicMissile( n ).Active = 0
+		MagicMissile( n ).Obj = find free object()
+		
+		rem check if it needs to be loaded
+		if n = 0
+			LoadObject( "media\objects\magicmissile\magicmissile.x" , MagicMissile( n ).Obj )
+			set object transparency MagicMissile( n ).Obj , 2
+			disable object zwrite MagicMissile( n ).Obj
+			set object light MagicMissile( n ).Obj , 0
+			
+		rem clone object
+		else
+			clone object MagicMissile( n ).Obj , MagicMissile( 0 ).Obj
+		endif
+	endif
+	
+	rem object properties
+	position object MagicMissile( n ).Obj , x# , y# , z#
+	show object MagicMissile( n ).Obj
+	LoopObject( MagicMissile( n ).Obj , 0 , 8 , 1.8 )
+	
+	rem set parameters
+	MagicMissile( n ).Active = 2
+	MagicMissile( n ).pos.x# = x#
+	MagicMissile( n ).pos.y# = y#
+	MagicMissile( n ).pos.z# = z#
+	MagicMissile( n ).FollowID = UnitFollowID
+	MagicMissile( n ).UnitID = UnitID
+	MagicMissile( n ).life = TBM.Ticks + 80
+
+endfunction n
+
+function DestroyMagicMissile( n )
+	
+	rem logging
+	if uMagicMissile.logging = 1 then AddTextToConsole( 0 , "DestroyMagicMissile " + str$(n) )
+	
+	rem make sure active
+	if MagicMissile( n ).Active < 2
+		if uMagicMissile.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy
+	StopObject( MagicMissile( n ).Obj )
+	hide object MagicMissile( n ).Obj
+	MagicMissile( n ).Active = 1
+	
+endfunction n
+
+function ControlMagicMissile()
+	
+	rem local variables
+   local n as integer
+	local u as integer
+
+	rem loop through all active 
+   for n = 0 to uMagicMissile.CurrentMax
+		if MagicMissile( n ).Active = 2
+			
+			rem get destination coordinates
+			MagicMissile( n ).dest = Unit( MagicMissile( n ).FollowID ).pos
+			
+			rem get target vector
+			set vector3 1 , MagicMissile( n ).dest.x# - MagicMissile( n ).pos.x# , MagicMissile( n ).dest.y# - MagicMissile( n ).pos.y# , MagicMissile( n ).dest.z# - MagicMissile( n ).pos.z#
+			normalize vector3 1 , 1
+			
+			rem move missile towards target
+			inc MagicMissile( n ).pos.x# , x vector3( 1 ) * MagicMissileSpeed
+			inc MagicMissile( n ).pos.y# , y vector3( 1 ) * MagicMissileSpeed
+			inc MagicMissile( n ).pos.z# , z vector3( 1 ) * MagicMissileSpeed
+			
+			rem update positions
+			position object MagicMissile( n ).Obj , MagicMissile( n ).pos.x# , MagicMissile( n ).pos.y# , MagicMissile( n ).pos.z#
+			point object MagicMissile( n ).Obj , MagicMissile( n ).dest.x# , MagicMissile( n ).dest.y# , MagicMissile( n ).dest.z#
+			
+			rem missile does damage to target unit
+			if Unit( MagicMissile( n ).FollowID ).Active > 1
+				if (MagicMissile( n ).pos.x# - Unit( MagicMissile( n ).FollowID ).pos.x#)^2 + (MagicMissile( n ).pos.z# - Unit( MagicMissile( n ).FollowID ).pos.z#)^2 < (Unit( MagicMissile( n ).FollowID ).Size#/3)^2
+					
+					rem damage unit
+					DamageUnit( MagicMissile( n ).FollowID , UnitAbility( MagicMissile( n ).UnitID , UNITABILITY_MAGIC_MISSILE ).HealthDamage# , UnitAbility( MagicMissile( n ).UnitID , UNITABILITY_MAGIC_MISSILE ).ManaDamage# )
+					
+					rem destroy missile
+					DestroyMagicMissile( n )
+					
+				endif
+			endif
+			
+			rem runs out of life
+			if MagicMissile( n ).life - TBM.ticks < 0 then DestroyMagicMissile( n )
+			
+		endif
+	next n
+
+endfunction

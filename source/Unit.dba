@@ -1,0 +1,1689 @@
+rem ---------------------------------------------------------------------------
+rem Unit - Controls all basic movements of units
+rem ---------------------------------------------------------------------------
+
+remstart
+	AttackActive 			- 0 if a unit is walking a "green" path, i.e. unit will pass hostile units without attacking
+								  1 if a unit is walking a "red" path, i.i. unit will attack any hostile units along the path
+	FollowUnit				- Stores the ID of a unit to follow.
+								  A value of -1 means it's not following anything
+	
+remend
+
+rem ---------------------------------------------------------------------------
+rem constants
+rem ---------------------------------------------------------------------------
+
+rem unit control
+#constant UNITCONTROL_PLAYER        1
+#constant UNITCONTROL_NOONE         2
+#constant UNITCONTROL_ENEMY         3
+
+rem unit sounds
+#constant UNITSOUND_SELECT				1
+#constant UNITSOUND_ANNOYED			2
+#constant UNITSOUND_TARGET				3
+#constant UNITSOUND_MOVE				4
+#constant UNITSOUND_TELEPORT			5
+#constant UNITSOUND_KILL				6
+#constant UNITSOUND_DIE					7
+#constant UNITSOUND_METEORSHOWER		8
+#constant UNITSOUND_FORCEFIELD		9
+#constant UNITSOUND_METEOR_SHOWER	10
+
+rem ---------------------------------------------------------------------------
+rem User defined types
+rem ---------------------------------------------------------------------------
+
+type UnitSelectionVT
+	state            						as integer
+endtype
+
+type UnitStatsVT
+	HealthEnable                     as integer
+	ManaEnable                       as integer
+	ShieldEnable                     as integer
+	
+	MaxHealth                        as integer
+	CurrentHealth#                   as float
+	HealthRecoil#                    as float
+	HealthRegenerationRate#				as float
+	MaxMana                          as integer
+	CurrentMana#                     as float
+	ManaRecoil#                      as float
+	ManaRegenerationRate#				as float
+	MaxShield                        as integer
+	CurrentShield#                   as float
+	ShieldRecoil#                    as float
+	ShieldRegenerationRate#				as float
+endtype
+
+type UnitSourceModelListAT
+	Filename$								as string
+	Obj										as dword
+	DiffuseImg                       as dword
+endtype
+
+type UnitEffectListAAT
+	typ										as integer
+	Index										as integer
+endtype
+
+type UnitSoundPlayerVT
+	CurrentSound							as integer
+endtype
+
+type UnitSoundListAAT
+	SND										as integer
+	typ										as integer
+endtype
+
+type UnitVT
+	CurrentMax 								as integer
+	CurrentWaypointMax					as integer
+	CurrentAnimationMax    				as integer
+	CurrentAbilityMax 					as integer
+	CurrentFormationMax    				as integer
+	CurrentSourceModelListMax			as integer
+	CurrentEffectListMax					as integer
+	CurrentSoundListMax					as integer
+	
+	logging                          as integer
+	DrawPath                         as integer
+	DrawFormation							as integer
+	Ability                          as UnitAbilityVT
+	
+	PostResetButtonClicked           as integer
+	DisableUnitDeselect              as integer
+	
+	ForceButtonClick                 as integer
+	ForceMouseClick                  as integer
+	
+	FormationCount                   as integer
+	FormationWasCalculated				as integer
+	
+	UnitUnderMouse							as integer
+	SelectCounter							as integer
+	LastSelected							as integer
+endtype
+
+type UnitAT
+	Active                           as integer
+	Control                          as integer
+	
+	pos                              as vec3
+	oldpos                           as vec3
+	angle                            as vec3
+	GroundSpeed#                     as float
+	AirSpeed#                        as float
+	Size#                            as float
+	HeightOffset#                    as float
+	CurrentSpeed#                    as float
+	
+	GroundViewRange#                 as float
+	AirViewRange#                    as float
+	
+	Obj                              as word
+	HalfSelectObj                    as word
+	SpinHalfSelectObj						as integer
+	SelectObj                        as word
+	ShadowObj								as integer
+	SourceModelID							as integer
+	
+	Selected                         as integer
+	CurrentWaypoint                  as integer
+	CurrentMaxWaypoint					as integer
+	FollowUnit                       as integer
+	FollowUnitDelayTimer             as integer
+	AttackActive              			as integer
+	EvadeUnit                        as integer
+	EvadeUnitTimer                   as integer
+	EvadeAngle#                      as float
+	EvadeUnitCounter						as integer
+	Visible									as integer
+	
+	UseFormation                   	as integer
+	FormationPos							as vec3
+	
+	SpellCastLimb                    as integer
+	
+	Stats                            as UnitStatsVT
+	Ability                          as UnitAbilityAT
+	Anim                             as AnimVT
+	RandomValue                      as integer
+	
+	GroundVertexBrushID					as integer
+	AirVertexBrushID						as integer
+	
+	EffectListCount						as integer
+	SoundListCount							as integer
+	
+	PortraitID								as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitUnit()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising Units" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+	rem ---------------------------------------------------------------------------
+	
+	global uUnit                      			as UnitVT
+	global UnitSelection								as UnitSelectionVT
+	global uUnitSoundPlayer							as UnitSoundPlayerVT
+	
+	rem ---------------------------------------------------------------------------
+	rem Global Arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim Unit()      							as UnitAT
+	global dim UnitSourceModelList()				as UnitSourceModelListAT
+	global dim UnitEffectList()					as UnitEffectListAAT
+	global dim UnitSoundList()						as UnitSoundListAAT
+
+	rem initial values
+	uUnit.CurrentMax = -1
+	uUnit.CurrentWaypointMax = 1
+	uUnit.CurrentAbilityMax = -1
+	uUnit.CurrentFormationMax = -1
+	uUnit.ForceButtonClick = -1
+	uUnit.ForceMouseClick = 0
+	uUnit.CurrentSourceModelListMax = -1
+	uUnit.CurrentEffectListMax = -1
+	
+	rem Initialise further components
+	InitUnitFormation()
+	InitUnitPath()
+	InitUnitAbility()
+	InitUnitCommandChain()
+	
+endfunction
+
+function CreateUnit( Filename$ , x# , y# , z# , control )
+	
+	rem local variables
+	local n as integer
+	local r as integer
+	local color as dword
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "CreateUnit " + chr$(34) + Filename$ + chr$(34) + "," + str$(x#) + "," + str$(y#) + "," + str$(z#) + "," + str$(typ) )
+	
+	rem make sure file exists
+	if file exist( Filename$ ) = 0
+		AddTextToConsole( 3 , "File " + chr$(34) + Filename$ + chr$(34) + " does not exist!" )
+		exitfunction -1
+	endif
+	
+	rem find a free slot with an inactive unit of the same type
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active < 2
+			if Unit( n ).SourceModelID > -1 and Unit( n ).SourceModelID < uUnit.CurrentSourceModelListMax
+				if UnitSourceModelList( Unit( n ).SourceModelID ).Filename$ = Filename$ then exit
+			endif
+		endif
+	next n
+	
+	rem find free slot
+	if n = uUnit.CurrentMax + 1
+		for n = 0 to uUnit.CurrentMax
+			if Unit( n ).Active < 2 then exit
+		next n
+	endif
+	
+	rem no free slot, create
+	if n = uUnit.CurrentMax + 1
+		
+		rem expand unit array
+		array insert at bottom Unit()
+		Unit( n ).SourceModelID = -1
+		
+		rem expand other arrays
+		inc uUnit.CurrentMax
+		dim UnitAbility( uUnit.CurrentMax , MaxUnitAbility ) as UnitAbilityAAT
+		dim UnitCommandChain( uUnit.CurrentMax , uUnitCommandChain.CurrentMax ) as UnitCommandChainAAT
+		dim UnitPath( uUnit.CurrentMax , uUnit.CurrentWaypointMax ) as PathfinderAAT
+		dim UnitEffectList( uUnit.CurrentMAx , uUnit.CurrentEffectListMax ) as UnitEffectListAAT
+		dim UnitSoundList( uUnit.CurrentMax , uUnit.CurrentSoundListMax ) as UnitSoundListAAT
+	endif
+	
+	rem if model is not part of source list, load it
+	for s = 0 to uUnit.CurrentSourceModelListMax
+		if UnitSourceModelList( s ).Filename$ = Filename$ then exit
+	next s
+	if s = uUnit.CurrentSourceModelListMax + 1
+		
+		rem expand array
+		array insert at bottom UnitSourceModelList()
+		inc uUnit.CurrentSourceModelListMax
+		
+		rem load the object and add to source list
+		UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj = find free object()
+		UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = find free image()
+		UnitSourceModelList( uUnit.CurrentSourceModelListMax ).FileName$ = FileName$
+		LoadObject( Filename$ , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj )
+		if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" ) then UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" , 0 )
+		if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" ) then UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" , 0 )
+		texture object UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg
+		set object effect UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , FastBoneFX
+		hide object UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj
+		
+		rem clone it and create unit model
+		Unit( n ).Obj = find free object()
+		clone object Unit( n ).Obj , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , 1
+		Unit( n ).SourceModelID = uUnit.CurrentSourceModelListMax
+		
+	else
+	
+		rem clone the object
+		Unit( n ).Obj = find free object()
+		clone object Unit( n ).Obj , UnitSourceModelList( s ).Obj , 1
+		Unit( n ).SourceModelID = s
+		
+	endif
+	
+	rem calculate size of unit
+	size# = (object size x(Unit( n ).Obj) + object size z(Unit( n ).Obj)) * 50
+	
+	rem choose colour of selection rings
+	if control = UNITCONTROL_PLAYER then img = IMGUnitSelectFriendly
+	if control = UNITCONTROL_NOONE then img = IMGUnitSelectNeutral
+	if control = UNITCONTROL_ENEMY then img = IMGUnitSelectHostile
+	
+	rem check if unit needs to load anything
+	if Unit( n ).Active = 0
+		
+		rem load unit half selection ring
+		Unit( n ).HalfSelectObj = find free object()
+		load object "media\objects\unitselect\halfselected.x" , Unit( n ).HalfSelectObj
+		scale object Unit( n ).HalfSelectObj , size# , size# , size#
+		set object transparency Unit( n ).HalfSelectObj , 2
+		set object light Unit( n ).HalfSelectObj , 0
+		hide object Unit( n ).HalfSelectObj
+		
+		rem load unit selection ring
+		Unit( n ).SelectObj = find free object()
+		load object "media\objects\unitselect\selected.x" , Unit( n ).SelectObj
+		scale object Unit( n ).SelectObj , size# , size# , size#
+		set object transparency Unit( n ).SelectObj , 2
+		set object light Unit( n ).SelectObj , 0
+		set object cull Unit( n ).SelectObj , 0
+		hide object Unit( n ).SelectObj
+		
+		rem load shadow object
+		Unit( n ).ShadowObj = find free object()
+		load object "media\objects\unitselect\shadow.x" , Unit( n ).ShadowObj
+		scale object Unit( n ).ShadowObj , size# , size# , size#
+		set object transparency Unit( n ).ShadowObj , 2
+		set object light Unit( n ).ShadowObj , 0
+		disable object zwrite Unit( n ).ShadowObj
+		
+	endif
+
+	rem properties
+	show object Unit( n ).Obj
+	position object Unit( n ).Obj , x# , y# , z#
+	texture object Unit( n ).HalfSelectObj , img
+	texture object Unit( n ).SelectObj , img
+	show object Unit( n ).ShadowObj
+	
+	rem reset command chain
+	CreateUnitCommandChain( n )
+	
+	rem add GUI frames
+	Unit( n ).PortraitID = GUICreateFrame()
+	
+	rem set parameters
+	Unit( n ).Active = 2
+	Unit( n ).Control = control
+	Unit( n ).pos.x# = x#
+	Unit( n ).pos.y# = y#
+	Unit( n ).pos.z# = z#
+	Unit( n ).GroundSpeed# = 0.3
+	Unit( n ).Size# = size# / 100.0
+	Unit( n ).HeightOffset# = 0
+	Unit( n ).SpellCastLimb = 0
+	Unit( n ).FollowUnit = -1
+	Unit( n ).AttackActive = 0
+	Unit( n ).Ability.Automatic = -1
+	Unit( n ).Ability.Active = -1
+	Unit( n ).UseFormation = -1
+	Unit( n ).CurrentMaxWaypoint = -1
+	Unit( n ).SpinHalfSelectObj = 0
+	Unit( n ).Visible = 1
+	Unit( n ).EffectListCount = -1
+	Unit( n ).SoundListCount = -1
+	
+	rem to avoid division by 0
+	Unit( n ).Stats.MaxHealth = 1
+	Unit( n ).Stats.MaxMana = 1
+	Unit( n ).Stats.MaxShield = 1
+	Unit( n ).Stats.HealthEnable = 0
+	Unit( n ).Stats.ManaEnable = 0
+	Unit( n ).Stats.ShieldEnable = 0
+	
+	rem reset ability list
+	for r = 0 to MaxUnitAbility
+		UnitAbility( n , r ).Active = 0
+		UnitAbility( n , r ).LockButton = 0
+		UnitAbility( n , r ).BindButton = -2
+	next r
+	
+	rem assign default vertex brushes
+	Unit( n ).GroundVertexBrushID = WorldCreateVertexBrush( 12 )
+	Unit( n ).AirVertexBrushID = WorldCreateVertexBrush( 12 )
+	
+	rem calculate formation data now that new unit has been created
+	uUnit.FormationWasCalculated = 0
+	_Unit_Calculate_Formation_Groups()
+	
+endfunction n
+
+function UnitPosition( n , x# , y# , z# )
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitPosition " + str$(n) + "," + str$(x#) + "," + str$(y#) + "," + str$(z#) )
+	
+	rem make sure index is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem position
+	Unit( n ).pos.x# = x#
+	Unit( n ).pos.y# = y#
+	Unit( n ).pos.z# = z#
+	Unit( n ).oldpos = Unit( n ).pos
+	
+endfunction n
+
+function UnitScale( n , SizeX# , SizeY# , SizeZ# )
+
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitScale " + str$(n) + "," + str$(SizeX#) + "," + str$(SizeY#) + "," + str$(SizeZ#) )
+	
+	rem make sure index is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem calculate size of unit
+	Unit( n ).Size# = Unit( n ).Size# * ((SizeX# + SizeY# + SizeZ#)/300.0)
+	
+	rem scale unit
+	scale object Unit( n ).Obj , SizeX# , SizeY# , SizeZ#
+	scale object Unit( n ).HalfSelectObj , Unit( n ).Size#*100 , Unit( n ).Size#*100 , Unit( n ).Size#*100
+	scale object Unit( n ).SelectObj , Unit( n ).Size#*100 , Unit( n ).Size#*100 , Unit( n ).Size#*100
+	
+endfunction n
+
+function DestroyUnit( n )
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "DestroyUnit " + str$(n) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem check if active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy the unit
+	hide object Unit( n ).Obj
+	hide object Unit( n ).HalfSelectObj
+	hide object Unit( n ).SelectObj
+	hide object Unit( n ).ShadowObj
+	Unit( n ).Active = 1
+	Unit( n ).Selected = 0
+	
+	rem unbind any buttons
+	for g = 0 to uGUI.CurrentMax
+		for b = 0 to GUI( g ).BindCount
+			if GUIBindUnit( g , b ) = n then GUIUnbindUnit( GUI( g ).ID , n )
+		next b
+	next g
+	
+	rem enable selection again
+	UnitSelection.state = _ENABLE
+	GUIDragBoxEnable()
+	
+	rem disable any abilities
+	for g = 0 to MaxUnitAbility
+		UnitAbility( n , g ).Active = 0
+	next g
+	
+	rem remove any effects
+	for g = 0 to Unit( n ).EffectListCount
+		if UnitEffectList( n , g ).typ = 0 then Effects_Destroy3DSmoke( UnitEffectList( n , g ).Index )
+		if UnitEffectList( n , g ).typ = 1 then Effects_DestroyEyeGlow( UnitEffectList( n , g ).Index )
+	next g
+	
+	rem remove any sounds
+	for g = 0 to Unit( n ).SoundListCount
+		delete sound UnitSoundList( n , g ).SND
+	next g
+	
+	rem reset path
+	ResetUnitPath( n )
+	
+	rem destroy unit's command chain
+	DestroyUnitCommandChain( n )
+	
+	rem remove unit from animation
+	StopObject( Unit( n ).Obj )
+	
+	rem remove unit from formation
+	if Unit( n ).UseFormation > -1 then RemoveUnitFromFormation( n , Unit( n ).UseFormation )
+	
+	rem Unit doesn't need vertex brush anymore
+	Unit( n ).GroundVertexBrushID = -1
+	Unit( n ).AirVertexBrushID = -1
+	Unit( n ).UseFormation = -1
+	
+	rem update formation data
+	_Unit_Calculate_Formation_Groups()
+	
+endfunction n
+
+function UnitChangeControl( n , control )
+	
+	rem make sure in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem choose colour of selection rings
+	if control = UNITCONTROL_PLAYER then img = IMGUnitSelectFriendly
+	if control = UNITCONTROL_NOONE then img = IMGUnitSelectNeutral
+	if control = UNITCONTROL_ENEMY then img = IMGUnitSelectHostile
+
+	rem properties
+	texture object Unit( n ).HalfSelectObj , img
+	texture object Unit( n ).SelectObj , img
+	
+	rem change control
+	Unit( n ).Control = control
+	
+	rem sping half selected ring
+	Unit( n ).SpinHalfSelectObj = TBM.Ticks + 50
+	
+	rem update formations
+	_Unit_Calculate_Formation_Groups()
+	
+endfunction n
+
+function UnitGetObject( n )
+	
+	rem make sure in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem get return value
+	ret = Unit( n ).Obj
+	
+endfunction ret
+
+function UnitAddEffectToList( n , typ , Index )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction
+	endif
+	
+	rem expand array in necessary
+	inc Unit( n ).EffectListCount
+	if Unit( n ).EffectListCount > uUnit.CurrentEffectListMax
+		inc uUnit.CurrentEffectListMax
+		dim UnitEffectList( uUnit.CurrentMax , uUnit.CurrentEffectListMax ) as UnitEffectListAAT
+	endif
+	
+	rem add to list
+	UnitEffectList( n , Unit( n ).EffectListCount ).typ = typ
+	UnitEffectList( n , Unit( n ).EffectListCount ).Index = Index
+	
+endfunction
+
+function UnitHide( n )
+	
+	rem hide main objects
+	hide object Unit( n ).Obj
+	hide object Unit( n ).ShadowObj
+	
+	rem hide effects
+	for s = 0 to Unit( n ).EffectListCount
+		if UnitEffectList( n , s ).typ = 0 then Effects_Hide3DSmoke( UnitEffectList( n , s ).Index )
+		if UnitEffectList( n , s ).typ = 1 then Effects_HideEyeGlow( UnitEffectList( n , s ).Index )
+	next s
+
+endfunction
+
+function UnitShow( n )
+	
+	rem show main objects
+	show object Unit( n ).Obj
+	show object Unit( n ).ShadowObj
+	
+	rem show effects
+	for s = 0 to Unit( n ).EffectListCount
+		if UnitEffectList( n , s ).typ = 0 then Effects_Show3DSmoke( UnitEffectList( n , s ).Index )
+		if UnitEffectList( n , s ).typ = 1 then Effects_ShowEyeGlow( UnitEffectList( n , s ).Index )
+	next s
+
+endfunction
+
+function UnitAddSound( n , filename$ , typ )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction
+	endif
+	
+	rem make sure file exists
+	if file exist( filename$ ) = 0
+		AddTextToConsole( 3 , "File " + chr$(34) + filename$ + chr$(34) + " does not exist!" )
+		exitfunction
+	endif
+	
+	rem increment count and expand array if needed
+	inc Unit( n ).SoundListCount
+	if Unit( n ).SoundListCount > uUnit.CurrentSoundListMax
+		inc uUnit.CurrentSoundListMax
+		dim UnitSoundList( uUnit.CurrentMax , uUnit.CurrentSoundListMax ) as UnitSoundListAAT
+	endif
+	
+	rem load sound and save
+	UnitSoundList( n , Unit( n ).SoundListCount ).SND = find free sound()
+	load sound filename$ , UnitSoundList( n , Unit( n ).SoundListCount ).SND
+	UnitSoundList( n , Unit( n ).SoundListCount ).typ = typ
+	
+endfunction
+
+function UnitPlaySound( n , typ )
+	
+	rem local variables
+	local s as integer
+	local r as integer
+	s = -1
+		
+	rem make sure no other sound is currently playing
+	if uUnitSoundPlayer.CurrentSound > 0
+		if sound exist( uUnitSoundPlayer.CurrentSound )
+			if sound playing( uUnitSoundPlayer.CurrentSound ) then exitfunction
+		endif
+	endif
+	
+	rem randomly search for sound matching that type
+	while rnd( Unit( n ).SoundListCount+1 )
+		
+		rem store starting point
+		if s < 0 then s = 0
+		r = s
+
+		rem find next index with that type
+		repeat
+			inc s
+			if s > Unit( n ).SoundListCount then s = 0
+			
+			rem type doesn't exist
+			if s = r
+				s = -1
+				exit
+			endif
+				
+		until UnitSoundList( n , s ).typ = typ
+	endwhile
+	
+	rem play sound
+	if s > -1
+		uUnitSoundPlayer.CurrentSound = UnitSoundList( n , s ).SND
+		play sound uUnitSoundPlayer.CurrentSound
+	endif
+	
+endfunction
+
+function UnitAddPortraitFrame( n , Filename$ )
+	
+	rem make sure index is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active! " )
+		exitfunction -1
+	endif
+	
+	rem add frame
+	GUIAddFrame( Unit( n ).PortraitID , Filename$ )
+	
+endfunction n
+
+function UnitSetPortraitFrameDelay( n , delay )
+	
+	rem make sure index is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active! " )
+		exitfunction -1
+	endif
+
+	rem make sure portrait frame exists
+	if Unit( n ).PortraitID > -1
+		GUIFrame( Unit( n ).PortraitID , 0 ).FrameDelay = delay
+	endif
+	
+endfunction n
+
+function ControlUnit()
+	
+	rem local variables
+	local n as integer
+	local sx as integer
+	local sy as integer
+	local success as integer
+	local x# as float
+	local y# as float
+	local z# as float
+	local selectcase as integer
+	
+	rem loop through all active units
+	for n = 0 to uUnit.CurrentMax
+		
+		rem generic checks
+		if Unit( n ).Active > 1
+			
+			rem draw unit paths
+			_Unit_Draw_Path( n )
+			
+			rem store old postitions
+			Unit( n ).oldpos = Unit( n ).pos
+			
+			rem move unit with current speed
+			Unit( n ).pos.x# = newxvalue( Unit( n ).pos.x# , Unit( n ).angle.y# , Unit( n ).CurrentSpeed# )
+			Unit( n ).pos.z# = newzvalue( Unit( n ).pos.z# , Unit( n ).angle.y# , Unit( n ).CurrentSpeed# )
+			
+			rem contorl half selected object
+			if Unit( n ).Selected = 1 or Unit( n ).Selected = 3
+				position object Unit( n ).HalfSelectObj , Unit( n ).pos.x# , Unit( n ).pos.y# + Unit( n ).HeightOffset# + 0.2 , Unit( n ).pos.z#
+				rotate limb Unit( n ).HalfSelectObj , 0 , 0 , wrapvalue( limb angle y( Unit( n ).HalfSelectObj , 0 ) + 0.98 ) , 0
+				show object Unit( n ).HalfSelectObj
+				
+				rem control tilting
+				if Unit( n ).HeightOffset# < 0.5
+					TiltObjectToTerrain( Unit( n ).HalfSelectObj , 2 )
+				else
+					rotate object Unit( n ).HalfSelectObj , curveangle( 0 , object angle x(Unit( n ).HalfSelectObj) , 7.1 ) , 0 , curveangle( 0 , object angle z(Unit( n ).HalfSelectObj) , 7.1 )
+				endif
+			else
+				hide object Unit( n ).HalfSelectObj
+			endif
+			
+			rem spin half select object
+			if Unit( n ).SpinHalfSelectObj > 0
+				position object Unit( n ).HalfSelectObj , Unit( n ).pos.x# , Unit( n ).pos.y# + Unit( n ).HeightOffset# + 0.2 , Unit( n ).pos.z#
+				rotate limb Unit( n ).HalfSelectObj , 0 , 0 , wrapvalue( limb angle y( Unit( n ).HalfSelectObj , 0 ) + 14 ) , 0
+				show object Unit( n ).HalfSelectObj
+
+				rem control tilting
+				if Unit( n ).HeightOffset# < 0.5
+					TiltObjectToTerrain( Unit( n ).HalfSelectObj , 2 )
+				else
+					rotate object Unit( n ).HalfSelectObj , curveangle( 0 , object angle x(Unit( n ).HalfSelectObj) , 7.1 ) , 0 , curveangle( 0 , object angle z(Unit( n ).HalfSelectObj) , 7.1 )
+				endif
+
+				rem time up
+				if Unit( n ).SpinHalfSelectObj < TBM.Ticks then Unit( n ).SpinHalfSelectObj = 0
+			endif
+			
+			rem control fully selected object
+			if Unit( n ).Selected = 2 or Unit( n ).Selected = 3
+				position object Unit( n ).SelectObj , Unit( n ).pos.x# , Unit( n ).pos.y# + Unit( n ).HeightOffset# + 0.2 , Unit( n ).pos.z#
+				show object Unit( n ).SelectObj
+				if Unit( n ).HeightOffset# < 0.5
+					TiltObjectToTerrain( Unit( n ).SelectObj , 2 )
+				else
+					rotate object Unit( n ).SelectObj , curveangle( 0 , object angle x(Unit( n ).SelectObj) , 7.1 ) , 0 , curveangle( 0 , object angle z(Unit( n ).SelectObj) , 7.1 )
+				endif
+			else
+				hide object Unit( n ).SelectObj
+			endif
+			
+			rem control shadow object
+			x# = (Unit( n ).size#*2500.0) - (Unit( n ).HeightOffset#*250.0)
+			position object Unit( n ).ShadowObj , Unit( n ).pos.x# , Unit( n ).pos.y# + 0.17 , Unit( n ).pos.z#
+			scale object Unit( n ).ShadowObj , x# , x# , x#
+			TiltObjectToTerrain( Unit( n ).ShadowObj , 2 )
+			
+			rem process recoil values
+			Unit( n ).Stats.HealthRecoil# = curvevalue( Unit( n ).Stats.CurrentHealth# , Unit( n ).Stats.HealthRecoil# , 14.2 )
+			Unit( n ).Stats.ManaRecoil# = curvevalue( Unit( n ).Stats.CurrentMana# , Unit( n ).Stats.ManaRecoil# , 14.2 )
+			Unit( n ).Stats.ShieldRecoil# = curvevalue( Unit( n ).Stats.CurrentShield# , Unit( n ).Stats.ShieldRecoil# , 14.2 )
+			
+			rem regeneration
+			if Unit( n ).Stats.CurrentHealth# < Unit( n ).Stats.MaxHealth then inc Unit( n ).Stats.CurrentHealth# , Unit( n ).Stats.HealthRegenerationRate#
+			if Unit( n ).Stats.CurrentHealth# > Unit( n ).Stats.MaxHealth then Unit( n ).Stats.CurrentHealth# = Unit( n ).Stats.MaxHealth
+			if Unit( n ).Stats.CurrentMana# < Unit( n ).Stats.MaxMana then inc Unit( n ).Stats.CurrentMana# , Unit( n ).Stats.ManaRegenerationRate#
+			if Unit( n ).Stats.CurrentMana# > Unit( n ).Stats.MaxMana then Unit( n ).Stats.CurrentMana# = Unit( n ).Stats.MaxMana
+			if Unit( n ).Stats.CurrentShield# < Unit( n ).Stats.MaxShield then inc Unit( n ).Stats.CurrentShield# , Unit( n ).Stats.ShieldRegenerationRate#
+			if Unit( n ).Stats.CurrentShield# > Unit( n ).Stats.MaxShield then Unit( n ).Stats.CurrentShield# = Unit( n ).Stats.MaxShield
+			
+			rem if at any point the health drops to 0, kill unit
+			if Unit( n ).Stats.CurrentHealth# = 0.0 and (Unit( n ).Active < 16 or Unit( n ).Active > 18) then Unit( n ).Active = 16
+			
+			rem handle collision with other units
+			for sx = 0 to uUnit.CurrentMax
+				if Unit( sx ).Active > 1
+					if sx <> n
+						dist# = ((Unit( n ).pos.x# - Unit( sx ).pos.x#)^2 + ((Unit( n ).pos.y# + Unit( n ).HeightOffset#) - (Unit( sx ).pos.y# + Unit( sx ).HeightOffset#))^2 + (Unit( n ).pos.z# - Unit( sx ).pos.z#)^2)^0.5
+						if dist# < Unit( n ).Size#
+							
+							rem handle collision for units with not the same control
+							a# = 90 - atanfull( Unit( n ).pos.z# - Unit( sx ).pos.z# , Unit( n ).pos.x# - Unit( sx ).pos.x# )
+							if Unit( n ).Control <> Unit( sx ).Control
+								rem if Unit( n ).Control = UNITCONTROL_PLAYER
+									Unit( n ).pos.x# = newxvalue( Unit( n ).pos.x# , a# , (Unit( n ).Size#) - dist# )
+									Unit( n ).pos.z# = newzvalue( Unit( n ).pos.z# , a# , (Unit( n ).Size#) - dist# )
+								rem endif
+							else
+								Unit( n ).pos.x# = curvevalue( newxvalue( Unit( n ).pos.x# , a# , (Unit( n ).Size#) - dist# ) , Unit( n ).pos.x# , 7.0 )
+								Unit( n ).pos.z# = curvevalue( newzvalue( Unit( n ).pos.z# , a# , (Unit( n ).Size#) - dist# ) , Unit( n ).pos.z# , 7.0 )
+							endif
+							
+						endif
+					endif
+				endif
+			next sx
+			
+			rem show or hide unit based on colour of Fog of War
+			sx = ((Unit( n ).pos.x# - uWorld.FogOfWar.StartX#) * uWorld.FogOfWar.ResolutionX) / (uWorld.FogOfWar.EndX# - uWorld.FogOfWar.StartX#)
+			sy = ((Unit( n ).pos.z# - uWorld.FogOfWar.Starty#) * uWorld.FogOfWar.ResolutionY) / (uWorld.FogOfWar.EndY# - uWorld.FogOfWar.StartY#)
+			if uWorld.FogOfWar.Obj > 0
+				if sx > -1 and sx < uWorld.FogOfWar.ResolutionX
+					if sy > -1 and sy < uWorld.FogOfwar.ResolutionY
+						if FogOfWarStaticBrush( sx , sy ).Color < FogOfWarStaticBrush( sx , sy ).MinColor
+							UnitShow( n )
+							Unit( n ).Visible = 1
+						else
+							UnitHide( n )
+							Unit( n ).Visible = 0
+							Unit( n ).Selected = 0
+						endif
+					endif
+				endif
+			endif
+			
+			rem update unit positions
+			position object Unit( n ).Obj , Unit( n ).pos.x# , Unit( n ).pos.y# + Unit( n ).HeightOffset# , Unit( n ).pos.z#
+			rotate limb Unit( n ).Obj , 0 , 0 , Unit( n ).angle.y# , 0
+			
+			rem handles
+			if Unit( n ).Active < 16 or Unit( n ).Active > 18
+				_Unit_Handle_Active_Abilities( n )
+			endif
+
+		endif
+		
+		rem state specific
+		selectcase = Unit( n ).Active
+		select selectcase
+		
+			rem on ground units
+			case 2
+				
+				_Unit_Handle_Ground_Paths( n )
+				_Unit_Handle_Ground_Animations( n )
+				_Unit_Handle_Ground_Movement( n )
+				
+			endcase
+			
+			rem stop moving unit
+			case 3
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 5.0 )
+
+				rem unit handlers
+				_Unit_Handle_Ground_Animations( n )
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem next state
+				if Unit( n ).CurrentSpeed# < Unit( n ).GroundSpeed# * 0.222 then Unit( n ).Active = 4
+				
+			endcase
+			
+			rem take off from ground
+			case 4
+
+				rem play jump up
+				StopObject( Unit( n ).Obj )
+				PlayObject( Unit( n ).Obj , Unit( n ).Anim.TakeOffJump.mStart , Unit( n ).Anim.TakeOffJump.mEnd , Unit( n ).Anim.TakeOffJump.mSpeed# )
+				
+				rem next state
+				Unit( n ).Active = 5
+				
+			endcase
+			
+			rem fly up from ground
+			case 5
+				
+				rem increase offset to 5 if still in air
+				if Unit( n ).HeightOffset# < 5.0 then inc Unit( n ).HeightOffset# , 0.11
+				if Unit( n ).HeightOffset# > 5.0 then Unit( n ).HeightOffset# = 5.0
+
+				rem fly up animation
+				if Unit( n ).HeightOffset# = 5.0
+					PlayObject( Unit( n ).Obj , Unit( n ).Anim.TakeOffFlyUp.mStart , Unit( n ).Anim.TakeOffFlyUp.mEnd , Unit( n ).Anim.TakeOffFlyUp.mSpeed# )
+					Unit( n ).Active = 6
+				endif
+
+			endcase
+			
+			rem arrive at top
+			case 6
+				
+				rem arrive at top
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					PlayObject( Unit( n ).Obj , Unit( n ).Anim.TakeOffArriveTop.mStart , Unit( n ).Anim.TakeOffArriveTop.mEnd , Unit( n ).Anim.TakeOffArriveTop.mSpeed# )
+					Unit( n ).Active = 7
+					Unit( n ).Ability.Active = -1
+					UnitUnlockAbility( n , UNITABILITY_LAND )
+					_Unit_Calculate_Formation_Groups()
+				endif
+
+			endcase
+			
+			rem flying 	
+			case 7
+
+				_Unit_Handle_Air_Paths( n )
+				_Unit_Handle_Air_Animations( n )
+				_Unit_Handle_Air_Movement( n )
+				
+			endcase
+			
+			rem slow down unit
+			case 8
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 17.8 )
+				
+				rem increase offset to 5 if still in air
+				if Unit( n ).HeightOffset# < 5 then inc Unit( n ).HeightOffset# , 0.11
+				if Unit( n ).HeightOffset# > 5 then Unit( n ).HeightOffset# = 5
+				
+				rem position at terrain height
+				if SC_RayCastGroup( COL_TERRAIN , Unit( n ).pos.x# , 200 , Unit( n ).pos.z# , Unit( n ).pos.x# , -200 , Unit( n ).pos.z# , 0 )
+					Unit( n ).pos.y# = curvevalue( SC_GetStaticCollisionY() , Unit( n ).pos.y# , 14.2 )
+				else
+					Unit( n ).pos.y# = curvevalue( 0 , Unit( n ).pos.y# , 14.2 )
+				endif
+				
+				rem control animation
+				if ObjectPlaying( Unit( n ).Obj ) = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.FlyIdle.mStart , Unit( n ).Anim.FlyIdle.mEnd , Unit( n ).Anim.FlyIdle.mSpeed# )
+
+				rem next state
+				if Unit( n ).CurrentSpeed# < 0.222 then Unit( n ).Active = 9
+				
+			endcase
+			
+			rem initiate landing
+			case 9
+				
+				rem play animation
+				StopObject( Unit( n ).Obj )
+				PlayObject( Unit( n ).Obj , Unit( n ).Anim.LandPrepare.mStart , Unit( n ).Anim.LandPrepare.mEnd , Unit( n ).Anim.LandPrepare.mSpeed# )
+				Unit( n ).Active = 10
+				
+			endcase
+			
+			rem prepare to land
+			case 10
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem handle animation
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					PlayObject( Unit( n ).Obj , Unit( n ).Anim.LandFlyDown.mStart , Unit( n ).Anim.LandFlyDown.mEnd , Unit( n ).Anim.LandFlyDown.mSpeed# )
+					Unit( n ).Active = 11
+				endif
+				
+			endcase
+			
+			rem descend
+			case 11
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem decrease offset to 0 if still in air
+				if Unit( n ).HeightOffset# > 0.0 then dec Unit( n ).HeightOffset# , 0.11
+				if Unit( n ).HeightOffset# < 0.0 then Unit( n ).HeightOffset# = 0.0
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 17.8 )
+
+				rem handle animation
+				if Unit( n ).HeightOffset# = 0.0
+					PlayObject( Unit( n ).Obj , Unit( n ).Anim.LandArriveBottom.mStart , Unit( n ).Anim.LandArriveBottom.mEnd , Unit( n ).Anim.LandArriveBottom.mSpeed# )
+					Unit( n ).Active = 12
+				endif
+			
+			endcase
+			
+			rem arrive on ground
+			case 12
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 17.8 )
+				
+				rem decrease offset to 0 if still in air
+				if Unit( n ).HeightOffset# > 0 then dec Unit( n ).HeightOffset# , 0.11
+				if Unit( n ).HeightOffset# < 0 then Unit( n ).HeightOffset# = 0
+
+				rem handle animation
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					Unit( n ).Active = 2
+					Unit( n ).Ability.Active = -1
+					UnitUnlockAbility( n , UNITABILITY_FLY )
+					_Unit_Calculate_Formation_Groups()
+				endif
+				
+			endcase
+			
+			rem initiate transition into attack
+			case 13
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem play animation
+				Unit( n ).RandomValue = rnd(2)
+				StopObject( Unit( n ).Obj )
+				if Unit( n ).RandomValue = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.UnicornGroundMagicAttackPrepare1.mStart , Unit( n ).Anim.UnicornGroundMagicAttackPrepare1.mEnd , Unit( n ).Anim.UnicornGroundMagicAttackPrepare1.mSpeed# )
+				if Unit( n ).RandomValue = 1 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.UnicornGroundMagicAttackPrepare2.mStart , Unit( n ).Anim.UnicornGroundMagicAttackPrepare2.mEnd , Unit( n ).Anim.UnicornGroundMagicAttackPrepare2.mSpeed# )
+				if Unit( n ).RandomValue = 2 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.UnicornGroundMagicAttackPrepare3.mStart , Unit( n ).Anim.UnicornGroundMagicAttackPrepare3.mEnd , Unit( n ).Anim.UnicornGroundMagicAttackPrepare3.mSpeed# )
+				
+				rem next state
+				Unit( n ).Active = 14
+				
+			endcase
+			
+			rem transition into attack
+			case 14
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				if Unit( n ).FollowUnit > -1 then Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( Unit( n ).FollowUnit ).pos.z# , Unit( n ).pos.x# - Unit( Unit( n ).FollowUnit ).pos.x# ) , Unit( n ).angle.y# , 3.5 )
+				
+				rem handle animation
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					StopObject( Unit( n ).Obj )
+					if Unit( n ).RandomValue = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.UnicornGroundMagicAttackRelease1.mStart , Unit( n ).Anim.UnicornGroundMagicAttackRelease1.mEnd , Unit( n ).Anim.UnicornGroundMagicAttackRelease1.mSpeed# )
+					if Unit( n ).RandomValue = 1 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.UnicornGroundMagicAttackRelease2.mStart , Unit( n ).Anim.UnicornGroundMagicAttackRelease2.mEnd , Unit( n ).Anim.UnicornGroundMagicAttackRelease2.mSpeed# )
+					if Unit( n ).RandomValue = 2 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.UnicornGroundMagicAttackRelease3.mStart , Unit( n ).Anim.UnicornGroundMagicAttackRelease3.mEnd , Unit( n ).Anim.UnicornGroundMagicAttackRelease3.mSpeed# )
+					if Unit( n ).FollowUnit > -1 then CreateMagicMissile( n , limb position x( Unit( n ).Obj , Unit( n ).SpellCastLimb ) , limb position y( Unit( n ).Obj , Unit( n ).SpellCastLimb ) , limb position z( Unit( n ).Obj , Unit( n ).SpellCastLimb ) , Unit( n ).FollowUnit )
+					Unit( n ).Active = 15
+				endif
+				
+			endcase
+			
+			rem wait for recoil animation to finish
+			case 15
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				if Unit( n ).FollowUnit > -1 then Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( Unit( n ).FollowUnit ).pos.z# , Unit( n ).pos.x# - Unit( Unit( n ).FollowUnit ).pos.x# ) , Unit( n ).angle.y# , 3.6 )
+				
+				rem return to idle state
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					Unit( n ).Active = 2
+					
+					rem if not automatic, disable again
+					if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).Automatic = 0
+						Unit( n ).AttackActive = 0
+						Unit( n ).Ability.Active = -1
+						Unit( n ).FollowUnit = -1
+						ResetUnitPath( n )
+					endif
+					
+				endif
+				
+			endcase
+			
+			rem kill unit
+			case 16
+				
+				rem initiate animation
+				Unit( n ).RandomValue = rnd(1)
+				StopObject( Unit( n ).Obj )
+				if Unit( n ).RandomValue = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.GroundDie1.mStart , Unit( n ).Anim.GroundDie1.mEnd , Unit( n ).Anim.GroundDie1.mSpeed# )
+				if Unit( n ).RandomValue = 1 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.GroundDie2.mStart , Unit( n ).Anim.GroundDie2.mEnd , Unit( n ).Anim.GroundDie2.mSpeed# )
+				
+				rem next state
+				Unit( n ).Active = 18
+				
+			endcase
+			
+			rem burn, then kill unit
+			case 17
+				
+				rem initiate animation
+				StopObject( Unit( n ).Obj )
+				PlayObject( Unit( n ).Obj , Unit( n ).Anim.GroundDieBurn.mStart , Unit( n ).Anim.GroundDieBurn.mEnd , Unit( n ).Anim.GroundDieBurn.mSpeed# )
+				
+				rem next state
+				Unit( n ).Active = 18
+			
+			endcase
+			
+			rem unit is dead
+			case 18
+				
+				rem if animation stops playing, destroy unit
+				Unit( n ).CurrentSpeed# = 0
+				if ObjectPlaying( Unit( n ).Obj ) = 0 then DestroyUnit( n )
+				
+			endcase
+			
+			rem teleport unit
+			case 19
+							
+				rem check if destination exceeds teleportation distance limit
+				if (Unit( n ).pos.x# - Unit( n ).Ability.Destination.x#)^2 + (Unit( n ).pos.z# - Unit( n ).Ability.Destination.z#)^2 > UnitAbility( n , UNITABILITY_TELEPORT ).Range#^2
+					
+					rem recalculate destination coordinates
+					set vector3 1 , Unit( n ).Ability.Destination.x# - Unit( n ).pos.x# , 0 , Unit( n ).Ability.Destination.z# - Unit( n ).pos.z#
+					normalize vector3 1 , 1
+					scale vector3 1 , 1 , UnitAbility( n , UNITABILITY_TELEPORT ).Range#
+					x# = x vector3(1) + Unit( n ).pos.x#
+					z# = z vector3(1) + Unit( n ).pos.z#
+
+					rem find path to the end
+					UnitCalculatePath( n , x# , z# , Unit( n ).Ability.Destination.x# , Unit( n ).Ability.Destination.z# )
+					
+				else
+					x# = Unit( n ).Ability.Destination.x#
+					z# = Unit( n ).Ability.Destination.z#
+				endif
+				
+				rem create teleport effects
+				Effects_CreateTeleport( Unit( n ).pos.x# , Unit( n ).pos.y# , Unit( n ).pos.z# , 30.0 )
+				Effects_CreateTeleportSparks( x# , y# , z# , 0.4 , rnd(40)+20 )
+				Effects_CreateTeleportSparks( x# , y# , z# , 0.4 , rnd(40)+20 )
+				Effects_CreateTeleportSparks( x# , y# , z# , 0.4 , rnd(40)+20 )
+				Effects_CreateTeleportSparks( x# , y# , z# , 0.4 , rnd(40)+20 )
+				Effects_CreateTeleportSparks( x# , y# , z# , 0.4 , rnd(40)+20 )
+				
+				rem position unit at destination
+				if SC_RayCastGroup( COL_TERRAIN , x# , 200 , z# , x# , -200 , z# , 0 )
+					y# = SC_GetStaticCollisionY()
+				else
+					y# = 0.0
+				endif
+				UnitPosition( n , x# , y# , z# )
+				
+				rem use mana
+				DamageUnit( n , 0.0 , UnitAbility( n , UNITABILITY_TELEPORT ).ManaDrain# )
+				
+				rem reset ability
+				Unit( n ).Ability.Active = -1
+				
+				rem return to idle
+				Unit( n ).Active = 2
+				
+			endcase
+			
+			rem initiate transition into changeling melee attack
+			case 20
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem play animation
+				Unit( n ).RandomValue = rnd(2)
+				StopObject( Unit( n ).Obj )
+				if Unit( n ).RandomValue = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare1.mStart , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare1.mEnd , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare1.mSpeed# )
+				if Unit( n ).RandomValue = 1 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare2.mStart , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare2.mEnd , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare2.mSpeed# )
+				if Unit( n ).RandomValue = 2 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare3.mStart , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare3.mEnd , Unit( n ).Anim.ChangelingGroundMeleeAttackPrepare3.mSpeed# )
+				
+				rem next state
+				Unit( n ).Active = 21
+				
+			endcase
+			
+			rem transition into attack
+			case 21
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				if Unit( n ).FollowUnit > -1 then Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( Unit( n ).FollowUnit ).pos.z# , Unit( n ).pos.x# - Unit( Unit( n ).FollowUnit ).pos.x# ) , Unit( n ).angle.y# , 3.5 )
+				
+				rem handle animation
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					StopObject( Unit( n ).Obj )
+					if Unit( n ).RandomValue = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease1.mStart , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease1.mEnd , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease1.mSpeed# )
+					if Unit( n ).RandomValue = 1 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease2.mStart , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease2.mEnd , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease2.mSpeed# )
+					if Unit( n ).RandomValue = 2 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease3.mStart , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease3.mEnd , Unit( n ).Anim.ChangelingGroundMeleeAttackRelease3.mSpeed# )
+					
+					rem damage targeted unit
+					if Unit( n ).FollowUnit > -1
+						DamageUnit( Unit( n ).FollowUnit , UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).HealthDamage# , UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).ManaDamage# )
+					endif
+					
+					Unit( n ).Active = 22
+				endif
+				
+			endcase
+			
+			rem wait for recoil animation to finish
+			case 22
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				if Unit( n ).FollowUnit > -1 then Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( Unit( n ).FollowUnit ).pos.z# , Unit( n ).pos.x# - Unit( Unit( n ).FollowUnit ).pos.x# ) , Unit( n ).angle.y# , 3.6 )
+				
+				rem return to idle state
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					Unit( n ).Active = 2
+					
+					rem if not automatic, disable again
+					if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).Automatic = 0
+						Unit( n ).AttackActive = 0
+						Unit( n ).Ability.Active = -1
+						Unit( n ).FollowUnit = -1
+						ResetUnitPath( n )
+					endif
+					
+				endif
+				
+			endcase
+			
+			rem initiate transition into force field
+			case 23
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem play animation
+				StopObject( Unit( n ).Obj )
+				PlayObject( Unit( n ).Obj , Unit( n ).Anim.ForceFieldPrepare.mStart , Unit( n ).Anim.ForceFieldPrepare.mEnd , Unit( n ).Anim.ForceFieldPrepare.mSpeed# )
+
+				rem next state
+				Unit( n ).Active = 24
+				
+			endcase
+			
+			rem transition into force field
+			case 24
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( n ).Ability.Destination.z# , Unit( n ).pos.x# - Unit( n ).Ability.Destination.x# ) , Unit( n ).angle.y# , 3.5 )
+				
+				rem handle animation
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					StopObject( Unit( n ).Obj )
+					PlayObject( Unit( n ).Obj , Unit( n ).Anim.ForceFieldRelease.mStart , Unit( n ).Anim.ForceFieldRelease.mEnd , Unit( n ).Anim.ForceFieldRelease.mSpeed# )
+					
+					rem find ground height and create force field
+					if SC_RayCastGroup( COL_TERRAIN , Unit( n ).Ability.Destination.x# , 200 , Unit( n ).Ability.Destination.z# , Unit( n ).Ability.Destination.x# , -200 , Unit( n ).Ability.Destination.z# , 0 )
+						CreateForceField( Unit( n ).Ability.Destination.x# , SC_GetStaticCollisionY() , Unit( n ).Ability.Destination.z# , 600 )
+						DamageUnit( n , 0.0 , UnitAbility( n , UNITABILITY_FORCE_FIELD ).ManaDrain# )
+					endif
+					
+					rem next state
+					Unit( n ).Active = 25
+				endif
+				
+			endcase
+			
+			rem wait for recoil animation to finish
+			case 25
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( n ).Ability.Destination.z# , Unit( n ).pos.x# - Unit( n ).Ability.Destination.x# ) , Unit( n ).angle.y# , 3.5 )
+				
+				rem return to idle state
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					Unit( n ).Active = 2
+										
+					rem if not automatic, disable again
+					if UnitAbility( n , UNITABILITY_FORCE_FIELD ).Automatic = 0
+						Unit( n ).AttackActive = 0
+						Unit( n ).Ability.Active = -1
+						Unit( n ).FollowUnit = -1
+						Unit( n ).Ability.Destination.x# = Unit( n ).pos.x#
+						Unit( n ).Ability.Destination.z# = Unit( n ).pos.z#
+						ResetUnitPath( n )
+					endif
+					
+				endif
+				
+			endcase
+			
+			rem initiate transition into meteor shower
+			case 26
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem play animation
+				StopObject( Unit( n ).Obj )
+				PlayObject( Unit( n ).Obj , Unit( n ).Anim.MeteorShowerPrepare.mStart , Unit( n ).Anim.MeteorShowerPrepare.mEnd , Unit( n ).Anim.MeteorShowerPrepare.mSpeed# )
+
+				rem next state
+				Unit( n ).Active = 27
+				
+			endcase
+			
+			rem transition into meteor shower
+			case 27
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( n ).Ability.Destination.z# , Unit( n ).pos.x# - Unit( n ).Ability.Destination.x# ) , Unit( n ).angle.y# , 3.5 )
+				
+				rem handle animation
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					StopObject( Unit( n ).Obj )
+					PlayObject( Unit( n ).Obj , Unit( n ).Anim.MeteorShowerRelease.mStart , Unit( n ).Anim.MeteorShowerRelease.mEnd , Unit( n ).Anim.MeteorShowerRelease.mSpeed# )
+					
+					rem find ground height and create meteor shower
+					if SC_RayCastGroup( COL_TERRAIN , Unit( n ).Ability.Destination.x# , 200 , Unit( n ).Ability.Destination.z# , Unit( n ).Ability.Destination.x# , -200 , Unit( n ).Ability.Destination.z# , 0 )
+						CreateMeteorShower( Unit( n ).Ability.Destination.x# , SC_GetStaticCollisionY() , Unit( n ).Ability.Destination.z# , 200 , 1.1 , 4.0 , UnitAbility( n , UNITABILITY_METEOR_SHOWER ).HealthDamage# )
+						DamageUnit( n , 0.0 , UnitAbility( n , UNITABILITY_METEOR_SHOWER ).ManaDrain# )
+					endif
+					
+					rem deactivate ability
+					Unit( n ).Ability.Active = -1
+													
+					rem next state
+					Unit( n ).Active = 28
+				endif
+				
+			endcase
+			
+			rem wait for recoil animation to finish
+			case 28
+				
+				rem unit handlers
+				_Unit_Handle_Ground_Movement( n )
+				
+				rem slow unit down
+				Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 7.1 )
+				
+				rem rotate towards target
+				Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - Unit( n ).Ability.Destination.z# , Unit( n ).pos.x# - Unit( n ).Ability.Destination.x# ) , Unit( n ).angle.y# , 3.5 )
+				
+				rem return to idle state
+				if ObjectPlaying( Unit( n ).Obj ) = 0
+					Unit( n ).Active = 2
+					
+					rem if not automatic, disable again
+					if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).Automatic = 0
+						Unit( n ).AttackActive = 0
+						Unit( n ).Ability.Active = -1
+						Unit( n ).FollowUnit = -1
+						Unit( n ).Ability.Destination.x# = Unit( n ).pos.x#
+						Unit( n ).Ability.Destination.z# = Unit( n ).pos.z#
+						ResetUnitPath( n )
+					endif
+					
+				endif
+			endcase
+			
+		endselect
+		
+		rem check if there are any chained commands
+		if PokeUnitCommandChain( n ) > -1
+			ExecuteAbilityFromUnitCommandChain( n )
+		endif
+	
+	next n
+	
+	rem reset button clicked
+	if uUnit.PostResetButtonClicked = 1 then Button.Clicked = -1
+	
+	rem handle formations
+	ControlUnitFormation()
+
+endfunction
+
+function TiltObjectToTerrain( Obj , speed )
+	
+	rem tilt
+	if SC_RayCastGroup( COL_TERRAIN , object position x( Obj ) , 200 , object position z( Obj ) , object position x( Obj ) , -200 , object position z( Obj ) , 0 )
+		rotate object Obj , curveangle( asin( SC_GetCollisionNormalZ() ) , object angle x( Obj ) , speed ) , 0 , curveangle( asin( 0 - SC_GetCollisionNormalX() ) , object angle z( Obj ) , speed )
+	endif
+	
+endfunction
+
+function GetUnitUnderMouse()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active units
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1
+			if (object screen x( Unit( n ).Obj ) - uMouse.x)^2 + (object screen y( Unit( n ).Obj ) - uMouse.y)^2 < (Unit( n ).Size#*14)^2
+				if ObjectInScreen( Unit( n ).Obj )
+					exitfunction n
+				endif
+			endif
+		endif
+	next n
+	
+endfunction -1
+
+function _Unit_Handle_Following( n )
+	
+	rem unit is not following
+	if Unit( n ).FollowUnit = -1 then exitfunction
+	
+	rem if unit is in range, stop following
+	if (Unit( n ).pos.x#-Unit( Unit( n ).FollowUnit ).pos.x#)^2 + (Unit( n ).pos.z#-Unit( Unit( n ).FollowUnit ).pos.z#)^2 < (Unit( n ).Size#*1.5)^2
+		if Unit( n ).CurrentMaxWaypoint > -1 then ResetUnitPath( n )
+	else
+	
+		rem if unit is not in range, find path to it
+		if TBM.Ticks - Unit( n ).FollowUnitDelayTimer > 40
+			Unit( n ).FollowUnitDelayTimer = TBM.Ticks
+			ResetUnitPath( n )
+			_Unit_Calculate_Formation_Groups()
+			UnitCalculatePath( n , Unit( n ).pos.x# , Unit( n ).pos.z# , Unit( Unit( n ).FollowUnit ).pos.x# , Unit( Unit( n ).FollowUnit ).pos.z# )
+		endif
+	
+	endif
+
+endfunction
+
+function _Unit_Handle_Ground_Movement( n )
+	
+	rem decrease offset to 0 if still in air
+	if Unit( n ).HeightOffset# > 0 then dec Unit( n ).HeightOffset# , 0.11
+	if Unit( n ).HeightOffset# < 0 then Unit( n ).HeightOffset# = 0
+
+	rem position at terrain height
+	if SC_RayCastGroup( COL_TERRAIN , Unit( n ).pos.x# , 200 , Unit( n ).pos.z# , Unit( n ).pos.x# , -200 , Unit( n ).pos.z# , 0 )
+		Unit( n ).pos.y# = curvevalue( SC_GetStaticCollisionY() , Unit( n ).pos.y# , 0.7 )
+	else
+		Unit( n ).pos.y# = curvevalue( 0 , Unit( n ).pos.y# , 1.7 )
+	endif
+	
+	rem collision with pathfinding walls
+	if SC_SphereCastGroup( COL_PATHFINDER , Unit( n ).oldpos.x# , Unit( n ).oldpos.y# + (Unit( n ).Size#/2) , Unit( n ).oldpos.z# , Unit( n ).pos.x# , Unit( n ).pos.y# + (Unit( n ).Size#/2) , Unit( n ).pos.z# , Unit( n ).Size# / 3 , 0 )
+		Unit( n ).pos.x# = SC_GetCollisionSlideX()
+		Unit( n ).pos.z# = SC_GetCollisionSlideZ()
+	endif
+	
+	rem tilt to terrain
+	TiltObjectToTerrain( Unit( n ).Obj , 2 )
+	
+endfunction
+
+function _Unit_Handle_Air_Movement( n )
+	
+	rem increase offset to 5 if still in air
+	if Unit( n ).HeightOffset# < 5 then inc Unit( n ).HeightOffset# , 0.11
+	if Unit( n ).HeightOffset# > 5 then Unit( n ).HeightOffset# = 5
+	
+	rem position at terrain height
+	if SC_RayCastGroup( COL_TERRAIN , Unit( n ).pos.x# , 200 , Unit( n ).pos.z# , Unit( n ).pos.x# , -200 , Unit( n ).pos.z# , 0 )
+		Unit( n ).pos.y# = curvevalue( SC_GetStaticCollisionY() , Unit( n ).pos.y# , 14.2 )
+	else
+		Unit( n ).pos.y# = curvevalue( 0 , Unit( n ).pos.y# , 14.2 )
+	endif
+	
+	rem tilt back to normal
+	rotate object Unit( n ).Obj , curveangle( 0 , object angle x(Unit( n ).Obj) , 8 ) , 0 , curveangle( 0 , object angle z(Unit( n ).Obj) , 8 )
+	
+endfunction
+
+function _Unit_Handle_Ground_Animations( n )
+	
+	rem no point if not visible
+	if Unit( n ).Visible = 0 then exitfunction
+	
+	rem idle animation
+	if Unit( n ).CurrentSpeed# < Unit( n ).GroundSpeed# * 0.01
+		if ObjectFrame( Unit( n ).Obj ) < Unit( n ).Anim.Idle.mStart or ObjectFrame( Unit( n ).Obj ) > Unit( n ).Anim.Idle.mEnd
+			StopObject( Unit( n ).Obj )
+			PlayObject( Unit( n ).Obj , Unit( n ).Anim.Idle.mStart , Unit( n ).Anim.Idle.mEnd , Unit( n ).Anim.Idle.mSpeed# )
+		endif
+		if ObjectPlaying( Unit( n ).Obj ) = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.Idle.mStart , Unit( n ).Anim.Idle.mEnd , Unit( n ).Anim.Idle.mSpeed# )
+	endif
+	
+	rem creep animation
+	if Unit( n ).CurrentSpeed# > Unit( n ).GroundSpeed# * 0.01 and Unit( n ).CurrentSpeed# < Unit( n ).GroundSpeed# * 0.333
+		if ObjectFrame( Unit( n ).Obj ) < Unit( n ).Anim.Creep.mStart or ObjectFrame( Unit( n ).Obj ) > Unit( n ).Anim.Creep.mEnd
+			StopObject( Unit( n ).Obj )
+			PlayObject( Unit( n ).Obj , Unit( n ).Anim.Creep.mStart , Unit( n ).Anim.Creep.mEnd , Unit( n ).Anim.Creep.mSpeed# )
+		endif
+		if ObjectPlaying( Unit( n ).Obj ) = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.Creep.mStart , Unit( n ).Anim.Creep.mEnd , Unit( n ).Anim.Creep.mSpeed# )
+	endif
+
+	rem walk animation
+	if Unit( n ).CurrentSpeed# > Unit( n ).GroundSpeed# * 0.333 and Unit( n ).CurrentSpeed# < Unit( n ).GroundSpeed# * 0.666
+		if ObjectFrame( Unit( n ).Obj ) < Unit( n ).Anim.Walk.mStart or ObjectFrame( Unit( n ).Obj ) > Unit( n ).Anim.Walk.mEnd
+			StopObject( Unit( n ).Obj )
+			PlayObject( Unit( n ).Obj , Unit( n ).Anim.Walk.mStart , Unit( n ).Anim.Walk.mEnd , Unit( n ).Anim.Walk.mSpeed# )
+		endif
+		if ObjectPlaying( Unit( n ).Obj ) = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.Walk.mStart , Unit( n ).Anim.Walk.mEnd , Unit( n ).Anim.Walk.mSpeed# )
+	endif
+	
+	rem run animation
+	if Unit( n ).CurrentSpeed# > Unit( n ).GroundSpeed# * 0.666
+		if ObjectFrame( Unit( n ).Obj ) < Unit( n ).Anim.Run.mStart or ObjectFrame( Unit( n ).Obj ) > Unit( n ).Anim.Run.mEnd
+			StopObject( Unit( n ).Obj )
+			PlayObject( Unit( n ).Obj , Unit( n ).Anim.Run.mStart , Unit( n ).Anim.Run.mEnd , Unit( n ).Anim.Run.mSpeed# )
+		endif
+		if ObjectPlaying( Unit( n ).Obj ) = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.Run.mStart , Unit( n ).Anim.Run.mEnd , Unit( n ).Anim.Run.mSpeed# )
+	endif
+	
+endfunction
+
+function _Unit_Handle_Air_Animations( n )
+	
+	rem no point if not visible
+	if Unit( n ).Visible = 0 then exitfunction
+	
+	rem control idle flying animation
+	if Unit( n ).CurrentSpeed# < Unit( n ).AirSpeed# * 0.333
+		if ObjectFrame( Unit( n ).Obj ) > Unit( n ).Anim.Fly.mStart and ObjectFrame( Unit( n ).Obj ) < Unit( n ).Anim.Fly.mEnd
+			StopObject( Unit( n ).Obj )
+			PlayObject( Unit( n ).Obj , Unit( n ).Anim.FlyToFlyIdle.mStart , Unit( n ).Anim.FlyToFlyIdle.mEnd , Unit( n ).Anim.FlyToFlyIdle.mSpeed# )
+		endif
+		if ObjectPlaying( Unit( n ).Obj ) = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.FlyIdle.mStart , Unit( n ).Anim.FlyIdle.mEnd , Unit( n ).Anim.FlyIdle.mSpeed# )
+	endif
+	
+	rem control transitions and flying animations
+	if Unit( n ).CurrentSpeed# > Unit( n ).AirSpeed# * 0.333
+		if ObjectFrame( Unit( n ).Obj ) > Unit( n ).Anim.FlyIdle.mStart and ObjectFrame( Unit( n ).Obj ) < Unit( n ).Anim.FlyIdle.mEnd
+			StopObject( Unit( n ).Obj )
+			PlayObject( Unit( n ).Obj , Unit( n ).Anim.FlyIdleToFly.mStart , Unit( n ).Anim.FlyIdleToFly.mEnd , Unit( n ).Anim.FlyIdleToFly.mSpeed# )
+		endif
+		if ObjectPlaying( Unit( n ).Obj ) = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.Fly.mStart , Unit( n ).Anim.Fly.mEnd , Unit( n ).Anim.Fly.mSpeed# )
+	endif
+			
+endfunction
+
+function DamageUnit( n , health# , mana# )
+	
+	rem do damage to shield first
+	if Unit( n ).Stats.ShieldEnable = 1
+		dec Unit( n ).Stats.CurrentShield# , health#
+	
+		rem if shield is gone, do damage to health
+		if Unit( n ).Stats.CurrentShield# < 0.0
+			inc Unit( n ).Stats.CurrentHealth# , Unit( n ).Stats.CurrentShield#
+			Unit( n ).Stats.CurrentShield# = 0.0
+		endif
+		
+	rem do damage to health
+	else
+		dec Unit( n ).Stats.CurrentHealth# , health#
+	endif
+	
+	rem damage to mana
+	if Unit( n ).Stats.ManaEnable = 1
+		dec Unit( n ).Stats.CurrentMana# , mana#
+		if Unit( n ).Stats.CurrentMana# < 0.0 then Unit( n ).Stats.CurrentMana# = 0.0
+	endif
+	
+	rem health can't go below 0
+	if Unit( n ).Stats.CurrentHealth# < 0.0 then Unit( n ).Stats.CurrentHealth# = 0.0
+
+endfunction
+
+function ControlUnitScreenDraws()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active untis
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1 and Unit( n ).Visible = 1
+			
+			rem only draw bars if unit is selected or ALT is pressed and unit is visible
+			if (keystate(56) or Unit( n ).Selected > 0) and Unit( n ).Visible = 1
+				
+				rem get screen coordinates of unit
+				if ObjectInScreen( Unit( n ).Obj )
+					sx = object screen x( Unit( n ).Obj )
+					sy = object screen y( Unit( n ).Obj )
+				endif
+				
+				rem draw health bar
+				success = Unit( n ).Stats.HealthEnable
+				if success = 1 and Unit( n ).Stats.ShieldEnable = 0
+					a2box sx - 40 , sy - 80 , sx + 40 , sy - 75 , 0x80808080
+					a2fillbox sx - 39 , sy - 79 , sx - 38 + ((Unit( n ).Stats.HealthRecoil# * 78) / Unit( n ).Stats.MaxHealth ) , sy - 75 , 0xFFFF0000
+					a2fillbox sx - 39 , sy - 79 , sx - 38 + ((Unit( n ).Stats.CurrentHealth# * 78) / Unit( n ).Stats.MaxHealth ) , sy - 75 , 0xFF00FF50
+				endif
+				
+				rem draw health and shield bar
+				if success = 1 and Unit( n ).Stats.ShieldEnable = 1
+					a2box sx - 40 , sy - 80 , sx + 40 , sy - 75 , 0x80808080
+					a2line sx , sy - 79 , sx , sy - 75 , 0x80808080
+					a2fillbox sx - 39 , sy - 79 , sx - 37 + ((Unit( n ).Stats.HealthRecoil# * 38) / Unit( n ).Stats.MaxHealth ) , sy -  75 , 0xFFFF0000
+					a2fillbox sx + 1 , sy - 79 , sx + 2 + ((Unit( n ).Stats.ShieldRecoil# * 38) / Unit( n ).Stats.MaxShield ) , sy - 75 , 0xFFFF0000
+					a2fillbox sx - 39 , sy - 79 , sx - 37 + ((Unit( n ).Stats.CurrentHealth# * 38) / Unit( n ).Stats.MaxHealth ) , sy -  75 , 0xFF00FF50
+					a2fillbox sx + 1 , sy - 79 , sx + 2 + ((Unit( n ).Stats.CurrentShield# * 38) / Unit( n ).Stats.MaxShield ) , sy - 75 , 0xFFF000FF
+				endif
+				
+				rem draw mana bar
+				if Unit( n ).Stats.ManaEnable = 1
+					a2box sx - 40 , sy - 75 , sx + 40 , sy - 70 , 0x80808080
+					a2fillbox sx - 39 , sy - 74 , sx - 38 + ((Unit( n ).Stats.ManaRecoil# * 78) / Unit( n ).Stats.MaxMana ) , sy - 70 , 0xFFFF0000
+					a2fillbox sx - 39 , sy - 74 , sx - 38 + ((Unit( n ).Stats.CurrentMana# * 78) / Unit( n ).Stats.MaxMana ) , sy - 70 , 0xFF0060FF
+				endif
+				
+			endif
+			
+		endif
+	next n 
+	
+endfunction

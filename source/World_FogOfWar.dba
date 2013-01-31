@@ -1,0 +1,271 @@
+function WorldCreateFogOfWar( StartX# , StartY# , EndX# , EndY# )
+	
+	rem local variables
+	local x as integer
+	local y as integer
+	local i as integer
+	local SizeX# as float
+	local SizeY# as float
+	local ResolutionX as integer
+	local ResolutionY as integer
+	
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "WorldCreateFogOfWar " + str$(StartX#) + "," + str$(StartY#) + "," + str$(EndX#) + "," + str$(EndY#) + "," + str$(ResolutionX) + "," + str$(ResolutionY) )
+	
+	rem make sure it hasn't already been created
+	if uWorld.FogOfWar.Obj > 0
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "Already active!" )
+		exitfunction -1
+	endif
+	
+	rem calculate size
+	SizeX# = EndX# - StartX#
+	SizeY# = EndY# - StartY#
+	
+	rem calculate resolution
+	ResolutionX = SizeX#/1.5
+	ResolutionY = SizeY#/1.5
+	
+	rem create
+	uWorld.FogOfWar.Obj = GenerateFogOfWar( StartX# , StartY# , EndX# , EndY# , ResolutionX , ResolutionY )
+	make mesh from object 1 , uWorld.FogOfWar.Obj
+	delete object uWorld.FogOfWar.Obj
+	make object uWorld.FogOfWar.Obj , 1 , 0
+	delete mesh 1
+	set object transparency uWorld.FogOfWar.Obj , 2
+	disable object zwrite uWorld.FogOfwar.Obj
+	disable object zdepth uWorld.FogOfWar.Obj
+	set object light uWorld.FogOfWar.Obj , 0
+	WrapObjectOnTerrain( uWorld.FogOfWar.Obj )
+	
+	rem set values
+	uWorld.FogOfWar.StartX# = StartX#
+	uWorld.FogOfWar.StartY# = StartY#
+	uWorld.FogOfWar.EndX# = EndX#
+	uWorld.FogOfWar.EndY# = EndY#
+	uWorld.FogOfWar.ResolutionX = ResolutionX
+	uWorld.FogOfWar.ResolutionY = ResolutionY
+	
+	rem calculate usable space (in grid coordinates, not real world coordinates)
+	uWorld.FogOfWar.UsableSize.x = ((uWorld.PathFinder.EndX#-uWorld.PathFinder.StartX#)*ResolutionX)/(EndX#-StartX#)
+	uWorld.FogOfWar.UsableSize.y = ((uWorld.PathFinder.EndY#-uWorld.PathFinder.StartY#)*ResolutionY)/(EndY#-StartY#)
+	uWorld.FogOfWar.UsableStart.x = ((uWorld.PathFinder.StartX#-StartX#)*ResolutionX)/(EndX#-StartX#)
+	uWorld.FogOfWar.UsableStart.y = ((uWorld.PathFinder.StartY#-StartY#)*ResolutionY)/(EndY#-StartY#)
+	
+	repeat
+		set cursor 0,0
+		print uWorld.FogOfWar.UsableSize.x
+		print uWorld.FogOfWar.UsableSize.y
+		print uWorld.FogOfWar.UsableStart.x
+		print uWorld.FogOfWar.UsableStart.y
+		print ResolutionX
+		print ResolutionY
+		sync
+	until returnkey()
+	
+	rem calculate fade speeds and processing amounts
+	uWorld.FogOfWar.VertexUpdateAmount = range( (4000 * ResolutionX * ResolutionY)/10000 , 4000 , 10000 )
+	
+	rem set up static brush
+	global dim FogOfWarStaticBrush( ResolutionX , ResolutionY ) as FogOfWarStaticBrushAAT
+	for x = 0 to ResolutionX
+		for y = 0 to ResolutionY
+			FogOfWarStaticBrush( x , y ).Color = uWorld.FogOfWar.StartColor
+			FogOfWarStaticBrush( x , y ).LockColor = 0x000000FF
+			FogOfWarStaticBrush( x , y ).MinColor = uWorld.FogOfWar.MinColor
+		next y
+	next x
+	
+	rem get height data for high ground vision denial
+	lock vertexdata for limb uWorld.FogOfWar.Obj , 0
+		for x = 0 to ResolutionX
+			for y = 0 to ResolutionY
+				FogOfWarStaticBrush( x , y ).Height# = get vertexdata position y( FogOfWarVertex( x , y , 0 ).VertexIndex )
+			next y
+		next x
+	unlock vertexdata
+
+endfunction n
+
+function WorldDestroyFogOfWar()
+	
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "WorldDestroyFogOfWar" )
+	
+	rem make sure it's active
+	if uWorld.FogOfWar.Obj = 0
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "World not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy
+	delete object uWorld.FogOfWar.Obj
+	uWorld.FogOfWar.Obj = 0
+	undim FogOfWarVertex()
+	undim FogOfWarStaticBrush()
+	
+endfunction n
+
+function GenerateFogOfWar( StartX# , StartY# , EndX# , EndY# , ResolutionX , ResolutionY )
+	
+	rem local variables
+	local mem as word
+	local mesh as word
+	local Obj as word
+	local FVF as dword
+	local vertSize as dword
+	local vertCount as dword
+	local pos as dword
+	local x as integer
+	local y as integer
+	local SizeX# as float
+	local SizeY# as float
+	local Index as dword
+	local Vertex as dword
+	local vertCounter as integer
+	
+	rem calculate size of map
+	SizeX# = EndX# - StartX#
+	SizeY# = EndY# - StartY#
+	
+	rem create vertex array
+	global dim FogOfWarVertex( ResolutionX , ResolutionY , 5 ) as FogOfWarVertexAAAT
+	dim FogOfWarVertexTracker( ResolutionX , ResolutionY ) as integer
+	
+	rem calculate header data
+	FVF = 338
+	vertSize = 36
+	vertCount = ResolutionX * ResolutionY * 6
+	
+	rem create memblock
+	mem = find free memblock()
+	make memblock mem , vertCount * vertSize + 12
+	
+	rem write header
+	write memblock dword mem , 0 , 338
+	write memblock dword mem , 4 , vertSize
+	write memblock dword mem , 8 , vertCount
+	
+	rem write face data (total of 6 vertices)
+	pos = 12
+	vertCounter = 0
+	for y = 0 to ResolutionY-1
+		for x = 0 to ResolutionX-1
+			
+			rem vertex 1
+			write memblock float mem , pos + 0 , StartX# + ((SizeX#*(x+1))/ResolutionX)
+			write memblock float mem , pos + 4 , 0.0
+			write memblock float mem , pos + 8 , StartY# + ((SizeY#*(y+0))/ResolutionY)
+			write memblock float mem , pos + 12, 0.0
+			write memblock float mem , pos + 16, 1.0
+			write memblock float mem , pos + 20, 0.0
+			write memblock dword mem , pos + 24, 0xFF000000
+			write memblock float mem , pos + 28, 0.0
+			write memblock float mem , pos + 32, 0.0
+			inc pos , vertSize
+			
+			rem save vertex index for better access later
+			FogOfWarVertex( x+1 , y+0 , FogOfWarVertexTracker( x+1 , y+0 ) ).VertexIndex = vertCounter
+			inc FogOfWarVertexTracker( x+1 , y+0 )
+			inc vertCounter
+
+			rem vertex 2
+			write memblock float mem , pos + 0 , StartX# + ((SizeX#*(x+0))/ResolutionX)
+			write memblock float mem , pos + 4 , 0.0
+			write memblock float mem , pos + 8 , StartY# + ((SizeY#*(y+0))/ResolutionY)
+			write memblock float mem , pos + 12, 0.0
+			write memblock float mem , pos + 16, 1.0
+			write memblock float mem , pos + 20, 0.0
+			write memblock dword mem , pos + 24, 0xFF000000
+			write memblock float mem , pos + 28, 0.0
+			write memblock float mem , pos + 32, 0.0
+			inc pos , vertSize
+			
+			rem save vertex index for better access later
+			FogOfWarVertex( x+0 , y+0 , FogOfWarVertexTracker( x+0 , y+0 ) ).VertexIndex = vertCounter
+			inc FogOfWarVertexTracker( x+0 , y+0 )
+			inc vertCounter
+
+			rem vertex 3
+			write memblock float mem , pos + 0 , StartX# + ((SizeX#*(x+0))/ResolutionX)
+			write memblock float mem , pos + 4 , 0.0
+			write memblock float mem , pos + 8 , StartY# + ((SizeY#*(y+1))/ResolutionY)
+			write memblock float mem , pos + 12, 0.0
+			write memblock float mem , pos + 16, 1.0
+			write memblock float mem , pos + 20, 0.0
+			write memblock dword mem , pos + 24, 0xFF000000
+			write memblock float mem , pos + 28, 0.0
+			write memblock float mem , pos + 32, 0.0
+			inc pos , vertSize
+			
+			rem save vertex index for better access later
+			FogOfWarVertex( x+0 , y+1 , FogOfWarVertexTracker( x+0 , y+1 ) ).VertexIndex = vertCounter
+			inc FogOfWarVertexTracker( x+0 , y+1 )
+			inc vertCounter
+
+			rem vertex 4
+			write memblock float mem , pos + 0 , StartX# + ((SizeX#*(x+1))/ResolutionX)
+			write memblock float mem , pos + 4 , 0.0
+			write memblock float mem , pos + 8 , StartY# + ((SizeY#*(y+0))/ResolutionY)
+			write memblock float mem , pos + 12, 0.0
+			write memblock float mem , pos + 16, 1.0
+			write memblock float mem , pos + 20, 0.0
+			write memblock dword mem , pos + 24, 0xFF000000
+			write memblock float mem , pos + 28, 0.0
+			write memblock float mem , pos + 32, 0.0
+			inc pos , vertSize
+			
+			rem save vertex index for better access later
+			FogOfWarVertex( x+1 , y+0 , FogOfWarVertexTracker( x+1 , y+0 ) ).VertexIndex = vertCounter
+			inc FogOfWarVertexTracker( x+1 , y+0 )
+			inc vertCounter
+
+			rem vertex 5
+			write memblock float mem , pos + 0 , StartX# + ((SizeX#*(x+0))/ResolutionX)
+			write memblock float mem , pos + 4 , 0.0
+			write memblock float mem , pos + 8 , StartY# + ((SizeY#*(y+1))/ResolutionY)
+			write memblock float mem , pos + 12, 0.0
+			write memblock float mem , pos + 16, 1.0
+			write memblock float mem , pos + 20, 0.0
+			write memblock dword mem , pos + 24, 0xFF000000
+			write memblock float mem , pos + 28, 0.0
+			write memblock float mem , pos + 32, 0.0
+			inc pos , vertSize
+			
+			rem save vertex index for better access later
+			FogOfWarVertex( x+0 , y+1 , FogOfWarVertexTracker( x+0 , y+1 ) ).VertexIndex = vertCounter
+			inc FogOfWarVertexTracker( x+0 , y+1 )
+			inc vertCounter
+
+			rem vertex 6
+			write memblock float mem , pos + 0 , StartX# + ((SizeX#*(x+1))/ResolutionX)
+			write memblock float mem , pos + 4 , 0.0
+			write memblock float mem , pos + 8 , StartY# + ((SizeY#*(y+1))/ResolutionY)
+			write memblock float mem , pos + 12, 0.0
+			write memblock float mem , pos + 16, 1.0
+			write memblock float mem , pos + 20, 0.0
+			write memblock dword mem , pos + 24, 0xFF000000
+			write memblock float mem , pos + 28, 0.0
+			write memblock float mem , pos + 32, 0.0
+			inc pos , vertSize
+			
+			rem save vertex index for better access later
+			FogOfWarVertex( x+1 , y+1 , FogOfWarVertexTracker( x+1 , y+1 ) ).VertexIndex = vertCounter
+			inc FogOfWarVertexTracker( x+1 , y+1 )
+			inc vertCounter
+			
+		next x
+	next y
+	
+	rem convert to object
+	mesh = find free mesh()
+	Obj = find free object()
+	make mesh from memblock mesh , mem
+	make object Obj , mesh , 0
+	
+	rem clean up
+	delete mesh mesh
+	delete memblock mem
+	undim FogOfWarVertexTracker()
+	
+endfunction Obj

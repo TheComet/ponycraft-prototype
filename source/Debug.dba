@@ -1,0 +1,322 @@
+rem -----------------------------------------------------------
+rem Debug
+rem by TheComet
+rem -----------------------------------------------------------
+
+#constant DEBUG_NORMAL			0
+#constant DEBUG_NEWQUESTION 	1
+#constant DEBUG_NEWANSWER 		2
+#constant DEBUG_CLOSEQUESTION	3
+
+type DebugVT
+   refresh     as integer
+	lastWriteType as integer
+	LoadListCount as integer
+endtype
+
+type DebugLoadListAT
+	filename$ as string
+	ID as integer
+endtype
+
+function InitDebug()
+
+   rem local variables
+   local Logfile$ as string
+   local lastrun$ as string
+	local copy$ as string
+
+   rem global variables
+   global uDebug as DebugVT
+	uDebug.lastWriteType = -1
+	uDebug.LoadListCount = -1
+	
+	rem global arrays
+	global dim DebugLoadList() as DebugLoadListAT
+
+   rem specify log file
+   if path exist( "logs" ) = 0 then make directory "logs"
+   Logfile$="logs\DebugLog.html"
+
+   rem get date last run
+   set dir "logs"
+   find first
+   find next
+   lastrun$=get file date$()
+   set dir ".."
+
+   ` Open the log file
+   if file exist(Logfile$) then delete file Logfile$
+   OPEN LOG Logfile$, 1
+
+   ` Enable logging against a tag even if the tag is unknown
+   SET LOG UNKNOWN TAG 1
+
+remstart
+   ` Set up the severity tags
+   SET LOG TAG 0 , "<font color=#000000>", "</font><br>" : rem this is the INFO level
+   SET LOG TAG 1 , "<font color=#0000ff>", "</font><br>": rem NOTICE level
+   SET LOG TAG 2 , "<font color=#808080>", "</font><br>": rem WARN level
+   SET LOG TAG 3 , "<font color=#ff8080>", "</font><br>": rem ERROR level
+   SET LOG TAG 4 , "<font color=#ff0000>", "</font><br>": rem DISASTER level
+	remend
+	` Copy header file into debug log
+	open to read 1 , "logs\data\header.html"
+		repeat
+			read string 1 , copy$
+			WRITELN LOG copy$
+		until file end(1)
+	close file 1
+	
+	` Create body
+	WRITELN LOG "<body>"
+	
+	` Little title to make you smile
+	WRITELN LOG "<div style=" + chr$(34) + "position: absolute; left: 300px; top: 0px;" + chr$(34) + ">"
+	WRITELN LOG "<img src=" + chr$(34) + "data/header.png" + chr$(34) + ">"
+	WRITELN LOG "</div>"
+
+   ` Write out a title
+	WRITELN LOG "<br><br>"
+   WRITELN LOG "============================================<br>"
+   WRITELN LOG "PonyCraft - Debug Output<br>"
+   WRITELN LOG "============================================<br>"
+   WRITELN LOG "<br><br><br>"
+
+	` Last run
+	WRITELN LOG "Last run : "+lastrun$
+   WRITELN LOG "<br><br><br>"
+	
+   ` Write out system details
+	WRITELN LOG "<div class="+chr$(34)+"dhtmlgoodies_question"+chr$(34)+">System Information</div>"
+   WRITELN LOG "<div class="+chr$(34)+"dhtmlgoodies_answer"+chr$(34)+"><div>"
+	WRITELN LOG "<ul>"
+   WRITELN LOG "<li>" + CURRENT GRAPHICS CARD$() + "</li>"
+   WRITELN LOG "<li>System BIOS version   : "+get registry$("HARDWARE\DESCRIPTION\System","SystemBiosVersion") + "</li>"
+   WRITELN LOG "<li>System BIOS date      : "+get registry$("HARDWARE\DESCRIPTION\System","SystemBiosDate") + "</li>"
+   WRITELN LOG "<li>Central processor     : "+get registry$("HARDWARE\DESCRIPTION\System\CentralProcessor\0","Identifier") + "</li>"
+   WRITELN LOG "<li>Processor name        : "+get registry$("HARDWARE\DESCRIPTION\System\CentralProcessor\0","ProcessorNameString") + "</li>"
+   WRITELN LOG "<li>Processor frequency   : "+str$(get registry("HARDWARE\DESCRIPTION\System\CentralProcessor\0","~MHz"))+" MHz" + "</li>"
+   WRITELN LOG "<li>Video BIOS version    : "+get registry$("HARDWARE\DESCRIPTION\System","VideoBiosVersion") + "</li>"
+   WRITELN LOG "<li>Video BIOS date       : "+get registry$("HARDWARE\DESCRIPTION\System","VideoBiosDate") + "</li>"
+   WRITELN LOG "<li>Running at resolution : "+str$(screen width())+"x"+str$(screen height())+"x"+str$(screen depth()) + "</li>"
+   WRITELN LOG "<li>Directory             : "+get dir$() + "</li>"
+   WRITELN LOG "</ul>"
+	WRITELN LOG "</div></div><pre>"
+
+   rem debug has started
+   DebugOutput(0,"Debugging Started. YAY!",DEBUG_NORMAL)
+
+endfunction
+
+function DebugOutput(level,message$,WriteType)
+
+   rem local variables
+   local color as dword
+	local n as integer
+	
+	rem set colour according to level of severity
+   select level
+      case 0 : color = 0xFFFFFFFF : endcase
+      case 1 : color = 0xFF0020FF : endcase
+      case 2 : color = 0xFF707000 : endcase
+      case 3 : color = 0xFFFF8000 : endcase
+      case 4 : color = 0xFFFF0000 : endcase
+   endselect
+	
+	rem replace <> characters with HTML entities
+	for n = 1 to fast len( message$ )
+		if mid$( message$ , n ) = "<"
+			message$ = fast left$( message$ , n-1 ) + "&lt;" + fast right$( message$ , fast len(message$)-n )
+			inc n , 4
+		endif
+		if mid$( message$ , n ) = ">"
+			message$ = fast left$( message$ , n-1 ) + "&gt;" + fast right$( message$ , fast len(message$)-n )
+			inc n , 4
+		endif
+	next n
+
+   rem create date and time flags
+   date$ = get date$()
+   time$ = get time$()
+	
+	rem create type flags
+   select level
+      case 0 : flag$ = "[INFO] " : endcase
+      case 1 : flag$ = "[NOTICE] " : endcase
+      case 2 : flag$ = "[WARNING] " : endcase
+      case 3 : flag$ = "[ERROR] " : endcase
+      case 4 : flag$ = "[DISASTER] " : endcase
+      case 5 : flag$ = "[USER] " : endcase
+   endselect
+	
+	rem create message
+   msg$ = "["+date$ + " " + time$ + "] " + flag$ + message$
+	
+	rem write normal output
+	if WriteType = DEBUG_NORMAL
+		if level = 0 then color = 0xFF000000
+		WRITELN LOG "<font color=#"+right$(hex$(color),6)+">" + msg$ + "</font>"
+	endif
+	
+	rem new question
+	if WriteType = DEBUG_NEWQUESTION
+		WRITELN LOG "</pre><div class="+chr$(34)+"dhtmlgoodies_question"+chr$(34)+">"
+		WRITELN LOG "<font color=#"+right$(hex$(color),6)+">" + msg$ + "</font>"
+		WRITELN LOG "</div>"
+		WRITELN LOG "<div class="+chr$(34)+"dhtmlgoodies_answer"+chr$(34)+"><div><ul><pre>"
+	endif
+	
+	rem new answer
+	if WriteType = DEBUG_NEWANSWER
+		WRITELN LOG "<li>" + msg$ + "</li>"
+	endif
+	
+	rem close question
+	if WriteType = DEBUG_CLOSEQUESTION
+		WRITELN LOG "</pre></ul></div></div><pre>"
+	endif
+
+   rem log in console
+   AddTextToConsole( level , message$ )
+
+endfunction
+
+function LoadObject(filename$,obj)
+	
+	rem check if object has been loaded before
+	for n = 0 to uDebug.LoadListCount
+		if filename$ = DebugLoadList( n ).filename$ then exit
+	next n
+	
+	rem not loaded before
+	if n = uDebug.LoadListCount+1
+		DebugOutput(0,"Loading Object "+chr$(34)+filename$+chr$(34)+", index : "+str$(obj),DEBUG_NORMAL)
+		if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+		load object filename$,obj
+		inc uDebug.LoadListCount
+		array insert at bottom DebugLoadList()
+		DebugLoadList( n ).filename$ = filename$
+		DebugLoadList( n ).ID = obj
+		
+	rem loaded before
+	else
+		instance object obj , DebugLoadList( n ).ID
+	endif
+
+endfunction
+
+function LoadImage(filename$,forceload)
+
+	rem check if image has been loaded before
+	for n = 0 to uDebug.LoadListCount
+		if filename$ = DebugLoadList( n ).filename$ then exit
+	next n
+	
+	rem not loaded before
+	if n = uDebug.LoadListCount+1 or forceload = 1
+		img = find free image()
+		DebugOutput(0,"Loading Image "+chr$(34)+filename$+chr$(34)+", index : "+str$(img),DEBUG_NORMAL)
+		if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+		load image filename$,img
+		inc uDebug.LoadListCount
+		array insert at bottom DebugLoadList()
+		DebugLoadList( n ).filename$ = filename$
+		DebugLoadList( n ).ID = img
+	
+	rem loaded before
+	else
+		img = DebugLoadList( n ).ID
+	endif
+
+endfunction img
+
+function LoadSound(filename$,snd)
+
+   DebugOutput(0,"Loading Sound "+chr$(34)+filename$+chr$(34)+", index : "+str$(snd),DEBUG_NORMAL)
+   if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+   load sound filename$,snd
+
+endfunction
+
+function LoadMusic(filename$,msc)
+
+   DebugOutput(0,"Loading Music "+chr$(34)+filename$+chr$(34)+", index : "+str$(msc),DEBUG_NORMAL)
+   if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+   load music filename$,msc
+
+endfunction
+
+function LoadBitmap(filename$,bmp)
+
+   DebugOutput(0,"Loading Bitmap "+chr$(34)+filename$+chr$(34)+", index : "+str$(bmp),DEBUG_NORMAL)
+   if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+   load image filename$,bmp
+
+endfunction
+
+function LoadEffect(filename$,fx)
+
+   DebugOutput(0,"Loading Effect "+chr$(34)+filename$+chr$(34)+", index : "+str$(fx),DEBUG_NORMAL)
+   if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+   load effect filename$,fx,0
+
+endfunction
+
+function LoadCameraEffect(filename$,fx)
+
+   DebugOutput(0,"Loading Camera Effect "+chr$(34)+filename$+chr$(34)+", index : "+str$(fx),DEBUG_NORMAL)
+   if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+   load camera effect filename$,fx,0
+
+endfunction
+
+function OpenToRead(file,filename$)
+
+   DebugOutput(0,"Opening file (read)"+chr$(34)+filename$+chr$(34)+", index : "+str$(file),DEBUG_NORMAL)
+   if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL):exitfunction -1
+   open to read file,filename$
+
+endfunction 0
+
+function OpenToWrite(file,filename$)
+
+   DebugOutput(0,"Opening file (write)"+chr$(34)+filename$+chr$(34)+", index : "+str$(file),DEBUG_NORMAL)
+   if file exist(filename$)=1 then DebugOutput(2,"File "+chr$(34)+filename$+chr$(34)+" already exists! Overwriting...",DEBUG_NORMAL):delete file filename$
+   open to write file,filename$
+
+endfunction
+
+remstart
+<body>
+      <div class="dhtmlgoodies_question">Q: What are the advantages of table less design?</div>
+      <div class="dhtmlgoodies_answer">
+      	<div>
+      		Ohh! There are so many:
+      		<ul>
+      			<li>Faster loading pages</li>
+      			<li>Smoother loading pages</li>
+      			<li>Saved bandwidth</li>
+      			<li>Separate layout and content</li>
+      			<li>Easy to change layout</li>
+      			<li>Increased accessibility</li>
+      			<li>Different styling for different media(print, screen, pda)</li>
+      		</ul>
+      	</div>
+      </div>
+      <div class="dhtmlgoodies_question">Q: What is the difference between the div and span tag ?</div>
+      <div class="dhtmlgoodies_answer">
+      	<div>
+      		DIV is a block element while SPAN is an inline element. What's common to them both is that none of them have any default styling.
+      	</div>
+      </div>
+      <div class="dhtmlgoodies_question">Q: What kind of site is dhtmlgoodies.com ?</div>
+      <div class="dhtmlgoodies_answer">
+      	<div>
+      		dhtmlgoodies.com is a private site developed and maintained by Alf Magne Kalleland. Here, you will find a lot of
+      		DHTML scripts you can use freely to enhance your website.
+      	</div>
+      </div>
+   </body>
+</html>
+remend

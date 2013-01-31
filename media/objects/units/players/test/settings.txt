@@ -1,0 +1,28 @@
+// Settings script
+// for our placeholder pony test.x
+// by TheComet
+
+// disable iteration
+DisableIteration
+
+// set keyframes
+SetValue Unit.Anim.Idle.Start 0
+SetValue Unit.Anim.Idle.End 1
+SetValue Unit.Anim.Creep.Start 4
+SetValue Unit.Anim.Creep.End 20
+SetValue Unit.Anim.Walk.Start 23
+SetValue Unit.Anim.Walk.End 39
+SetValue Unit.Anim.Run.Start 42
+SetValue Unit.Anim.Run.End 48
+
+// set speed for frames
+SetValue Unit.Anim.Idle.Speed 0.04
+SetValue Unit.Anim.Creep.Speed 0.8
+setValue Unit.Anim.Walk.Speed 0.8
+setValue Unit.Anim.Run.Speed 1.1
+
+// set other values
+SetValue Unit.Speed 0.4
+
+// End script
+END

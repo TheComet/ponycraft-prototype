@@ -1,0 +1,228 @@
+rem ---------------------------------------------------------------------------
+rem Console
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant ConsoleTextMax                     100
+#constant ConsoleArgMax                      10
+#constant ConsoleArgExtractMax					100
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type ConsoleVT
+   Active                                    as integer
+   pos                                       as vec2
+   size                                      as vec2
+   toggle                                    as integer
+   ForceOutput                               as integer
+	Resize												as integer
+	Move													as integer
+endtype
+
+type ConsoleTextAT
+   Color                                     as dword
+   Text$                                     as string
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitConsole()
+
+   rem ---------------------------------------------------------------------------
+   rem Global Variables
+   rem ---------------------------------------------------------------------------
+
+   global uConsole                             as ConsoleVT
+
+   rem ---------------------------------------------------------------------------
+   rem Global Arrays
+   rem ---------------------------------------------------------------------------
+
+   global dim ConsoleText( ConsoleTextMax )    as ConsoleTextAT
+   
+   rem set initial values
+   uConsole.Active = 0
+   uConsole.pos.x = 10
+   uConsole.pos.y = 80
+   uConsole.size.x = 600
+   uConsole.size.y = 680
+
+endfunction
+
+function ControlConsole()
+
+   rem insert key will switch between different active states
+   rem 0 means it's invisible (inactive)
+   rem 1 means it's visible, but you can't type anything into it
+   rem 2 means it's visible and you can type things into it
+   if keystate(210)
+      if uConsole.Toggle = 0
+         uConsole.Toggle = 1
+         
+         rem change active states
+         inc uConsole.Active
+         if uConsole.Active > 2 then uConsole.Active = 0
+         
+         rem if console is ready to accept text, reset entry buffer
+         if uConsole.Active = 2 then ClearTextEntry()
+         
+      endif
+   else
+      uConsole.Toggle = 0
+   endif
+   
+   rem if the active state is larger than 0, draw console to the screen
+   if uConsole.Active > 0
+      
+      rem draw frame
+      a2fillbox uConsole.pos.x , uConsole.pos.y , uConsole.pos.x + uConsole.size.x , uConsole.pos.y + uConsole.size.y , 0xC0000000
+      a2box uConsole.pos.x , uConsole.pos.y , uConsole.pos.x + uConsole.size.x , uConsole.pos.y + uConsole.size.y , 0xFFFFFFFF
+      a2line uConsole.pos.x , uConsole.pos.y + uConsole.size.y - 20 , uConsole.pos.x + uConsole.size.x , uConsole.pos.y + uConsole.size.y - 20 , 0xFFFFFFFF
+   
+      rem draw text to console
+      for n = 0 to ConsoleTextMax
+         if n*15 < uConsole.size.y - 40
+            a2text FontID , uConsole.pos.x+3 , uConsole.pos.y + uConsole.size.y - 40 - (n*15) , ConsoleText( n ).text$ , ConsoleText( n ).color
+			endif
+      next n
+		
+		rem paste motivational fluttershy image (yay :3)
+		paste image IMGFluttershyALotOfCode , uConsole.pos.x + 120 , uConsole.pos.y - 80 , 1
+		
+		rem move
+		if uConsole.Move
+			uConsole.pos.x = uMouse.x
+			uConsole.pos.y = uMouse.y
+			if uMouse.click = 1 then uConsole.Move = 0
+		endif
+		
+		rem resize
+		if uConsole.Resize
+			uConsole.size.x = range( uMouse.x - uConsole.pos.x , 200 , 100000 )
+			uConsole.size.y = range( uMouse.y - uConsole.pos.y , 50 , 10000 )
+			if uMouse.click = 1 then uConsole.Resize = 0
+		endif
+   
+   endif
+   
+   rem check if the console is ready to accept text
+   if uConsole.Active = 2
+		
+   
+      rem light up input box
+      a2fillbox uConsole.pos.x+1 , uConsole.pos.y + uConsole.size.y - 19 , uConsole.pos.x + uConsole.size.x-1 , uConsole.pos.y + uConsole.size.y-1 , 0x50FFFF00
+      
+      rem print user input
+      a2text FontID , uConsole.pos.x+3 , uConsole.pos.y + uConsole.size.y-19 , GetTextEntryWithCursor() , 0xFFFFFFFF
+      
+      rem enter text into console
+      if returnkey()
+         if GetTextEntry() <> ""
+         
+            rem prepare processing
+				_Script_Prepare_Dynamic_Values( 0 )
+				
+				rem process entered command
+				AddTextToConsole( 5 , GetTextEntry() )
+				if CompileEntry( GetTextEntry() , 0 , 0 ) > -1 then ProcessEntry( 0 , 0 , _ENABLE , _ENABLE )
+            ClearTextEntry()
+				DestroyScript( -1 )
+            
+         endif
+      endif
+      
+   endif
+
+endfunction
+
+function AddTextToConsole( flag , text$ )
+
+   remstart
+   ----------------------------------------------------------
+   Flags
+   0 - INFO
+   1 - NOTICE
+   2 - WARNING
+   3 - ERROR
+   4 - DISASTER
+   5 - USER (Text entered by the user)
+   ----------------------------------------------------------
+   remend
+   
+   rem local variables
+   local n as integer
+   local flag$ as string
+	local color as integer
+	
+	rem set colour according to level of severity
+	select flag
+		case 0 : color = 0xFFFFFFFF : endcase
+		case 1 : color = 0xFF0020FF : endcase
+		case 2 : color = 0xFF707000 : endcase
+		case 3 : color = 0xFFFF8000 : endcase
+		case 4 : color = 0xFFFF0000 : endcase
+		case 5 : color = 0xFF808080 : endcase
+	endselect
+   
+   rem create flag
+   select flag
+      case 0 : flag$ = "[INFO] " : endcase
+      case 1 : flag$ = "[NOTICE] " : endcase
+      case 2 : flag$ = "[WARNING] " : endcase
+      case 3 : flag$ = "[ERROR] " : endcase
+      case 4 : flag$ = "[DISASTER] " : endcase
+      case 5 : flag$ = "[USER] " : endcase
+   endselect
+	
+	rem shift text stack to make room for new line of text
+   for n = ConsoleTextMax to 1 step -1
+      ConsoleText( n ).text$ = ConsoleText( n - 1 ).text$
+      ConsoleText( n ).color = ConsoleText( n - 1 ).color
+   next n
+   
+   rem now slot 0 is ready to be overwritten
+   ConsoleText( 0 ).text$ = flag$ + text$
+   ConsoleText( 0 ).color = color
+   
+   rem force output to debug log
+   if uConsole.ForceOutput = 1 and text$ <> ""
+		
+		rem replace <> characters with HTML entities
+		for n = 1 to fast len( text$ )
+			if mid$( text$ , n ) = "<"
+				text$ = fast left$( text$ , n-1 ) + "&lt;" + fast right$( text$ , fast len(text$)-n )
+				inc n , 4
+			endif
+			if mid$( text$ , n ) = ">"
+				text$ = fast left$( text$ , n-1 ) + "&gt;" + fast right$( text$ , fast len(text$)-n )
+				inc n , 4
+			endif
+		next n
+   
+      if flag = 0 then color = 0xFF000000
+		WRITELN LOG "<font color=#"+right$(hex$(color),6)+">" + flag$ + text$ + "</font>"
+      
+   endif
+
+endfunction
+
+function ComposeString( StartIndex , EndIndex , AddSpaces )
+
+	local n as integer
+	local result$ as string
+	
+	result$ = ""
+	for n = StartIndex to EndIndex
+		result$ = result$ + ConsoleCmd$(n)
+		if ConsoleCmd$(n) <> "" and AddSpaces = 1 then result$ = result$ + " "
+	next n
+	result$ = left$(result$,len(result$)-1)
+
+endfunction result$

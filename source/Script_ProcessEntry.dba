@@ -1,0 +1,54 @@
+function ProcessEntry( slot , lin , queue , QueueCopy )
+	
+	rem update dynamic values
+	ScriptUpdateDynamicValues()
+	
+	rem process commands that are not allowed to be queued
+	if _Process_Command_Deny_Queue( slot , lin ) = 0 then exitfunction
+
+	rem queue command if enabled
+	if queue = _ENABLE
+		QueueCommand( slot , lin , QueueCopy )
+		exitfunction
+	endif
+	
+	rem process commands that are allowed to be queued
+	if _Process_Command_Allow_Queue( slot , lin ) = 0 then exitfunction
+	
+   rem unable to execute
+   AddTextToConsole( 4 , "Unknown OP code! -- " + chr$(34) + str$(Script( slot , lin ).cmd) + chr$(34) )
+   AddTextToConsole( 4 , "Script: " + str$(slot) )
+   AddTextToConsole( 4 , "line: " + str$(lin) )
+
+endfunction
+
+function CallEvent( slot , lin )
+	
+	rem local variables
+	local lastScript as integer
+	local lastLine as integer
+	local lastActive as integer
+	
+	rem store last data
+	lastScript = uScript.CurrentSelected
+	lastLine = Script( slot , 0 ).CurrentLine
+	lastActive = Script( slot , 0 ).Active
+	
+	rem set current data
+	uScript.CurrentSelected = slot
+	Script( slot , 0 ).CurrentLine = lin
+	Script( slot , 0 ).Active = 2
+	
+	rem process event
+	repeat
+		ProcessEntry( slot , Script( slot , 0 ).CurrentLine , _ENABLE , _DISABLE )
+		inc Script( slot , 0 ).CurrentLine
+	until Script( slot , 0 ).Active < 2 or Script( slot , 0 ).CurrentLine > 1023
+	
+	rem restore data
+	Script( slot , 0 ).Active = 1
+	uScript.CurrentSelected = lastScript
+	Script( lastScript , 0 ).CurrentLine = lastLine
+	Script( lastScript , 0 ).Active = lastActive
+	
+endfunction

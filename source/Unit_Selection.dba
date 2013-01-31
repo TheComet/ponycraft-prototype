@@ -1,0 +1,148 @@
+function UnitProcessSelectionList()
+
+	rem get units under mouse
+	uUnit.UnitUnderMouse = GetUnitUnderMouse()
+
+	rem local variables
+	local n as integer
+	local sx as integer
+	local sy as integer
+	local success as integer
+	local priority as integer
+	
+	rem loop through all active units
+	priority = 0
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1 and Unit( n ).Visible = 1
+				
+			rem reset success
+			success = 0
+			
+			rem get screen coordinates of unit
+			sx = object screen x( Unit( n ).Obj )
+			sy = object screen y( Unit( n ).Obj )
+			
+			rem check if they are inside the box
+			if GUIDragBox.Active > 0
+				if GUIDragBox.sx > GUIDragBox.ex
+					if sx > GUIDragBox.ex and sx < GUIDragBox.sx then success = 1
+				else
+					if sx < GUIDragBox.ex and sx > GUIDragBox.sx then success = 1
+				endif
+				if success = 1
+					if GUIDragBox.sy < GUIDragBox.ey
+						if sy > GUIDragBox.ey or sy < GUIDragBox.sy then success = 0
+					else
+						if sy < GUIDragBox.ey or sy > GUIDragBox.sy then success = 0
+					endif
+				endif
+			endif
+		
+			rem single click units
+			if uGUI.Mouse3DInvalid = 0
+				if (sx - uMouse.x)^2 + (sy - uMouse.y)^2 < (Unit( n ).Size#*14)^2
+					
+					rem mouse is over a unit
+					success = 1
+				endif
+			endif
+			
+			rem process selections
+			rem 0 - not selected
+			rem 1 - half selected
+			rem 2 - selected
+			rem 3 - selected and half selected
+			if success = 1
+				if Unit( n ).Selected = 0 then Unit( n ).Selected = 1
+				if Unit( n ).Selected = 2 then Unit( n ).Selected = 3
+			else
+				if Unit( n ).Selected = 1 then Unit( n ).Selected = 0
+				if Unit( n ).Selected = 3 then Unit( n ).Selected = 2
+			endif
+			
+			rem units can't be selected when selection isn't enabled
+			if UnitSelection.state = _ENABLE
+	
+				rem deselect any units that were previously selected
+				rem if an ability was activated, unit can't be deselected
+				rem if the user is holding shift, units can't be deselected
+				if uMouse.Click = 1 and uUnit.DisableUnitDeselect = 0 and uGUI.Mouse3DInvalid = 0 and shiftkey() = 0
+					if Unit( n ).Selected = 2
+						Unit( n ).Selected = 0
+						Button.Clicked = -1
+						HideUnitPath( n )
+					endif
+				endif
+		
+				rem a box has been dragged (mouse has let go)
+				if GUIDragBox.Active = 2
+					
+					rem select any units that are half selected
+					if Unit( n ).Selected = 1
+						if Unit( n ).Control = UNITCONTROL_PLAYER then Unit( n ).Selected = 2 : ShowUnitPath( n )
+						if Unit( n ).Control = UNITCONTROL_NOONE and priority < 2 then Unit( n ).Selected = 2 : ShowUnitPath( n )
+						if Unit( n ).Control = UNITCONTROL_ENEMY and priority < 1 then Unit( n ).Selected = 2 : ShowUnitPath( n )
+						
+						rem prioritise unit selection
+						if Unit( n ).Control = UNITCONTROL_PLAYER
+							if priority < 2
+								priority = 2
+								for s = 0 to uUnit.CurrentMax
+									if Unit( s ).Active > 1
+										if Unit( s ).Control = UNITCONTROL_ENEMY or Unit( s ).Control = UNITCONTROL_NOONE then Unit( s ).Selected = 0 : HideUnitPath( s )
+									endif
+								next s
+							endif
+						endif
+						if Unit( n ).Control = UNITCONTROL_NOONE
+							if priority < 1
+								priority = 1
+								for s = 0 to uUnit.CurrentMax
+									if Unit( s ).Active > 1
+										if Unit( s ).Control = UNITCONTROL_ENEMY then Unit( s ).Selected = 0 : HideUnitPath( s )
+									endif
+								next s
+							endif
+						endif
+						
+					endif
+					
+					rem select any units that were highlighted
+					if Unit( n ).Selected = 3 then Unit( n ).Selected = 2
+			
+				endif
+			endif
+		endif
+		
+	next n
+	
+	rem play selection sound
+	if uMouse.Click = 3
+		n = GetUnitUnderMouse()
+		if n > -1
+			
+			rem track how many times unit has been selected
+			if uUnit.LastSelected = n
+				if uUnitSoundPlayer.CurrentSound > 0
+					if sound exist( uUnitSoundPlayer.CurrentSound )
+						if sound playing( uUnitSoundPlayer.CurrentSound ) = 0
+							inc uUnit.SelectCounter
+						endif
+					endif
+				endif
+			else
+				uUnit.SelectCounter = 0
+				uUnit.LastSelected = n
+			endif
+			
+			rem play sound
+			if uUnit.SelectCounter < 10
+				UnitPlaySound( n , UNITSOUND_SELECT )
+			else
+				UnitPlaySound( n , UNITSOUND_ANNOYED )
+			endif
+		
+		endif
+	endif
+	
+endfunction

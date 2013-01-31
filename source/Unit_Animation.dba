@@ -1,0 +1,49 @@
+rem ---------------------------------------------------------------------------
+rem Unit animations
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User defined types
+rem ---------------------------------------------------------------------------
+
+type AnimKeysVT
+	mStart                           		as integer
+	mEnd                             		as integer
+	mSpeed#                          		as float
+endtype
+
+type AnimVT
+	Idle                                   as AnimKeysVT
+	Creep                                  as AnimKeysVT
+	Walk                                   as AnimKeysVT
+	Run                                    as AnimKeysVT
+	TakeOffJump                            as AnimKeysVT
+	TakeOffFlyUp                           as AnimKeysVT
+	TakeOffArriveTop                       as AnimKeysVT
+	FlyIdle                                as AnimKeysVT
+	FlyIdleToFly                           as AnimKeysVT
+	Fly                                    as AnimKeysVT
+	FlyToFlyIdle                           as AnimKeysVT
+	LandPrepare                            as AnimKeysVT
+	LandFlyDown                            as AnimKeysVT
+	LandArriveBottom                       as AnimKeysVT
+	GroundDie1                             as AnimKeysVT
+	GroundDie2                             as AnimKeysVT
+	GroundDieBurn                          as AnimKeysVT
+	UnicornGroundMagicAttackPrepare1       as AnimKeysVT
+	UnicornGroundMagicAttackPrepare2       as AnimKeysVT
+	UnicornGroundMagicAttackPrepare3       as AnimKeysVT
+	UnicornGroundMagicAttackRelease1       as AnimKeysVT
+	UnicornGroundMagicAttackRelease2       as AnimKeysVT
+	UnicornGroundMagicAttackRelease3       as AnimKeysVT
+	ChangelingGroundMeleeAttackPrepare1    as AnimKeysVT
+	ChangelingGroundMeleeAttackPrepare2    as AnimKeysVT
+	ChangelingGroundMeleeAttackPrepare3    as AnimKeysVT
+	ChangelingGroundMeleeAttackRelease1    as AnimKeysVT
+	ChangelingGroundMeleeAttackRelease2    as AnimKeysVT
+	ChangelingGroundMeleeAttackRelease3    as AnimKeysVT
+	ForceFieldPrepare								as AnimKeysVT
+	ForceFieldRelease								as AnimKeysVT
+	MeteorShowerPrepare							as AnimKeysVT
+	MeteorShowerRelease							as AnimKeysVT
+endtype

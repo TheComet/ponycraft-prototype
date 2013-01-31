@@ -1,0 +1,863 @@
+rem ---------------------------------------------------------------------------
+rem Unit Abilities
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem different abilities
+#constant MaxUnitAbility										12
+#constant ABILITY_NOP											0
+#constant UNITABILITY_MOVE										1
+#constant UNITABILITY_STOP										2
+#constant UNITABILITY_HOLD										3
+#constant UNITABILITY_PATROL									4
+#constant UNITABILITY_ATTACK									5
+#constant UNITABILITY_FLY										6
+#constant UNITABILITY_LAND										7
+#constant UNITABILITY_MAGIC_MISSILE							8
+#constant UNITABILITY_TELEPORT								9
+#constant UNITABILITY_CHANGELING_MELEE_ATTACK			10
+#constant UNITABILITY_FORCE_FIELD							11
+#constant UNITABILITY_METEOR_SHOWER							12
+
+rem ---------------------------------------------------------------------------
+rem User defined types
+rem ---------------------------------------------------------------------------
+
+type UnitAbilityVT
+	AllowLeftMouseClickForPath       			as integer
+	UsingFirstTime                   			as integer
+	LocalSelect											as integer
+endtype
+
+type UnitAbilityAT
+	Automatic                        			as integer
+	Active                           			as integer
+	Destination                      			as vec3
+	LastClicked											as vec3
+endtype
+
+type UnitAbilityAAT
+	Active                           			as integer
+	LockButton                       			as integer
+	HideButton											as integer
+	BindButton                       			as integer
+	Range#                           			as float
+	HealthDamage#                    			as float
+	ManaDamage#                      			as float
+	ManaDrain#											as float
+	Automatic											as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitUnitAbility()
+	
+	rem ---------------------------------------------------------------------------
+	rem Global arrays
+	rem ---------------------------------------------------------------------------
+
+	global dim UnitAbility() 						as UnitAbilityAAT
+	
+endfunction
+
+function UnitAddAbility( n , ability , ButtonID )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitAddAbility " + str$(ability) )
+	
+	rem make sure index is within range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem find button index
+	for g = 0 to uGUI.CurrentMax
+		if GUI( g ).ID = ButtonID then exit
+	next g
+	
+	rem not found
+	if g = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "Button not found!" )
+		exitfunction -1
+	endif
+	
+	rem activate ability in ability list and bind to button
+	UnitAbility( n , ability ).Active = 1
+	UnitAbility( n , ability ).Automatic = 0
+	UnitAbility( n , ability ).Range# = 0
+	UnitAbility( n , ability ).BindButton = g
+	UnitAbility( n , ability ).LockButton = 0
+	UnitAbility( n , ability ).HideButton = 0
+	UnitAbility( n , ability ).HealthDamage# = 0
+	UnitAbility( n , ability ).ManaDamage# = 0
+	
+endfunction n
+
+function UnitSetAbilityRange( n , ability , range# )
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitSetAbilityRange " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem set ability range
+	UnitAbility( n , ability ).Range# = range#
+	
+endfunction n
+
+function UnitLockAbility( n , ability )
+
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitUnlockAbility " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).LockButton = 1
+	
+endfunction n
+
+function UnitUnlockAbility( n , ability )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitLockAbility " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).LockButton = 0
+	
+endfunction n
+
+function UnitHideAbility( n , ability )
+
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitHideAbility " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).HideButton = 1
+	
+endfunction n
+
+function UnitShowAbility( n , ability )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitShowAbility " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).HideButton = 0
+	
+endfunction n
+
+function UnitSetAbilityHealthDamage( n , ability , damage# )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitSetAbilityHealthDamage " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).HealthDamage# = damage#
+	
+endfunction n
+
+function UnitSetAbilityManaDamage( n , ability , damage# )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitSetAbilityManaDamage " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).ManaDamage# = damage#
+	
+endfunction n
+
+function UnitSetAbilityManaDrain( n , ability , drain# )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitSetAbilityManaDrain " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).ManaDrain# = drain#
+	
+endfunction n
+
+function UnitSetAbilityAutomatic( n , ability )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitSetAbilityAutomatic " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).Automatic = 1
+	
+endfunction n
+
+function UnitSetAbilityManual( n , ability )
+	
+	rem local variables
+	local g as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitShowButton " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem lock button for unit
+	UnitAbility( n , ability ).Automatic = 0
+	
+endfunction n
+
+rem means all units selected will activate this ability with just one click
+function UnitSetAbilityGlobal( n , ability )
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitSetAbilityGlobal " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem check if ability has been added to this unit
+	if UnitAbility( n , ability ).Active = 0
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Ability has not been added!" )
+		exitfunction -1
+	endif
+	
+	rem set ability global
+	UnitAbility( n , ability ).Active = 2
+	
+endfunction n
+
+rem means that only one of the selected units will activate this ability per click
+function UnitSetAbilityLocal( n , ability )
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitSetAbilityLocal " + str$(n) + "," + str$(ability) )
+	
+	rem make sure unit is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem make sure ability has been added to this unit
+	if UnitAbility( n , ability ).Active = 0
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Ability has not been added!" )
+		exitfunction -1
+	endif
+	
+	rem make ability local
+	UnitAbility( n , ability ).Active = 1
+	
+endfunction n
+
+function UnitUseAbility( n , ability , x# , z# , TargetUnit , Keys )
+	
+	remstart
+	Keys contains various keypresses, all masked into one variable.
+	2^0 - Shiftkey
+	2^1 - Controlkey
+	
+	Keys can also equal -1, in which case the function was called by the command chain itself.
+	The ability must then be executed immediately.
+	remend
+
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitUseAbility " + str$(n) + "," + str$(ability) + "," + str$(x#) + "," + str$(z#) + "," + str$(Chain) )
+	
+	rem make sure unit index is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction
+	endif
+		
+	rem check if keys can be used
+	if Keys > -1
+
+		rem delete chain if shiftkey was not pressed
+		if (Keys && 0x00000001) = 0
+			DestroyUnitCommandChain( n )
+		endif
+		
+		rem if shift was pressed, add to command chain rather than execute it directly
+		if (Keys && 0x00000001) = 1
+			if UnitCommandChain( n , 0 ).Count = -1 then AddAbilityToUnitCommandChain( n , ABILITY_NOP , Unit( n ).Ability.LastClicked.x# , Unit( n ).Ability.LastClicked.z# , TargetUnit )
+			AddAbilityToUnitCommandChain( n , ability , x# , z# , TargetUnit )
+			Unit( n ).Ability.LastClicked.x# = x#
+			Unit( n ).Ability.LastClicked.z# = z#
+			exitfunction
+		endif
+		
+	endif
+	
+	rem store last clicked
+	Unit( n ).Ability.LastClicked.x# = x#
+	Unit( n ).Ability.LastClicked.z# = z#
+	
+	rem move ability
+	if ability = UNITABILITY_MOVE
+		
+		rem reset path
+		ResetUnitPath( n )
+		
+		rem formation groups must be recalculated
+		_Unit_Calculate_Formation_Groups()
+
+		rem find paths
+		UnitCalculatePath( n , Unit( n ).pos.x# , Unit( n ).pos.z# , x# , z# )
+		
+		rem player is moving
+		Unit( n ).Ability.Active = UNITABILITY_MOVE
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = TargetUnit
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	rem stop ability
+	if ability = UNITABILITY_STOP
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem player has stopped
+		Unit( n ).Ability.Active = -1
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = -1
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_HOLD
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem player is holding
+		Unit( n ).Ability.Active = UNITABILITY_HOLD
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = -1
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_PATROL
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+
+		rem formation groups must be recalculated
+		_Unit_Calculate_Formation_Groups()
+		
+		rem find paths
+		UnitCalculatePath( n , Unit( n ).pos.x# , Unit( n ).pos.z# , x# , z# )
+				
+		rem player is patrolling
+		Unit( n ).Ability.Active = UNITABILITY_PATROL
+		Unit( n ).AttackActive = 1
+		Unit( n ).FollowUnit = -1
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_ATTACK
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem formation groups must be recalculated
+		_Unit_Calculate_Formation_Groups()
+		
+		rem find paths
+		UnitCalculatePath( n , Unit( n ).pos.x# , Unit( n ).pos.z# , x# , z# )
+		
+		rem player is attacking
+		Unit( n ).AttackActive = 1
+		Unit( n ).FollowUnit = TargetUnit
+		
+		rem try to use ability bound to attack button
+		if Unit( n ).Ability.Automatic > -1
+			Unit( n ).Ability.Active = Unit( n ).Ability.Automatic
+		else
+			Unit( n ).Ability.Active = UNITABILITY_ATTACK
+		endif
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_FLY
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem unit takes to the air
+		Unit( n ).Active = 3
+		Unit( n ).Ability.Active = UNITABILITY_FLY
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = -1
+		
+		rem lock button so it can't be used again
+		UnitLockAbility( n , ability )
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_LAND
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem unit lands
+		Unit( n ).Active = 8
+		Unit( n ).Ability.Active = UNITABILITY_LAND
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = -1
+		
+		rem lock button so it can't be used again
+		UnitLockAbility( n , ability )
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_MAGIC_MISSILE
+		
+		rem stop moving unit
+		ResetUnitpath( n )
+		
+		rem unit is persuing target
+		Unit( n ).Ability.Active = UNITABILITY_MAGIC_MISSILE
+		Unit( n ).AttackActive = 1
+		Unit( n ).FollowUnit = TargetUnit
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_CHANGELING_MELEE_ATTACK
+		
+		rem stop moving unit
+		ResetUnitpath( n )
+		
+		rem unit is persuing target
+		Unit( n ).Ability.Active = UNITABILITY_CHANGELING_MELEE_ATTACK
+		Unit( n ).AttackActive = 1
+		Unit( n ).FollowUnit = TargetUnit
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_FORCE_FIELD
+		
+		rem make sure there is enough  mana, otherwise skip
+		if Unit( n ).Stats.CurrentMana# < UnitAbility( n , ability ).ManaDrain# then exitfunction
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem unit needs to move within range
+		Unit( n ).Ability.Active = UNITABILITY_FORCE_FIELD
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = -1
+		
+		rem find path
+		Unit( n ).Ability.Destination.x# = x#
+		Unit( n ).Ability.Destination.z# = z#
+		UnitCalculatePath( n , Unit( n ).pos.x# , Unit( n ).pos.z# , x# , z# )
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_TELEPORT
+		
+		rem make sure there is enough mana, otherwise skip
+		if Unit( n ).Stats.CurrentMana# < UnitAbility( n , ability ).ManaDrain# then exitfunction
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem activate teleport
+		Unit( n ).Ability.Active = UNITABILITY_MOVE
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = -1
+		Unit( n ).Ability.Destination.x# = x#
+		Unit( n ).Ability.Destination.z# = z#
+		Unit( n ).Active = 19
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	if ability = UNITABILITY_METEOR_SHOWER
+		
+		rem make sure there is enough  mana, otherwise skip
+		if Unit( n ).Stats.CurrentMana# < UnitAbility( n , ability ).ManaDrain# then exitfunction
+		
+		rem stop moving unit
+		ResetUnitPath( n )
+		
+		rem unit needs to move within range
+		Unit( n ).Ability.Active = UNITABILITY_METEOR_SHOWER
+		Unit( n ).AttackActive = 0
+		Unit( n ).FollowUnit = -1
+		
+		rem find path
+		Unit( n ).Ability.Destination.x# = x#
+		Unit( n ).Ability.Destination.z# = z#
+		UnitCalculatePath( n , Unit( n ).pos.x# , Unit( n ).pos.z# , x# , z# )
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+endfunction
+
+function _Unit_Handle_Active_Abilities( n )
+	
+	rem local variables
+	local success as integer
+	local dist# as float
+	local r as integer
+	
+	rem check if unit has an automatic attack
+	if Unit( n ).Ability.Automatic > -1
+		
+		rem it can be used if unit is idle, has stopped, is patrolling, or is using generic attack
+		if Unit( n ).Ability.Active = -1 or Unit( n ).Ability.Active = UNITABILITY_STOP or Unit( n ).Ability.Active = UNITABILITY_PATROL or Unit( n ).Ability.Active = UNITABILITY_ATTACK
+
+			rem check if enemy unit is in ability range
+			for r = 0 to uUnit.CurrentMax
+				if Unit( r ).Active > 1
+					if Unit( r ).Control <> Unit( n ).Control and Unit( r ).Control <> UNITCONTROL_NOONE
+						dist# = (Unit( r ).pos.x# - Unit( n ).pos.x#)^2 + (Unit( r ).pos.z# - Unit( n ).pos.z#)^2
+						
+						rem in range and visible
+						if dist# < Unit( n  ).GroundViewRange#^2 and Unit( r ).Visible = 1
+							
+							rem activate ability
+							Unit( n ).Ability.Active = Unit( n ).Ability.Automatic
+							Unit( n ).AttackActive = 1
+							if Unit( n ).FollowUnit = -1 then Unit( n ).FollowUnit = r
+							exit
+							
+						endif
+						
+					endif
+				endif
+			next r
+		
+		endif
+	endif
+	
+	rem unit is moving
+	if Unit( n ).Ability.Active = UNITABILITY_MOVE
+		
+		rem check if unit has a target unit
+		if Unit( n ).FollowUnit > -1
+			
+			rem unit must be visible
+			if Unit( n ).Visible = 1
+			
+				rem follow
+				_Unit_Handle_Following( n )
+			
+			endif
+		endif
+	endif
+	
+	rem unit is using magic missile
+	if Unit( n ).Ability.Active = UNITABILITY_MAGIC_MISSILE
+		
+		rem check if target unit is in ability range
+		if Unit( n ).FollowUnit > -1
+			
+			rem get distance
+			dist# = (Unit( Unit( n ).FollowUnit ).pos.x# - Unit( n ).pos.x#)^2 + (Unit( Unit( n ).FollowUnit ).pos.z# - Unit( n ).pos.z#)^2
+			
+			rem unit is in ability range
+			if dist# < UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).Range#^2 and Unit( Unit( n ).FollowUnit ).Visible = 1
+				
+				rem execute ability
+				if Unit( n ).Active < 13 or Unit( n ).Active > 15 then Unit( n ).Active = 13
+				
+			rem persue target
+			else
+				_Unit_Handle_Following( n )
+				
+				rem unit is lost
+				if dist# > (Unit( n ).GroundViewRange#+1)^2
+					Unit( n ).Ability.Active = -1
+					Unit( n ).FollowUnit = -1
+					Unit( n ).AttackActive = 0
+				endif
+				
+			endif
+						
+		rem if unit is no longer following, end ability
+		else
+			Unit( n ).Ability.Active = UNITABILITY_ATTACK
+			Unit( n ).AttackActive = 1
+		endif
+		
+	endif
+	
+	rem unit is using force field
+	if Unit( n ).Ability.Active = UNITABILITY_FORCE_FIELD
+		
+		rem get distance to destination
+		dist# = (Unit( n ).pos.x# - Unit( n ).Ability.Destination.x#)^2 + (Unit( n ).pos.z# - Unit( n ).Ability.Destination.z#)^2
+		
+		rem check if in range
+		if dist# < UnitAbility( n , UNITABILITY_FORCE_FIELD ).Range#^2
+			
+			rem activate ability
+			if Unit( n ).Active < 23 or Unit( n ).Active > 25 then Unit( n ).Active = 23
+			
+		endif
+		
+	endif
+	
+	rem unit is using meteor shower
+	if Unit( n ).Ability.Active = UNITABILITY_METEOR_SHOWER
+		
+		rem get distance to destination
+		dist# = (Unit( n ).pos.x# - Unit( n ).Ability.Destination.x#)^2 + (Unit( n ).pos.z# - Unit( n ).Ability.Destination.z#)^2
+		
+		rem check if in range
+		if dist# < UnitAbility( n , UNITABILITY_METEOR_SHOWER ).Range#^2
+			
+			rem activate ability
+			if Unit( n ).Active < 26 or Unit( n ).Active > 28 then Unit( n ).Active = 26
+			
+		endif
+		
+	endif
+	
+	rem unit is using changeling melee
+	if Unit( n ).Ability.Active = UNITABILITY_CHANGELING_MELEE_ATTACK
+		
+		rem check if target unit is in ability range
+		if Unit( n ).FollowUnit > -1
+			
+			rem get distance
+			dist# = (Unit( Unit( n ).FollowUnit ).pos.x# - Unit( n ).pos.x#)^2 + (Unit( Unit( n ).FollowUnit ).pos.z# - Unit( n ).pos.z#)^2
+			
+			rem unit is in ability range
+			if dist# < UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).Range#^2 and Unit( Unit( n ).FollowUnit ).Visible = 1
+				
+				rem execute ability
+				if Unit( n ).Active < 20 or Unit( n ).Active > 22 then Unit( n ).Active = 20
+				
+			rem persue target
+			else
+				_Unit_Handle_Following( n )
+				
+				rem unit is lost
+				if dist# > (Unit( n ).GroundViewRange#+1)^2
+					Unit( n ).Ability.Active = -1
+					Unit( n ).FollowUnit = -1
+					Unit( n ).AttackActive = 0
+				endif
+				
+			endif
+		
+		rem if unit is no longer following, end ability
+		else
+			Unit( n ).Ability.Active = -1
+			Unit( n ).AttackActive = 0
+		endif
+		
+	endif
+	
+	rem target unit has been destroyed
+	if Unit( n ).FollowUnit > -1
+		if Unit( Unit( n ).FollowUnit ).Active < 2
+			Unit( n ).FollowUnit = -1
+			Unit( n ).Active = 2
+			if Unit( n ).Ability.Active <> Unit( n ).Ability.Automatic then UnitCalculatePath( n , Unit( n ).pos.x# , Unit( n ).pos.z# , Unit( n ).Ability.Destination.x# , Unit( n ).Ability.Destination.z# )
+		endif
+	endif
+	
+endfunction

@@ -1,0 +1,1165 @@
+function _Process_Command_Allow_Queue( slot , lin )
+	
+	rem ---------------------------------------------------------------------------
+	rem Core Commands
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_OPENTOREAD
+		OpenToRead( ScriptIntegerData(ScriptDataList(slot,lin,1).index).dat , ScriptStringData(ScriptDataList(slot,lin,0).index).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_OPENTOWRITE	
+		OpenToWrite( ScriptIntegerData(ScriptDataList(slot,lin,0).index).dat , ScriptStringData(ScriptDataList(slot,lin,1).index).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_CLOSEFILE
+		close file ScriptIntegerData(ScriptDataList(slot,lin,0).index).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WRITEBYTE
+		write byte ScriptIntegerData(ScriptDataList(slot,lin,0).index).dat , ScriptIntegerData(ScriptDataList(slot,lin,1).index).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WRITELONG
+		write long ScriptIntegerData(ScriptDataList(slot,lin,0).index).dat , ScriptIntegerData(ScriptDataList(slot,lin,1).index).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WRITEFLOAT
+		write float ScriptIntegerData(ScriptDataList(slot,lin,0).index).dat , ScriptFloatData(ScriptDataList(slot,lin,1).index).dat#
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WRITESTRING
+		write string ScriptIntegerData(scriptDataList(slot,lin,0).index).dat , ScriptStringData(ScriptDataList(slot,lin,1).index).dat$
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WRITEFILEBLOCK
+		write fileblock ScriptIntegerData(ScriptDataList(slot,lin,0).index).dat , ScriptStringData(ScriptDataList(slot,lin,1).index).dat$
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_READFILEBLOCK
+		read fileblock ScriptIntegerData(ScriptDataList(slot,lin,0).index).dat , ScriptStringdata(ScriptDataList(slot,lin,1).index).dat$
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DELETEFILE
+		delete file ScriptStringData(ScriptDataList(slot,lin,0).index).dat$
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_CALLEVENT
+		CallEvent( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat+1 )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER
+		ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat = ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERFLOAT
+		ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat = ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATINTEGER
+		ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# = ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT
+		ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# = ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVARIABLESTRING
+		ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ = ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER
+		inc ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_INTEGER
+		inc ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_FLOAT
+		inc ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_FLOAT
+		inc ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER
+		dec ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_INTEGER
+		dec ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_FLOAT
+		dec ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_FLOAT
+		dec ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_FORCEOUTPUT
+		uConsole.ForceOutput = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_NOP
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_PRINT
+		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_STRING then AddTextToConsole( 3 , ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
+		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_FLOAT then AddTextToConsole( 3 , str$(ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat#) )
+		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_INTEGER then AddTextToConsole( 3 , str$(ScriptintegerData( ScriptDataList(slot,lin,0).Index ).dat) )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_RESETGAMETIMER
+		ResetGameTimer()
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Logging
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_TURNALLLOGGINGON
+		SetAllLoggingFlags( 1 )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_TURNALLLOGGINGOFF
+		SetAllLoggingFlags( 0 )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_CAMERALOGGING
+		uCamera.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_CLICKOBJLOGGING
+		uClickObj.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DISTORTIONLOGGING
+		uDistortion.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_FORCEFIELDLOGGING
+		uForceField.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUILOGGING
+		uGUI.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_MENULOGGING
+		Menu.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_MESSAGELOGGING
+		uMessage.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SCRIPTLOGGING
+		uScript.logging = ScriptIntegerdata( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_TRIGGERLOGGING
+		uTrigger.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITLOGGING
+		uUnit.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDLOGGING
+		uWorld.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+		
+	rem ---------------------------------------------------------------------------
+	rem camera
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_SETCAMERAMODE
+		uCamera.Mode = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_PANCAMERA
+		PanCamera( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem ClickObj
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_CREATECLICKOBJ
+		uScript.LastIndex = CreateClickObj( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,4).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,5).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,6).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYCLICKOBJ
+		DestroyClickobj( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_CREATECLICKOBJCONNECTION
+		uScript.LastIndex = CreateClickObjConnection( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYCLICKOBJCONNECTION
+		DestroyClickObjConnection( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SHOWCLICKOBJ
+		ShowClickObj( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_HIDECLICKOBJ
+		HideClickObj( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SHOWCLICKOBJCONNECTION
+		ShowClickObjConnection( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_HIDECLICKOBJCONNECTION
+		HideClickObjConnection( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Distortion
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_CREATEDISTORTION
+		uScript.LastIndex = CreateDistortion( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,4).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,5).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,6).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYDISTORTION
+		DestroyDistortion( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Force Field
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_CREATEFORCEFIELD
+		uScript.LastIndex = CreateForceField( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYFORCEFIELD
+		DestroyForceField( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYALLFORCEFIELD
+		DestroyAllForceField()
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem GUI
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_GUIADDSTATICIMAGE
+		uScript.LastIndex = GUIAddStaticImage( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,3).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIDESTROYELEMENT
+		GUIDestroyElement( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIADDBUTTON
+		uScript.LastIndex = GUIAddButton( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,4).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,5).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,6).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,7).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,8).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUILOCKBUTTON
+		GUILockButton( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIUNLOCKBUTTON
+		GUIUnlockButton( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISHOWELEMENT
+		GUIShowElement( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIHIDEELEMENT
+		GUIHideElement( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBUTTONENABLETOGGLE
+		GUIButtonEnableToggle( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBUTTONDISABLETOGGLE
+		GUIButtonDisableToggle( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBINDBUTTONTOUNIT
+		GUIBindButtonToUnit( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIPOSITIONELEMENT
+		GUIPositionElement( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBUTTONEVENTCLICK
+		
+		rem find ID of GUI element
+		for n = 0 to uGUI.CurrentMax
+			if GUI( n ).ID = ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat then exit
+		next n
+		if n = uGUI.CurrentMax + 1
+			AddTextToConsole( 3 , "Unable to set event. Button ID " + chr$(34) + str$( ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat ) + chr$(34) + "not found!" )
+			exitfunction 0
+		endif
+		
+		rem setup correctly
+		GUI( n ).EventClickActive = 1
+		GUI( n ).EventClickScript = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		GUI( n ).EventClickLine = ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat+1
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIDRAGBOXENABLE
+		GUIDragBoxEnable()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIDRAGBOXDISABLE
+		GUIDragBoxDisable()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIADDSTATICFRAME
+		GUIAddStaticFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONNORMALFRAME
+		GUIAddButtonNormalFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONMOUSEOVERFRAME
+		GUIAddButtonMouseOverFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONPRESSFRAME
+		GUIAddButtonPressFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONLOCKEDFRAME
+		GUIAddButtonLockedFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONICONFRAME
+		GUIAddButtonIconFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISETSTATICFRAMEDELAY
+		GUISetStaticFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONNORMALFRAMEDELAY
+		GUISetButtonNormalFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONMOUSEOVERFRAMEDELAY
+		GUISetButtonMouseOverFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONPRESSFRAMEDELAY
+		GUISetButtonPressFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONLOCKEDFRAMEDELAY
+		GUISetButtonLockedFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONICONFRAMEDELAY
+		GUISetButtonIconFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUISETPORTRAITPOSITION
+		GUISetPortraitPosition( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+
+	rem ---------------------------------------------------------------------------
+	rem Message
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_CREATEMESSAGE
+		uScript.LastIndex = CreateMessage( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,2).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,4).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYMESSAGE
+		DestroyMessage( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UPDATEMESSAGEPOSITION
+		UpdateMessagePosition( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UPDATEMESSAGETEXT
+		UpdateMessageText( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,2).Index ).dat$ )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Minimap
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_CREATEMINIMAP
+		uScript.LastIndex = CreateMinimap( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,4).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,5).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,6).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,7).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYMINIMAP
+		DestroyMinimap( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Script
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_SCRIPTDUMPALLDATATODEBUGLOG
+		ScriptDumpAllDataToDebugLog( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Set internal values
+	rem ---------------------------------------------------------------------------
+	
+	rem camera
+	if Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMAXPOSX
+		uCamera.MaxPos.x# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMINPOSX
+		uCamera.MinPos.x# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMAXPOSZ
+		uCamera.MaxPos.z# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMINPOSZ
+		uCamera.MinPos.z# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	
+	rem unit animations
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMIDLESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" + str$( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ) ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.idle.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMIDLEEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.idle.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMIDLESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.idle.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCREEPSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.creep.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCREEPEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.creep.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCREEPSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.creep.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMWALKSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.walk.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMWALKEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.walk.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMWALKSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.walk.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMRUNSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.run.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMRUNEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.run.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMRUNSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.run.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFJUMPSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffJump.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFJUMPEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffJump.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFJUMPSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffJump.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFFLYUPSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffFlyUp.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFFLYUPEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffFlyUp.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFFLYUPSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffFlyUp.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffArriveTop.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffArriveTop.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.TakeOffArriveTop.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyIdle.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLEEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyIdle.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyIdle.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLETOFLYSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyIdleToFly.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLETOFLYEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyIdleToFly.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLETOFLYSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyIdleToFly.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.Fly.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.Fly.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.Fly.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYTOFLYIDLESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyToFlyIdle.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYTOFLYIDLEEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyToFlyIdle.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYTOFLYIDLESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.FlyToFlyIdle.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDPREPARESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandPrepare.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDPREPAREEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandPrepare.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDPREPARESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandPrepare.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDFLYDOWNSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandFlyDown.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDFLYDOWNEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandFlyDown.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDFLYDOWNSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandFlyDown.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandArriveBottom.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandArriveBottom.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.LandArriveBottom.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE1START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDie1.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE1END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDie1.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE1SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDie1.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE2START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDie2.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE2END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDie2.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE2SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDie2.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIEBURNSTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDieBurn.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIEBURNEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDieBurn.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIEBURNSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.GroundDieBurn.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare1.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare1.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare1.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare2.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare2.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare2.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare3.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare3.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackPrepare3.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease1.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease1.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease1.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease2.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease2.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease2.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease3.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease3.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.UnicornGroundMagicAttackRelease3.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare1.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare1.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare1.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare2.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare2.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare2.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare3.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare3.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackPrepare3.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease1.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease1.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease1.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease2.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease2.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease2.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3START
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease3.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3END
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease3.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3SPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ChangelingGroundMeleeAttackRelease3.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDPREPARESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ForceFieldPrepare.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDPREPAREEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ForceFieldPrepare.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDPREPARESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ForceFieldPrepare.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDRELEASESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ForceFieldRelease.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDRELEASEEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ForceFieldRelease.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDRELEASESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.ForceFieldRelease.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERPREPARESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.MeteorShowerPrepare.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERPREPAREEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.MeteorShowerPrepare.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERPREPARESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.MeteorShowerPrepare.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASESTART
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.MeteorShowerRelease.mStart = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASEEND
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.MeteorShowerRelease.mEnd = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASESPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).anim.MeteorShowerRelease.mSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	
+	rem unit stats
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSHEALTHENABLE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.HealthEnable = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMANAENABLE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.ManaEnable = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSSHIELDENABLE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.ShieldEnable = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMAXHEALTH
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.MaxHealth = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSCURRENTHEALTH
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.CurrentHealth# = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMAXMANA
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.MaxMana = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSCURRENTMANA
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.CurrentMana# = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMAXSHIELD
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.MaxShield = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSCURRENTSHIELD
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.CurrentShield# = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSHEALTHREGENERATIONRATE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.HealthRegenerationRate# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMANAREGENERATIONRATE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.ManaRegenerationRate# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSSHIELDREGENERATIONRATE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).stats.ShieldRegenerationRate# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+
+	rem unit speeds
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITGROUNDSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).GroundSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITAIRSPEED
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).AirSpeed# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# : exitfunction 0
+	endif
+	
+	rem unit ranges
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITGROUNDVIEWRANGE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).GroundViewRange# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat#
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).GroundVertexBrushID = WorldCreateVertexBrush( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# )
+		uUnit.FormationWasCalculated = 0
+		_Unit_Calculate_Formation_Groups()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITAIRVIEWRANGE
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).AirViewRange# = ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat#
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).AirVertexBrushID = WorldCreateVertexBrush( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# )
+		uUnit.FormationWasCalculated = 0
+		_Unit_Calculate_Formation_Groups()
+		exitfunction 0
+	endif
+	
+	rem limbs
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITSPELLCASTLIMB
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).SpellCastLimb = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	
+	rem ability settings
+	if Script( slot , lin ).cmd = CMD_SETVALUE_UNITABILITYAUTOMATIC
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < 0 or ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat > uUnit.CurrentMax then AddTextToConsole( 3 , "Unable to set internal value, unit index not found!" ) : exitfunction 0
+		Unit( ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat ).Ability.Automatic = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	
+	rem command queue values
+	if Script( slot , lin ).cmd = CMD_SETVALUE_COMMANDQUEUEBUFFERDISTANCE
+		uCommandQueue.BufferDistance = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat : exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Unit
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_CREATEUNIT
+		uScript.LastIndex = CreateUnit( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,4).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITPOSITION
+		UnitPosition( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSCALE
+		UnitScale( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYUNIT
+		DestroyUnit( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITADDEFFECTTOLIST
+		UnitAddEffectToList( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITADDSOUND
+		UnitAddSound( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITCHANGECONTROL
+		UnitChangeControl( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Unit Abilties
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_UNITADDABILITY
+		UnitAddAbility( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYRANGE
+		UnitSetAbilityRange( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITLOCKABILITY
+		UnitLockAbility( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITUNLOCKABILITY
+		UnitUnlockAbility( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSHOWABILITY
+		UnitShowAbility( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITHIDEABILITY
+		UnitHideAbility( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYHEALTHDAMAGE
+		UnitSetAbilityHealthDamage( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYMANADAMAGE
+		UnitSetAbilityManaDamage( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYMANADRAIN
+		UnitSetAbilityManaDrain( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYAUTOMATIC
+		UnitSetAbilityAutomatic( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYMANUAL
+		UnitSetAbilityManual( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYGLOBAL
+		UnitSetAbilityGlobal( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETABILITYLOCAL
+		UnitSetAbilityLocal( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITUSEABILITY
+		UnitUseAbility( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,4).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,5).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GETUNITOBJECT
+		ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat = UnitGetObject( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITADDPORTRAITFRAME
+		UnitAddPortraitFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITSETPORTRAITFRAMEDELAY
+		UnitSetPortraitFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+
+	rem ---------------------------------------------------------------------------
+	rem World
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_DESTROYWORLD
+		DestroyWorld()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDADDSCENERYOBJECT
+		WorldAddSceneryObject( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDPOSITIONSCENERYOBJECT
+		WorldPositionSceneryObject( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDROTATESCENERYOBJECT
+		WorldRotateSceneryObject( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDSCALESCENERYOBJECT
+		WorldScaleSceneryObject( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDADDTERRAINOBJECT
+		WorldAddTerrainObject( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDCREATEPATHFINDER
+		WorldCreatePathfinder( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,4).Index ).dat# , ScriptIntegerdata( ScriptDataList(slot,lin,5).Index ).dat , ScriptIntegerdata( ScriptDataList(slot,lin,6).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,7).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDCREATEFOGOFWAR
+		WorldCreateFogOfWar( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDDESTROYFOGOFWAR
+		WorldDestroyFogOfWar()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDEXPORT
+		WorldExport( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDSHOWPATHMAP
+		WorldShowPathmap()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_WORLDHIDEPATHMAP
+		WorldHidePathmap()
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Smoke
+	rem ---------------------------------------------------------------------------
+
+	if Script( slot , lin ).cmd = CMD_CREATESMOKE
+		uScript.LastIndex = Effects_Create3DSmoke( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,4).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,5).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,6).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYSMOKE
+		Effects_Destroy3DSmoke( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYALLSMOKE
+		Effects_DestroyAll3DSmoke()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETSMOKEFORCE
+		Effects_SetForce3DSmoke( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Eye Glow
+	rem ---------------------------------------------------------------------------
+
+	if Script( slot , lin ).cmd = CMD_CREATEEYEGLOW
+		uScript.LastIndex = Effects_CreateEyeGlow( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,4).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,5).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,6).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYEYEGLOW
+		Effects_DestroyEyeGlow( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+
+	rem ---------------------------------------------------------------------------
+	rem Trigger
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_CREATETRIGGER
+		uScript.LastIndex = CreateTrigger( ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,4).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,5).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,6).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYTRIGGER
+		DestroyTrigger( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_ADDTRIGGERCONDITION
+		AddTriggerCondition( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SHOWTRIGGER
+		ShowTrigger( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SHOWTRIGGERS
+		ShowTriggers()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_HIDETRIGGERS
+		HideTriggers()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_TRIGGERRESETTIMERS
+		TriggerResetTimers()
+		exitfunction 0
+	endif
+
+endfunction -1

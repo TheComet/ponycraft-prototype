@@ -1,0 +1,44 @@
+Pony animations reference list.
+
+Twilight Sparkle.
+ver. 28.09.2012
+
+
+Frames		Animation
+range
+
+	movements
+
+0 - 40		generic pony walking
+41 - 71		generic pony trotting
+72 - 92		generic pony running
+93 - 133		generic pony sneaking
+331 - 350		Pinkie's bouncing ^^
+
+	idles
+
+135 - 165		generic pony idle (standing)
+165 - 196		generic pony idle (blink)
+196 - 231		generic pony idle 2 (look left)
+231 - 266		generic pony idle 3 (look right)
+
+	deaths
+
+266 - 286		generic pony death 1 (fall to side)(last frame - final death pose)
+287 - 300		generic pony death 2 (collapse on spot)(last frame - final death pose)
+301 - 326		generic pony death 3 (fire death)(last frame - final death pose)(why your game has such painful way to die?)
+
+	attacks (beyond this - not ready yet)
+
+296 - xxx		unicorn idle to attack
+xxx - xxx		unicorn attack to idle
+
+xxx - xxx		unicorn idle to magic attack
+xxx - xxx		unicorn weak magic attack
+xxx - xxx		unicorn magic attack to idle
+
+xxx - xxx		unicorn powerful magic attack
+xxx - xxx		unicorn powerful magic attack to idle
+
+	scripted (???)
+xxx - xxx		zzz

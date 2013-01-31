@@ -1,0 +1,229 @@
+rem -----------------------------------------------------------
+rem Animation - Controls animations of objects
+rem -----------------------------------------------------------
+
+rem -----------------------------------------------------------
+rem Constants
+rem -----------------------------------------------------------
+
+rem -----------------------------------------------------------
+rem User Defined Types
+rem -----------------------------------------------------------
+
+type AnimationVT
+   logging 												as integer
+	CurrentMax 											as integer
+endtype
+
+type AnimationAT
+   Active 												as integer
+   CurrentFrame# 										as float
+   StartFrame# 										as float
+   EndFrame# 											as float
+   Speed# 												as float
+   Obj 													as word
+endtype
+
+rem -----------------------------------------------------------
+rem Initialise
+rem -----------------------------------------------------------
+
+function InitAnimation()
+
+   rem debug
+   DebugOutput( 0 , "Initialising Animation" , DEBUG_NORMAL )
+   
+   rem -----------------------------------------------------------
+   rem global variables
+   rem -----------------------------------------------------------
+
+   global uAnimation 								as AnimationVT
+   
+   rem -----------------------------------------------------------
+   rem global arrays
+   rem -----------------------------------------------------------
+
+   global dim Animation() 							as AnimationAT
+	
+	rem initial values
+	uAnimation.CurrentMax = -1
+   
+endfunction
+
+function PlayObject( Obj , StartFrame# , EndFrame# , Speed# )
+   
+	rem invalid speed
+	if Speed# = 0.0 then exitfunction
+	
+	rem local variables
+   local n as integer
+
+   rem find free slot
+   for n = 0 to uAnimation.CurrentMax
+      if Animation( n ).Active < 2 then exit
+   next n
+   
+   rem no free slot found, create
+   if n = uAnimation.CurrentMax + 1
+      array insert at bottom Animation()
+		inc uAnimation.CurrentMax
+   endif
+   
+   rem set frame
+   set object frame Obj , StartFrame#
+   
+   rem set values
+   Animation( n ).Active        = 2
+   Animation( n ).Obj           = Obj
+   Animation( n ).StartFrame#   = StartFrame#
+   Animation( n ).EndFrame#     = EndFrame#
+   if Speed# > 0 then Animation( n ).CurrentFrame# = StartFrame#
+	if Speed# < 0 then Animation( n ).CurrentFrame# = EndFrame#
+   Animation( n ).Speed#        = Speed#
+   
+endfunction
+
+function LoopObject( Obj , StartFrame# , EndFrame# , Speed# )
+   
+	rem invalid speed
+	if Speed# = 0.0 then exitfunction
+	
+	rem local variables
+   local n as integer
+
+   rem find free slot
+   for n = 0 to uAnimation.CurrentMax
+      if Animation( n ).Active < 2 then exit
+   next n
+   
+   rem no free slot found, create
+   if n = uAnimation.CurrentMax + 1
+      array insert at bottom Animation()
+		inc uAnimation.CurrentMax
+   endif
+   
+   rem set frame
+   set object frame Obj , StartFrame#
+   
+   rem set values
+   Animation( n ).Active        = 3
+   Animation( n ).Obj           = Obj
+   Animation( n ).StartFrame#   = StartFrame#
+   Animation( n ).EndFrame#     = EndFrame#
+   if Speed# > 0 then Animation( n ).CurrentFrame# = StartFrame#
+	if Speed# < 0 then Animation( n ).CurrentFrame# = EndFrame#
+   Animation( n ).Speed#        = Speed#
+   
+endfunction
+
+function StopObject( Obj )
+
+   rem local variables
+   local n as integer
+
+   rem find animation index of object
+   for n = 0 to uAnimation.CurrentMax
+      if Animation( n ).Obj = Obj then exit
+   next n
+   
+   rem not found
+   if n = uAnimation.CurrentMax + 1 then exitfunction
+
+   rem make sure animation is Active
+   if Animation( n ).Active < 2 then exitfunction
+   
+   rem set frame
+   set object frame Animation( n ).Obj , Animation( n ).CurrentFrame#
+   
+   rem stop object
+   Animation( n ).Active  = 0
+   Animation( n ).Obj     = 0
+   
+endfunction
+
+function ObjectPlaying( Obj )
+
+   rem local variables
+   local n as integer
+
+   rem find animation index of object
+   for n = 0 to uAnimation.CurrentMax
+      if Animation( n ).Obj = Obj then exit
+   next n
+   
+   rem not found
+   if n = uAnimation.CurrentMax + 1 then exitfunction 0
+
+   rem make sure animation is Active
+   if Animation( n ).Active < 2 then  exitfunction 0
+
+endfunction 1
+
+function ObjectFrame( Obj )
+
+   rem local variables
+   local n as integer
+	local f# as float
+
+   rem find animation index of object
+   for n = 0 to uAnimation.CurrentMax
+      if Animation( n ).Obj = Obj then exit
+   next n
+   
+   rem not found
+   if n = uAnimation.CurrentMax + 1 then exitfunction 0.0
+
+   rem make sure animation is Active
+   if Animation( n ).Active = 0 then exitfunction 0.0
+
+	rem return value
+	f# = Animation( n ).CurrentFrame#
+
+endfunction f#
+
+function ControlAnimation()
+
+   rem local variables
+   local n as integer
+   
+   rem loop through all Active animations
+   for n = 0 to uAnimation.CurrentMax
+      if Animation( n ).Active > 1
+      
+         rem increment frame
+         inc Animation( n ).CurrentFrame# , Animation( n ).Speed#
+         
+         rem play object
+         if Animation( n ).Active = 2
+
+            rem animation reaches end
+            if Animation( n ).CurrentFrame# > Animation( n ).EndFrame#
+               Animation( n ).CurrentFrame# = Animation( n ).EndFrame#
+               Animation( n ).Active = 1
+            endif
+            if Animation( n ).CurrentFrame# < Animation( n ).StartFrame#
+               Animation( n ).CurrentFrame# = Animation( n ).StartFrame#
+               Animation( n ).Active = 1
+            endif
+
+         endif
+         
+         rem loop object
+         if Animation( n ).Active = 3
+            
+            rem animation reaches end
+            if Animation( n ).CurrentFrame# > Animation( n ).EndFrame#
+               Animation( n ).CurrentFrame# = Animation( n ).StartFrame#
+            endif
+            if Animation( n ).CurrentFrame# < Animation( n ).StartFrame#
+               Animation( n ).CurrentFrame# = Animation( n ).EndFrame#
+            endif
+         endif
+         
+         rem update object frame
+         set object frame Animation( n ).Obj , Animation( n ).CurrentFrame#
+
+      endif
+   next n
+
+endfunction

@@ -1,0 +1,292 @@
+rem --------------------------------------------------------------
+rem 3D Trail
+rem --------------------------------------------------------------
+
+rem --------------------------------------------------------------
+rem User Defined Types
+rem --------------------------------------------------------------
+
+type Effects_3DTrailVT
+	IMG														as dword
+	CurrentMax												as integer
+endtype
+
+type Effects_3DTrailAT
+   Active													as integer
+   Obj														as word
+   Divisions												as integer
+   pos1														as vec3
+   pos2														as vec3
+   Force														as vec3
+   FollowObj1												as word
+   FollowLimb1												as word
+   FollowObj2												as word
+   FollowLimb2												as word
+   Update													as integer
+   UpdateCounter											as integer
+   DestroyTimer											as integer
+endtype
+
+rem --------------------------------------------------------------
+rem Initialization
+rem --------------------------------------------------------------
+
+function Effects_Init3DTrail()
+
+   rem --------------------------------------------------------------
+   rem Global variables
+   rem --------------------------------------------------------------
+   
+   global uEffects_3DTrail								as Effects_3DTrailVT
+   
+   rem --------------------------------------------------------------
+   rem Global arrays
+   rem --------------------------------------------------------------
+   
+   global dim Effects_3DTrail()						as Effects_3DTrailAT
+   
+   rem --------------------------------------------------------------
+   rem images
+   rem --------------------------------------------------------------
+   
+   uEffects_3DTrail.IMG=find free image()
+   load image "media\images\effects\trail\trail.png" , uEffects_3DTrail.IMG
+	
+	rem initial values
+	uEffects_3DTrail.CurrentMax = -1
+
+endfunction
+
+rem --------------------------------------------------------------
+rem functions
+rem --------------------------------------------------------------
+
+function Effects_Create3DTrail( Divisions )
+
+   rem local variables
+   local n as integer
+   
+   rem find free slot for 3D trail
+   for n = 0 to uEffects_3DTrail.CurrentMax
+      if Effects_3DTrail( n ).Active < 2 then exit
+   next n
+   
+   rem No free slot available? Create
+   if n = uEffects_3DTrail.CurrentMax+1
+		inc uEffects_3DTrail.CurrentMax
+		array insert at bottom Effects_3DTrail()
+	endif
+   
+   rem slot is being used for the first time
+   if Effects_3DTrail( n ).Active=0
+      
+      rem create subdivided plain
+      Effects_3DTrail( n ).Obj = find free object()
+      make object plain Effects_3DTrail( n ).Obj , 10 , 10 , 1 , Divisions
+      texture object Effects_3DTrail( n ).Obj , uEffects_3DTrail.IMG
+      ghost object on Effects_3DTrail( n ).Obj
+      set object radius Effects_3DTrail( n ).Obj , -1
+      set object transparency Effects_3DTrail( n ).Obj , 4
+      set object cull Effects_3DTrail( n ).Obj , 0
+      disable object zwrite Effects_3DTrail( n ).Obj
+
+   endif
+   
+   rem set parameters
+   Effects_3DTrail( n ).Active = 2
+   Effects_3DTrail( n ).Divisions = Divisions
+   Effects_3DTrail( n ).Force.x# = 0
+   Effects_3DTrail( n ).Force.y# = 0
+   Effects_3DTrail( n ).Force.z# = 0
+   Effects_3DTrail( n ).Update = 0
+   Effects_3DTrail( n ).Destroytimer = 0
+   show object Effects_3DTrail( n ).Obj
+
+endfunction n
+
+function Effects_Destroy3DTrail( n )
+
+   rem if not active, exit
+   if Effects_3DTrail( n ).Active < 2 then exitfunction -1
+   
+   rem set destroy timer
+   Effects_3DTrail( n ).DestroyTimer = Effects_3DTrail( n ).Divisions * (Effects_3DTrail( n ).Update+1)
+   
+   rem set force values to 0
+   Effects_3DTrail( n ).Force.x# = 0
+   Effects_3DTrail( n ).Force.y# = 0
+   Effects_3DTrail( n ).Force.z# = 0
+   
+   rem reset follow values
+   Effects_3DTrail( n ).FollowObj1 = 0
+   Effects_3DTrail( n ).FollowObj2 = 0
+
+endfunction n
+
+function Effects_DestroyAll3DTrails( n )
+
+   rem local variables
+   local n as integer
+   
+   rem destroy all trails
+   for n = 0 to uEffects_3DTrail.CurrentMax
+      Effects_Destroy3DTrail( n )
+   next n
+   
+endfunction
+
+function Effects_Position3DTrail( n , x1# , y1# , z1# , x2# , y2# , z2# )
+
+   rem if not active, exit
+   if Effects_3DTrail( n ).Active < 2 then exitfunction -1
+   
+   rem update positions
+   Effects_3DTrail( n ).pos1.x# = x1#
+   Effects_3DTrail( n ).pos1.y# = y1#
+   Effects_3DTrail( n ).pos1.z# = z1#
+   Effects_3DTrail( n ).pos2.x# = x2#
+   Effects_3DTrail( n ).pos2.y# = y2#
+   Effects_3DTrail( n ).pos2.z# = z2#
+
+endfunction n
+
+function Effects_Reset3DTrail( n , x# , y# , z# )
+
+   rem if not active, exit
+   if Effects_3DTrail( n ).Active < 2 then exitfunction -1
+   
+   rem position all vertices at coordinates
+   lock vertexdata for limb Effects_3DTrail( n ).Obj , 0
+      for i = Effects_3DTrail( n ).Divisions * 2 to 0 step -2
+         set vertexdata position i , x# , y# , z#
+         set vertexdata position i+1 , x# , y# , z#
+      next i
+   unlock vertexdata
+
+endfunction n
+
+function Effects_SetFollow3DTrail( n , FollowObj1 , FollowLimb1 , FollowObj2 , FollowLimb2 )
+
+   rem if not active, exit
+   if Effects_3DTrail( n ).Active < 2 then exitfunction -1
+   
+   rem set follow data
+   Effects_3DTrail( n ).FollowObj1 = FollowObj1
+   Effects_3DTrail( n ).FollowLimb1 = FollowLimb1
+   Effects_3DTrail( n ).FollowObj2 = FollowObj2
+   Effects_3DTrail( n ).FollowLimb2 = FollowLimb2
+
+endfunction n
+
+function Effects_Color3DTrail( n , color )
+
+   rem if not active, exit
+   if Effects_3DTrail( n ).active < 2 then exitfunction -1
+   
+   rem color object
+   set object diffuse Effects_3DTrail( n ).Obj , color
+   
+endfunction n
+
+function Effects_SetUpdate3DTrail( n , update )
+
+   rem if not active, exit
+   if Effects_3DTrail( n ).Active < 2 then exitfunction -1
+   
+   rem set update value
+   Effects_3DTrail( n ).Update = update
+
+endfunction n
+
+function Effects_SetForce3DTrail( n , x# , y# , z# )
+
+   rem if not active, exit
+   if Effects_3DTrail( n ).Active < 2 then exitfunction -1
+   
+   rem set force values
+   Effects_3DTrail( n ).force.x# = x#
+   Effects_3DTrail( n ).force.y# = y#
+   Effects_3DTrail( n ).force.z# = z#
+   
+endfunction n
+
+function Effects_Control3DTrails()
+
+   rem local variables
+   local n as integer
+   local x1# as float
+   local y1# as float
+   local z1# as float
+   local x2# as float
+   local y2# as float
+   local z2# as float
+   
+   rem loop through all active trails
+   for n = 0 to uEffects_3DTrail.CurrentMax
+      if Effects_3DTrail( n ).Active=2
+      
+         rem update trail positions if it is following anything
+         if Effects_3DTrail( n ).FollowObj1 > 0 and Effects_3DTrail( n ).FollowObj2 > 0
+				if object exist( Effects_3DTrail( n ).FollowObj1 ) and object exist( Effects_3DTrail( n ).FollowObj2 )
+					x1# = limb position x( Effects_3DTrail( n ).FollowObj1 , Effects_3DTrail( n ).FollowLimb1 )
+					y1# = limb position y( Effects_3DTrail( n ).FollowObj1 , Effects_3DTrail( n ).FollowLimb1 )
+					z1# = limb position z( Effects_3DTrail( n ).FollowObj1 , Effects_3DTrail( n ).FollowLimb1 )
+					x2# = limb position x( Effects_3DTrail( n ).FollowObj2 , Effects_3DTrail( n ).FollowLimb2 )
+					y2# = limb position y( Effects_3DTrail( n ).FollowObj2 , Effects_3DTrail( n ).FollowLimb2 )
+					z2# = limb position z( Effects_3DTrail( n ).FollowObj2 , Effects_3DTrail( n ).FollowLimb2 )
+					Effects_Position3DTrail( n , x1# , y1# , z1# , x2# , y2# , z2# )
+				endif
+         endif
+         
+         rem update update-counter
+         inc Effects_3DTrail( n ).UpdateCounter
+         if Effects_3DTrail( n ).UpdateCounter > Effects_3DTrail( n ).Update then Effects_3DTrail( n ).UpdateCounter=0
+         
+         rem edit mesh using vertexdata
+         lock vertexdata for limb Effects_3DTrail( n ).Obj , 0
+            if Effects_3DTrail( n ).UpdateCounter=0
+            
+               rem shift trail stack down
+               for i = Effects_3DTrail( n ).Divisions*2 to 2 step -2
+                  x1# = get vertexdata position x( i-2 )
+                  y1# = get vertexdata position y( i-2 )
+                  z1# = get vertexdata position z( i-2 )
+                  x2# = get vertexdata position x( i-1 )
+                  y2# = get vertexdata position y( i-1 ) 
+                  z2# = get vertexdata position z( i-1 )
+                  set vertexdata position i , x1# , y1# , z1#
+                  set vertexdata position i+1 , x2# , y2# , z2#
+               next i
+            endif
+            
+            rem apply force to each vertice
+            for i = 0 to Effects_3DTrail( n ).Divisions*2 step 2
+                  x1# = get vertexdata position x( i ) + Effects_3DTrail( n ).force.x#
+                  y1# = get vertexdata position y( i ) + Effects_3DTrail( n ).force.y#
+                  z1# = get vertexdata position z( i ) + Effects_3DTrail( n ).force.z#
+                  x2# = get vertexdata position x( i+1 ) + Effects_3DTrail( n ).force.x#
+                  y2# = get vertexdata position y( i+1 ) + Effects_3DTrail( n ).force.y#
+                  z2# = get vertexdata position z( i+1 ) + Effects_3DTrail( n ).force.z#
+                  set vertexdata position i , x1# , y1# , z1#
+                  set vertexdata position i+1 , x2# , y2# , z2#
+            next i               
+            
+            rem set positions of first vertices
+            set vertexdata position 0 , Effects_3DTrail( n ).pos1.x# , Effects_3DTrail( n ).pos1.y# , Effects_3DTrail( n ).pos1.z#
+            set vertexdata position 1 , Effects_3DTrail( n ).pos2.x# , Effects_3DTrail( n ).pos2.y# , Effects_3DTrail( n ).pos2.z#
+         unlock vertexdata
+         
+         rem if destroy timer is active, decrement
+         if Effects_3DTrail( n ).DestroyTimer > 1 then dec Effects_3DTrail( n ).DestroyTimer
+         
+         rem destroy trail
+         if Effects_3DTrail( n ).DestroyTimer=1
+            hide object Effects_3DTrail( n ).Obj
+            Effects_3DTrail( n ).Active=1
+            Effects_3DTrail( n ).DestroyTimer=0
+         endif
+
+      endif
+   next n
+
+endfunction

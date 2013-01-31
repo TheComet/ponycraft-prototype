@@ -1,0 +1,343 @@
+function _ScriptCompileEntryWorld( slot , lin )
+	
+	rem local variables
+	local a as integer
+	local b as integer
+	local c as integer
+	local d as integer
+	local e as integer
+	local f as integer
+	local g as integer
+	local h as integer
+	
+	if ConsoleCmd$(0) = "destroyworld"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_DESTROYWORLD
+		exitfunction lin+1
+	
+	endif
+	
+	if ConsoleCmd$(0) = "worldaddsceneryobject"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "WorldAddSceneryObject expects <Filename$> <TextureName$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a string!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataString( ConsoleCmd$(1) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDADDSCENERYOBJECT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "worldpositionsceneryobject"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "WorldPositionSceneryObject expects <x#> <y#> <z#>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a float!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDPOSITIONSCENERYOBJECT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "worldrotatesceneryobject"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "WorldRotateSceneryObject expects <x#> <y#> <z#>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a float!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDROTATESCENERYOBJECT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "worldscalesceneryobject"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "WorldScaleSceneryObject expects <x#> <y#> <z#>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a float!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDSCALESCENERYOBJECT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "worldaddterrainobject"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "WorldAddTerrainObject expects <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$ + chr$(34) + " is not a string!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataString( ConsoleCmd$(1) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDADDTERRAINOBJECT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "worldcreatepathfinder"
+		
+		rem error
+		if ConsoleCmd$(8) = ""
+			AddTextToConsole( 3 , "WorldCreatePathfinder expects <StartX#> <StartY#> <EndX#> <EndY#> <ResX> <ResY> <Threshold> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(8) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(8) + chr$(34) + " is not a string!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		e = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if e > -1
+			if ScriptVariableList( slot , e ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not a float!" ) : exitfunction -1
+			e = ScriptVariableList( slot , e ).Index
+		endif
+		f = ScriptGetVariableID( slot , ConsoleCmd$(5) )
+		if f > -1
+			if ScriptVariableList( slot , f ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(5) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			f = ScriptVariableList( slot , f ).Index
+		endif
+		g = ScriptGetVariableID( slot , ConsoleCmd$(6) )
+		if g > -1
+			if ScriptVariableList( slot , g ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(6) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			g = ScriptVariableList( slot , g ).Index
+		endif
+		h = ScriptGetVariableID( slot , ConsoleCmd$(7) )
+		if h > -1
+			if ScriptVariableList( slot , h ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(7) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			h = ScriptVariableList( slot , h ).Index
+		endif
+		if a = -1 then a = ScriptAddDataString( ConsoleCmd$(8) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if d = -1 then d = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		if e = -1 then e = ScriptAddDataFloat( val(ConsoleCmd$(4)) )
+		if f = -1 then f = ScriptAddDataInteger( val(ConsoleCmd$(5)) )
+		if g = -1 then g = ScriptAddDataInteger( val(ConsoleCmd$(6)) )
+		if h = -1 then h = ScriptAddDataInteger( val(ConsoleCmd$(7)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDCREATEPATHFINDER
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 4 , e , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 5 , f , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 6 , g , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 7 , h , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "worldcreatefogofwar"
+		
+		rem error
+		if ConsoleCmd$(4) = ""
+			AddTextToConsole( 3 , "WorldCreateFogOfWar expects <StartX#> <StartY#> <EndX#> <EndY#>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a float!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not a float!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		if a = -1 then a = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		if d = -1 then d = ScriptAddDataFloat( val(ConsoleCmd$(4)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDCREATEFOGOFWAR
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "worlddestroyfogofwar"
+		Script( slot , lin ).cmd = CMD_WORLDDESTROYFOGOFWAR
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "worldexport"
+		
+		rem error
+		if ConsoleCmd$(0) = ""
+			AddTextToConsole( 3 , "WorldExport expects <filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a string!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataString( ConsoleCmd$(1) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDEXPORT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "worldhidepathmap"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDHIDEPATHMAP
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "worldshowpathmap"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDSHOWPATHMAP
+		exitfunction lin+1
+		
+	endif
+	
+endfunction -3

@@ -1,0 +1,228 @@
+rem ---------------------------------------------------------------------------
+rem Unit formations
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User defined types
+rem ---------------------------------------------------------------------------
+
+type UnitFormationAT
+	Active                           			as integer
+	AveragePos                       			as vec3
+	Count                            			as integer
+	Speed#                           			as float
+	DenyHighGroundVision								as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitUnitFormation()
+	
+	rem ---------------------------------------------------------------------------
+	rem global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim UnitFormation() 					as UnitFormationAT
+
+endfunction
+
+function _Unit_Calculate_Formation_Groups()
+	
+	rem formation was already calculated this loop
+	if uUnit.FormationWasCalculated = 1 then exitfunction
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	local r as integer
+	local f# as float
+	
+	rem prepare average data so other units can be removed/added
+	for s = 0 to uUnit.CurrentFormationMax
+		UnitFormation( s ).Count = 0
+		UnitFormation( s ).AveragePos.x# = 0.0
+		UnitFormation( s ).AveragePos.z# = 0.0
+		UnitFormation( s ).DenyHighGroundVision = 1
+	next s
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1 and Unit( n ).UseFormation > -1
+			
+			rem unit must be removed from it's formation so it can join potential other formations
+			RemoveUnitFromFormation( n , Unit( n ).UseFormation )
+			
+		endif
+	next n
+	
+	rem calculate formations, but only for units used by the player
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1 and Unit( n ).Control = UNITCONTROL_PLAYER
+
+			rem find an existing formation to join
+			for s = 0 to uUnit.CurrentFormationMax
+				if UnitFormation( s ).Active = 2
+					if (Unit( n ).pos.x# - (UnitFormation( s ).AveragePos.x#/UnitFormation( s ).Count))^2 + (Unit( n ).pos.z# - (UnitFormation( s ).AveragePos.z#/UnitFormation( s ).Count))^2 < 38.0
+						
+						rem check if the other units already in formation have the same selection state
+						for r = 0 to uUnit.CurrentMax
+							if Unit( r ).Active > 1 and Unit( r ).UseFormation = s
+								if (Unit( r ).Selected < 2) xor (Unit( n ).Selected < 2) then exit
+							endif
+						next r
+						if r = uUnit.CurrentMax + 1
+						
+							rem new count
+							inc UnitFormation( s ).Count
+							
+							rem add unit to formation
+							Unit( n ).UseFormation = s
+							Unit( n ).FormationPos = Unit( n ).pos
+							inc UnitFormation( s ).AveragePos.x# , Unit( n ).pos.x#
+							inc UnitFormation( s ).AveragePos.z# , Unit( n ).pos.z#
+							f# = ((Unit( n ).HeightOffset#<0.2) * Unit( n ).GroundSpeed#) + ((Unit( n ).HeightOffset#>=0.2) * Unit( n ).AirSpeed#)
+							if f# < UnitFormation( s ).Speed# then UnitFormation( s ).Speed# = f#
+							
+							rem high ground vision
+							if Unit( n ).HeightOffset# > 0.2 then UnitFormation( s ).DenyHighGroundVision = 0
+							
+							rem finished
+							exit
+							
+						endif
+					endif
+				endif
+			next s
+
+			rem no formation was found
+			if s = uUnit.CurrentFormationMax + 1
+				
+				rem find a free slot
+				for s = 0 to uUnit.CurrentFormationMax
+					if UnitFormation( s ).Active < 2 then exit
+				next s
+				
+				rem no free slot, create
+				if s = uUnit.CurrentFormationMax + 1
+					inc uUnit.CurrentFormationMax
+					array insert at bottom UnitFormation()
+				endif
+				
+				rem add unit to formation
+				Unit( n ).UseFormation = s
+				Unit( n ).FormationPos = Unit( n ).pos
+				UnitFormation( s ).Active = 2
+				UnitFormation( s ).Count = 1
+				UnitFormation( s ).AveragePos.x# = Unit( n ).pos.x#
+				UnitFormation( s ).AveragePos.z# = Unit( n ).pos.z#
+				UnitFormation( s ).Speed# = ((Unit( n ).HeightOffset#<0.2) * Unit( n ).GroundSpeed#) + ((Unit( n ).HeightOffset#>=0.2) * Unit( n ).AirSpeed#)
+				if Unit( n ).HeightOffset# > 0.2 then UnitFormation( s ).DenyHighGroundVision = 0
+				
+			endif
+			
+		endif
+	next n
+	
+	rem calculate average
+	for n = 0 to uUnit.CurrentFormationMax
+		if UnitFormation( n ).Active = 2
+			UnitFormation( n ).AveragePos.x# = UnitFormation( n ).AveragePos.x# / UnitFormation( n ).Count
+			UnitFormation( n ).AveragePos.z# = UnitFormation( n ).AveragePos.z# / UnitFormation( n ).Count
+		endif
+	next n
+	
+	rem update formation vertex brushes
+	for n = 0 to uUnit.CurrentFormationMax
+		WorldAddVertexBrushToFormationBrush( n )
+	next n
+	
+	rem formation was calculated
+	uUnit.FormationWasCalculated = 1
+	
+endfunction
+
+function RemoveUnitFromFormation( n , Formation )
+	
+	rem local variables
+	local s as integer
+	local success as integer
+	
+	rem remove unit from formation
+	Unit( n ).UseFormation = -1
+	
+	rem count how many units are left in formation and recheck if high ground vision should be denied
+	UnitFormation( Formation ).DenyHighGroundVision = 1
+	success = 0
+	for s = 0 to uUnit.CurrentMax
+		if Unit( s ).Active > 1
+			if Unit( s ).UseFormation = Formation
+				success = 1
+				if Unit( s ).HeightOffset# > 0.2
+					UnitFormation( Formation ).DenyHighGroundVision = 0
+				endif
+			endif
+		endif
+	next s
+
+	rem none left, destroy formation
+	if success = 0
+		UnitFormation( Formation ).Active = 0
+	endif
+	
+endfunction
+
+function ControlUnitFormation()
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem reset average data
+	for s = 0 to uUnit.CurrentFormationMax
+		UnitFormation( s ).AveragePos.x# = 0
+		UnitFormation( s ).AveragePos.z# = 0
+		UnitFormation( s ).Count = 0
+	next s
+	
+	rem recalculate average positions
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1
+			for s = 0 to uUnit.CurrentFormationMax
+				if Unit( n ).UseFormation = s
+					inc UnitFormation( s ).Count
+					inc UnitFormation( s ).AveragePos.x# , Unit( n ).pos.x#
+					inc UnitFormation( s ).AveragePos.z# , Unit( n ).pos.z#
+				endif
+			next s
+		endif
+	next n
+	
+	rem calculate average
+	for s = 0 to uUnit.CurrentFormationMax
+		if Unitformation( s ).Count > 0
+			UnitFormation( s ).AveragePos.x# = UnitFormation( s ).AveragePos.x# / UnitFormation( s ).Count
+			UnitFormation( s ).AveragePos.z# = UnitFormation( s ).AveragePos.z# / UnitFormation( s ).Count
+		endif
+	next s
+	
+endfunction
+
+function _Unit_Draw_Formations()
+	
+	rem local variables
+	local n as integer
+	
+	rem draw average positions
+	for n = 0 to uUnit.CurrentFormationMax
+		if UnitFormation( n ).Active > 1
+			position object 1000 , UnitFormation( n ).AveragePos.x# , 0 , UnitFormation( n ).AveragePos.z#
+			a2fillcircle object screen x(1000) , object screen y(1000) , 4 , 0xFFFF8000
+			a2text FontID , object screen x(1000) , object screen y(1000) + 8 , str$(n) , 0xFFFFFFFF
+		endif
+	next n
+	
+endfunction

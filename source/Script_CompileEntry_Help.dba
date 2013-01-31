@@ -1,0 +1,28 @@
+function _ScriptCompileEntryHelp( slot , lin )
+	
+	rem ---------------------------------------------------------------------------
+	rem help
+	rem ---------------------------------------------------------------------------
+	if ConsoleCmd$(0) = "help"
+		
+		rem deeper help
+		if ConsoleCmd$(1) = "core" then Script( slot , lin ).cmd = CMD_HELPCORE                    : exitfunction lin+1
+		if ConsoleCmd$(1) = "gamecontrols" then Script( slot , lin ).cmd = CMD_HELPGAMECONTROLS    : exitfunction lin+1
+		if ConsoleCmd$(1) = "logging" then Script( slot , lin  ).cmd = CMD_HELPLOGGING             : exitfunction lin+1
+		if ConsoleCmd$(1) = "camera" then Script( slot , lin  ).cmd = CMD_HELPCAMERA               : exitfunction lin+1
+		if ConsoleCmd$(1) = "clickobj" then Script( slot , lin  ).cmd = CMD_HELPCLICKOBJ           : exitfunction lin+1
+		if ConsoleCmd$(1) = "distortion" then Script( slot , lin  ).cmd = CMD_HELPDISTORTION       : exitfunction lin+1
+		if ConsoleCmd$(1) = "gui" then Script( slot , lin  ).cmd = CMD_HELPGUI                     : exitfunction lin+1
+		if ConsoleCmd$(1) = "menu" then Script( slot , lin  ).cmd = CMD_HELPMENU                   : exitfunction lin+1
+		if ConsoleCmd$(1) = "message" then Script( slot , lin  ).cmd = CMD_HELPMESSAGE             : exitfunction lin+1
+		if ConsoleCmd$(1) = "script" then Script( slot , lin  ).cmd = CMD_HELPSCRIPT               : exitfunction lin+1
+		if ConsoleCmd$(1) = "textentry" then Script( slot , lin  ).cmd = CMD_HELPTEXTENTRY         : exitfunction lin+1
+		if ConsoleCmd$(1) = "trigger" then Script( slot , lin  ).cmd = CMD_HELPTRIGGER             : exitfunction lin+1
+		if ConsoleCmd$(1) = "unit" then Script( slot , lin  ).cmd = CMD_HELPUNIT                   : exitfunction lin+1
+		if ConsoleCmd$(1) = "world" then Script( slot , lin  ).cmd = CMD_HELPWORLD                 : exitfunction lin+1
+		
+		rem just help
+		Script( slot , lin ).cmd = CMD_HELP : exitfunction lin+1
+	endif
+	
+endfunction -3

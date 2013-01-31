@@ -1,0 +1,497 @@
+rem ---------------------------------------------------------------------------
+rem Unit Pathfinder
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type PathfinderAAT
+	pos                              			as vec3
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitUnitPath()
+
+	rem ---------------------------------------------------------------------------
+	rem Global Arrays
+	rem ---------------------------------------------------------------------------
+
+	global dim UnitPath( 1 , 1 )				as PathfinderAAT
+
+endfunction
+
+function UnitCalculatePath( n , StartX# , StartY# , EndX# , EndY#)
+	
+	rem local variables
+	local sx as integer
+	local sy as integer
+	local ex as integer
+	local ey as integer
+	local success as integer
+	local p as integer
+	local r as integer
+	local s as integer
+	local x# as float
+	local z# as float
+	local nextx# as float
+	local nextz# as float
+	local saveCurrentWaypoint as integer
+	local color as dword
+	local angle# as float
+	local RemoveLastWaypoint as integer
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitCalculatePath " + str$(n) + "," + str$(EndX#) + "," + str$(EndY#) )
+
+	rem convert to tile coordinates
+	ex = ((EndX# - uWorld.PathFinder.StartX#) * uWorld.PathFinder.ResolutionX) / (uWorld.PathFinder.EndX# - uWorld.PathFinder.StartX#)
+	ey = ((EndY# - uWorld.PathFinder.StartY#) * uWorld.PathFinder.ResolutionY) / (uWorld.PathFinder.EndY# - uWorld.PathFinder.StartY#)
+	sx = ((StartX# - uWorld.PathFinder.StartX#) * uWorld.PathFinder.ResolutionX) / (uWorld.PathFinder.EndX# - uWorld.PathFinder.StartX#)
+	sy = ((StartY# - uWorld.PathFinder.Starty#) * uWorld.PathFinder.ResolutionY) / (uWorld.PathFinder.EndY# - uWorld.PathFinder.StartY#)
+	
+	rem check if coordinates are in range
+	if sx > -1 and sy > -1 and sx < uWorld.PathFinder.ResolutionX + 1 and sy < uWorld.PathFinder.ResolutionY + 1
+		if ex > -1 and ey > -1 and ex < uWorld.PathFinder.ResolutionX + 1 and ey < uWorld.PathFinder.ResolutionY + 1
+			
+			rem check if air unit is in a formation with ground units
+			if Unit( n ).HeightOffset# > 0.2
+				for s = 0 to uUnit.CurrentMax
+					if s <> n
+						if Unit( s ).Active > 1 and Unit( s ).HeightOffset# < 0.2
+							if Unit( s ).UseFormation = Unit( n ).UseFormation then exit
+						endif
+					endif
+				next s
+			else
+				s = 0
+			endif
+			
+			rem search for ground paths
+			if s < uUnit.CurrentMax + 1
+
+				rem logging
+				success = 1
+				if uWorld.PathFinder.ID > -1
+					if uUnit.logging = 1 then AddTextToConsole( 0 , "Path from " + str$(sx) + "," + str$(sy) + " to " + str$(ex) + "," + str$(ey) )
+					
+					rem if unit is on an invalid position, find a surrounding tile
+					if iaa_get pathmap value( uWorld.PathFinder.ID , sx , sy )
+						if _Pathfinder_Find_Free_Surrounding( sx , sy )
+							sx = Misc.pos2D.x
+							sy = Misc.pos2D.y
+						endif
+					endif
+					
+					rem if mouse is on an invalid position, find next tile closest to the unit
+					if iaa_get pathmap value( uWorld.Pathfinder.ID , ex , ey )
+						if _Pathfinder_Interpolate_Until_Free( ex , ey , sx , sy )
+							ex = Misc.pos2D.x
+							ey = Misc.pos2D.y
+							RemoveLastWaypoint = 1
+						endif
+					endif
+					
+					rem calculate path
+					success = iaa_search path( uWorld.PathFinder.ID , 0 , sx , sy , ex , ey )
+				endif
+					
+				rem compile to way points
+				if success = 1
+
+					rem pathfinder has been set up
+					if uWorld.PathFinder.ID > -1
+						success = iaa_compile path to checkpoints( uWorld.PathFinder.ID , 0 )
+						
+						rem resize array for waypoints if needed
+						saveCurrentWaypoint = 0
+						if iaa_get total checkpoints( uWorld.PathFinder.ID , 0 )+1 > uUnit.CurrentWaypointMax
+							uUnit.CurrentWaypointMax = iaa_get total checkpoints( uWorld.Pathfinder.ID , 0 )+1
+							dim UnitPath( uUnit.CurrentMax , uUnit.CurrentWaypointMax ) as PathfinderAAT
+						endif
+						
+						rem first waypoint
+						UnitPath( n , saveCurrentWaypoint ).pos.x# = StartX#
+						UnitPath( n , saveCurrentWaypoint ).pos.z# = StartY#
+						
+						rem store all waypoints into an array
+						for p = 0 to iaa_get total checkpoints( uWorld.PathFinder.ID , 0 ) - 1
+							x# = uWorld.PathFinder.StartX# + (((uWorld.PathFinder.EndX# - uWorld.PathFinder.StartX#) * iaa_get checkpoint x( uWorld.PathFinder.ID , 0 , p ) ) / uWorld.PathFinder.ResolutionX)
+							z# = uWorld.PathFinder.StartY# + (((uWorld.PathFinder.EndY# - uWorld.PathFinder.StartY#) * iaa_get checkpoint y( uWorld.PathFinder.ID , 0 , p ) ) / uWorld.PathFinder.ResolutionY)
+							inc saveCurrentWaypoint
+							UnitPath( n , saveCurrentWaypoint ).pos.x# = x#
+							UnitPath( n , saveCurrentWaypoint ).pos.z# = z#
+						next p
+						
+						rem last waypoint
+						if RemoveLastWaypoint = 0
+							inc saveCurrentWaypoint
+							UnitPath( n , saveCurrentWaypoint ).pos.x# = EndX#
+							UnitPath( n , saveCurrentWaypoint ).pos.z# = EndY#
+						endif
+						
+						rem optimize waypoints
+						for p = 0 to saveCurrentWaypoint
+							
+							rem raycast to next waypoints until no collision is found
+							for s = p + 2 to saveCurrentWaypoint
+								if SC_RayCastGroup( COL_PATHFINDER , UnitPath( n , p ).pos.x# , uWorld.PathFinder.Threshold , UnitPath( n , p ).pos.z# , UnitPath( n , s ).pos.x# , uWorld.PathFinder.Threshold , UnitPath( n , s ).pos.z# , 0 ) = 0
+									
+									rem waypoint not needed, remove
+									dec s
+									for r = s to saveCurrentWaypoint - 1
+										UnitPath( n , r ).pos = UnitPath( n , r + 1).pos
+									next r
+									dec saveCurrentWaypoint
+									exit
+								endif
+							next s
+							
+						next p
+						
+						rem check if second last waypoint is needed
+						if saveCurrentWaypoint > 1
+							if SC_RayCastGroup( COL_PATHFINDER , UnitPath( n , saveCurrentWaypoint - 2 ).pos.x# , uWorld.PathFinder.Threshold , UnitPath( n , saveCurrentWaypoint - 2 ).pos.z# , UnitPath( n , saveCurrentWaypoint ).pos.x# , uWorld.PathFinder.Threshold , UnitPath( n , saveCurrentWaypoint ).pos.z# , 0 ) = 0
+								UnitPath( n , saveCurrentWaypoint - 1 ).pos = UnitPath( n , saveCurrentWaypoint).pos
+								dec saveCurrentWaypoint
+							endif
+						endif
+					
+					rem pathfinder has not been set up
+					else
+						
+						rem resize array for waypoints if needed
+						if 1 > uUnit.CurrentWaypointMax
+							dim UnitPath( uUnit.CurrentMax , 1 ) as PathfinderAAT
+						endif
+
+						rem first waypoint
+						UnitPath( n , 0 ).pos.x# = StartX#
+						UnitPath( n , 0 ).pos.z# = StartY#
+
+						rem last waypoint
+						UnitPath( n , 1 ).pos.x# = EndX#
+						UnitPath( n , 1 ).pos.z# = EndY#
+						
+						rem current waypoint
+						saveCurrentWaypoint = 1
+					
+					endif
+				endif
+				
+			rem search for air paths
+			else
+				
+				rem resize array for waypoints if needed
+				if 1 > uUnit.CurrentWaypointMax
+					dim UnitPath( uUnit.CurrentMax , 1 ) as PathfinderAAT
+				endif
+
+				rem first waypoint
+				UnitPath( n , 0 ).pos.x# = StartX#
+				UnitPath( n , 0 ).pos.z# = StartY#
+
+				rem last waypoint
+				UnitPath( n , 1 ).pos.x# = EndX#
+				UnitPath( n , 1 ).pos.z# = EndY#
+				
+				rem current waypoint
+				saveCurrentWaypoint = 1
+				
+			endif
+						
+			rem check if unit can use formations
+			if Unit( n ).UseFormation > -1
+
+				rem get angle offset
+				if saveCurrentWaypoint > 0
+					
+					rem calculate angle offset
+					angle# = 270.0 - atanfull( UnitPath( n , 0 ).pos.z# - UnitPath( n , 1 ).pos.z# , UnitPath( n , 0 ).pos.x# - UnitPath( n , 1 ).pos.x# )
+					dec angle# , 270 - atanfull( UnitPath( n , saveCurrentWaypoint - 1 ).pos.z# - UnitPath( n , saveCurrentWaypoint ).pos.z# , UnitPath( n , saveCurrentWaypoint - 1 ).pos.x# - UnitPath( n , saveCurrentWaypoint ).pos.x# )
+
+					rem subtract average position
+					x# = Unit( n ).FormationPos.x# - UnitFormation( Unit( n ).UseFormation ).AveragePos.x#
+					z# = Unit( n ).FormationPos.z# - UnitFormation( Unit( n ).UseFormation ).AveragePos.z#
+					
+					rem perform rotation around y axis using a rotation matrix
+					remstart
+							  / cos(a)   0        -sin(a)  \
+					Ry(a) = | 0        1        0        |
+							  \ sin(a)   0        cos(a)   /
+					remend
+					nx# = (x#*cos(angle#)) - (z#*sin(angle#))
+					nz# = (x#*sin(angle#)) + (z#*cos(angle#))
+					
+					rem add last waypoint position
+					x# = nx# + UnitPath( n , saveCurrentWaypoint ).pos.x#
+					z# = nz# + UnitPath( n , saveCurrentWaypoint ).pos.z#
+											
+					rem make sure new coordinates are valid by raycasting from last waypoint
+					if SC_RayCastGroup( COL_PATHFINDER , UnitPath( n , saveCurrentWaypoint - 1 ).pos.x# , uWorld.PathFinder.Threshold , UnitPath( n , saveCurrentWaypoint - 1 ).pos.z# , x# , uWorld.PathFinder.Threshold , z# , 0 ) = 0
+						
+						rem if valid, replace last waypoint positions with these
+						UnitPath( n , saveCurrentWaypoint ).pos.x# = x#
+						UnitPath( n , saveCurrentWaypoint ).pos.z# = z#
+													
+					endif
+					
+				endif
+				
+			endif
+
+			rem finish saving wayopint data
+			Unit( n ).CurrentMaxWaypoint = saveCurrentWaypoint
+			if uUnit.logging = 1
+				AddTextToConsole( 0 , "saveCurrentWaypoint: " + str$(saveCurrentWaypoint) )
+			endif
+
+		endif
+	endif
+	
+endfunction
+
+function ResetUnitPath( n )
+
+	rem reset path
+	Unit( n ).CurrentWaypoint = 1
+	Unit( n ).CurrentMaxWaypoint = -1
+	
+endfunction
+
+function _Unit_Handle_Ground_Paths( n )
+	
+	rem check if unit has any paths queued
+	if Unit( n ).CurrentMaxWaypoint > -1
+		
+		rem calculate speed
+		if Unit( n ).UseFormation = -1
+			Unit( n ).CurrentSpeed# = curvevalue( Unit( n ).GroundSpeed# , Unit( n ).CurrentSpeed# , 17.8 )
+		else
+			Unit( n ).CurrentSpeed# = curvevalue( UnitFormation( Unit( n ).UseFormation ).Speed# , Unit( n ).CurrentSpeed# , 17.8 )
+		endif
+		
+		rem handle paths
+		_Unit_Handle_Paths( n )
+	
+	else
+		
+		rem slow unit down
+		Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 17.8 )
+		
+	endif
+	
+endfunction
+
+function _Unit_Handle_Air_Paths( n )
+	
+	rem check if unit has any paths queued
+	if Unit( n ).CurrentMaxWaypoint > -1
+		
+		rem calculate speed
+		if Unit( n ).UseFormation = -1
+			Unit( n ).CurrentSpeed# = curvevalue( Unit( n ).AirSpeed# , Unit( n ).CurrentSpeed# , 17.8 )
+		else
+			Unit( n ).CurrentSpeed# = curvevalue( UnitFormation( Unit( n ).UseFormation ).Speed# , Unit( n ).CurrentSpeed# , 17.8 )
+		endif
+		
+		rem handle paths
+		_Unit_Handle_Paths( n )
+
+	else
+		
+		rem slow unit down
+		Unit( n ).CurrentSpeed# = curvevalue( 0 , Unit( n ).CurrentSpeed# , 17.8 )
+		
+	endif
+			
+endfunction
+
+function _Unit_Handle_Paths( n )
+
+	rem check if unit is evading
+	if Unit( n ).EvadeUnit = 0
+		
+		rem rotate unit to next waypoint
+		Unit( n ).angle.y# = curveangle( 270 - atanfull( Unit( n ).pos.z# - UnitPath( n , Unit( n ).CurrentWaypoint ).pos.z# , Unit( n ).pos.x# - UnitPath( n , Unit( n ).CurrentWaypoint ).pos.x# ) , Unit( n ).angle.y# , 3.5 )
+
+	else
+	
+		rem rotate unit away from colliding unit
+		Unit( n ).angle.y# = curveangle( Unit( n ).EvadeAngle# , Unit( n ).angle.y# , 1.78 )
+		
+		rem check if evade timer has expired
+		if TBM.Ticks - Unit( n ).EvadeUnitTimer > 40 then Unit( n ).EvadeUnit = 0
+	endif
+	
+	rem check if unit has to evade another unit
+	rem this only works if the unit is not attacking
+	if Unit( n ).AttackActive = 0 and Unit( n ).HeightOffset# < 0.222
+		for sx = 0 to uUnit.CurrentMax
+			if sx <> n
+				if Unit( sx ).Active > 1 and Unit( n ).Control <> Unit( sx ).Control
+					if Unit( sx ).HeightOffset# < 0.222
+						if Unit( n ).FollowUnit <> sx
+							if (Unit( sx ).pos.x# - Unit( n ).pos.x#)^2 + ((Unit( sx ).pos.y#+Unit( sx ).HeightOffset#) - (Unit( n ).pos.y#+Unit( sx ).HeightOffset#))^2 + (Unit( sx ).pos.z# - Unit( n ).pos.z#)^2 < (Unit( n ).size#*1.5)^2
+								dist# = Unit( n ).angle.y# - (270 - atanfull( Unit( n ).pos.z# - Unit( sx ).pos.z# , Unit( n ).pos.x# - Unit( sx ).pos.x# ))
+								if dist# < -180.0 then inc dist# , 360.0
+								if CustomABS(dist#) < 45
+									
+									rem if unit has just evaded before, increment counter
+									if TBM.Ticks - Unit( n ).EvadeUnitTimer < 80
+										inc Unit( n ).EvadeUnitCounter
+									else
+										Unit( n ).EvadeUnitCounter = 0
+									endif
+									
+									rem if unit has evaded too many times, cancel ability
+									if Unit( n ).EvadeUnitCounter > 6
+										Unit( n ).Ability.Active = -1
+										ResetUnitPath( n )
+									endif
+									
+									rem let unit evade
+									Unit( n ).EvadeUnit = 1
+									Unit( n ).EvadeUnitTimer = TBM.Ticks
+									Unit( n ).EvadeAngle# = dist# + Unit( n ).angle.y#
+									
+								endif
+							endif
+						endif
+					endif
+				endif
+			endif
+		next sx
+	endif
+	
+	rem arrived at waypoint? Set coordinates to next
+	if (Unit( n ).pos.x# - UnitPath( n , Unit( n ).CurrentWaypoint).pos.x#)^2 + (Unit( n ).pos.z# - UnitPath( n , Unit( n ).CurrentWaypoint).pos.z#)^2 < (Unit( n ).GroundSpeed#*2)^2
+		inc Unit( n ).CurrentWaypoint
+	endif
+	
+	rem last waypoint reached
+	if Unit( n ).CurrentWaypoint > Unit( n ).CurrentMaxWaypoint
+		
+		rem reset path
+		ResetUnitPath( n )
+		if Unit( n ).FollowUnit = -1
+			Unit( n ).Ability.Active = -1
+			Unit( n ).AttackActive = 0
+		endif
+	
+	endif
+	
+endfunction
+
+function _Unit_Draw_Path( n )
+	
+	rem draw path (Debug)
+	if uUnit.DrawPath = 1
+		
+		rem draw the path
+		for w = 1 to Unit( n ).CurrentMaxWaypoint
+			if SC_RayCastGroup( COL_TERRAIN , UnitPath( n , w ).pos.x# , 200 , UnitPath( n , w ).pos.z# , UnitPath( n , w ).pos.x# , -200 , UnitPath( n , w ).pos.z# , 0 )
+				position object 1000 , UnitPath( n , w ).pos.x# , SC_GetStaticCollisionY() , UnitPath( n , w ).pos.z#
+			endif
+			x = object screen x( 1000 )
+			y = object screen y( 1000 )
+			a2fillcircle x , y , 3 , 0xFFFF0000
+			if SC_RayCastGroup( COL_TERRAIN , UnitPath( n , w-1 ).pos.x# , 200 , UnitPath( n , w-1 ).pos.z# , UnitPath( n , w-1 ).pos.x# , -200 , UnitPath( n , w-1 ).pos.z# , 0 )
+				position object 1000 , UnitPath( n , w-1 ).pos.x# , SC_GetStaticCollisionY() , UnitPath( n , w-1 ).pos.z#
+			endif
+			x2 = object screen x( 1000 )
+			y2 = object screen y( 1000 )
+			a2fillcircle x2 , y2 , 3 , 0xFFFF0000
+			a2line x , y , x2 , y2 , 0xFFFF8000
+		next w
+
+	endif
+	
+	rem draw formations
+	if uUnit.DrawFormation = 1 then _Unit_Draw_Formations()
+				
+endfunction
+
+function _Pathfinder_Find_Free_Surrounding( sx , sy )
+	
+	remstart
+	----------------------------------------------------------
+	2 5 8
+	1 4 7
+	0 3 6
+	----------------------------------------------------------
+	remend
+	
+	rem pathfinder is not set up
+	if uWorld.PathFinder.ID = -1 then exitfunction
+
+	rem local variables
+	local x as integer
+	local y as integer
+	local nx as integer
+	local ny as integer
+	local count as integer
+	
+	rem find free surrounding
+	count = -1
+	for x = -1 to 1
+		for y = -1 to 1
+			nx = sx + x
+			ny = sy + y
+			if nx > -1 and nx < uWorld.PathFinder.ResolutionX+1
+				if ny > -1 and ny < uWorld.PathFinder.ResolutionY+1
+					if iaa_get pathmap value( uWorld.PathFinder.ID , nx , ny ) = 0
+						Misc.Pos2D.x = nx
+						Misc.Pos2D.y = ny
+						exitfunction 1
+					endif
+				endif
+			endif
+		next y
+	next x
+	
+endfunction 0
+
+function _Pathfinder_Interpolate_Until_Free( sx , sy , ex , ey )
+	
+	rem local variables
+	local xstep# as float
+	local ystep# as float
+	local x# as float
+	local y# as float
+	local StepDistance as integer
+	local n as integer
+
+	rem get step values
+	set vector3 1 , ex-sx , ey-sy , 0
+	normalize vector3 1 , 1
+	xstep# = x vector3( 1 )
+	ystep# = y vector3( 1 )
+	
+	rem calculate step distance
+	StepDistance = ((ex-sx)^2 + (ey-sy)^2)^0.5
+	
+	rem set starting positions
+	x# = sx
+	y# = sy
+		
+	rem loop until end position is overshot
+	for n = 1 to StepDistance
+		inc x# , xstep#
+		inc y# , ystep#
+		sx = x# : sy = y#
+		if iaa_get pathmap value( uWorld.Pathfinder.ID , sx , sy ) = 0
+			Misc.Pos2D.x = sx
+			Misc.Pos2D.y = sy
+			exitfunction 1
+		endif
+	next n
+	
+endfunction 0

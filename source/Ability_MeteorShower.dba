@@ -1,0 +1,284 @@
+rem ----------------------------------------------------------------------------------
+rem Meteor Shower - AoE spell
+rem ----------------------------------------------------------------------------------
+
+rem ----------------------------------------------------------------------------------
+rem Constants
+rem ----------------------------------------------------------------------------------
+
+#constant MeteorShowerRockCount						18
+
+rem ----------------------------------------------------------------------------------
+rem User Defined Types
+rem ----------------------------------------------------------------------------------
+
+type MeteorShowerVT
+	CurrentMax												as integer
+endtype
+
+type MeteorShowerAT
+	Active													as integer
+	pos														as vec3
+	life														as integer
+	size#														as float
+	radius#													as float
+	damage#													as float
+endtype
+
+type MeteorShowerObjectListAAT
+	Obj														as integer
+	Fire														as integer
+endtype
+
+type MeteorShowerDebrisVT
+	CurrentMax												as integer
+endtype
+
+type MeteorShowerDebrisAT
+	Active													as integer
+	pos														as vec3
+	grav#														as float
+	size#														as float
+	Obj														as integer
+	Direction#												as float
+endtype
+
+rem ----------------------------------------------------------------------------------
+rem Initialise
+rem ----------------------------------------------------------------------------------
+
+function InitMeteorShower()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising Meteor Shower" , DEBUG_NORMAL )
+	
+	rem ----------------------------------------------------------------------------------
+	rem Global variables
+	rem ----------------------------------------------------------------------------------
+	
+	global uMeteorShower									as MeteorShowerVT
+	global uMeteorShowerDebris							as MeteorShowerDebrisVT
+	
+	rem ----------------------------------------------------------------------------------
+	rem Global arrays
+	rem ----------------------------------------------------------------------------------
+	
+	global dim MeteorShower()							as MeteorShowerAT
+	global dim MeteorShowerObjectList()				as MeteorShowerObjectListAAT
+	global dim MeteorShowerDebris()					as MeteorShowerDebrisAT
+	
+	rem initial values
+	uMeteorShower.CurrentMax = -1
+	uMeteorShowerDebris.CurrentMax = -1
+	
+endfunction
+
+function CreateMeteorShower( x# , y# , z# , life , size# , radius# , damage# )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uMeteorShower.CurrentMax
+		if MeteorShower( n ).Active < 2 then exit
+	next n
+	
+	rem none found, create
+	if n = uMeteorShower.CurrentMax + 1
+		inc uMeteorShower.CurrentMax
+		array insert at bottom MeteorShower()
+		dim MeteorShowerObjectList( uMeteorShower.CurrentMax , MeteorShowerRockCount ) as MeteorShowerObjectListAAT
+	endif
+	
+	rem load media
+	if MeteorShower( n ).Active = 0
+		
+		rem load rocks
+		for k = 0 to MeteorShowerRockCount-1
+			MeteorShowerObjectList( n , k ).Obj = find free object()
+			LoadObject( "media\objects\abilities\MeteorShower\rock.x" ,  MeteorShowerObjectList( n , k ).Obj )
+		next k
+		
+	endif
+	
+	rem prepare objects
+	for k = 0 to MeteorShowerRockCount-1
+		a# = rnd(360) : position object MeteorShowerObjectList( n , k ).Obj , cos(a#)*radius#*(rnd(100)/100.0)+x# , y#+(size#*20) + (size#*rnd(30)) , sin(a#)*radius#*(rnd(100)/100.0)+z#
+		show object MeteorShowerObjectList( n , k ).Obj
+		scale object MeteorShowerObjectList( n , k ).Obj , size# , size# , size#
+		MeteorShowerObjectList( n , k ).Fire = Effects_Create3DFire( x# , y#+(size#*50) , z# , 0 , size# , MeteorShowerObjectList( n , k ).Obj , 0 )
+	next k
+	
+	rem set parameters
+	MeteorShower( n ).Active = 2
+	MeteorShower( n ).pos.x# = x#
+	MeteorShower( n ).pos.y# = y#
+	MeteorShower( n ).pos.z# = z#
+	MeteorShower( n ).life = life
+	MeteorShower( n ).size# = size#
+	MeteorShower( n ).radius# = radius#
+	MeteorShower( n ).damage# = damage#
+	
+endfunction n
+
+function DestroyMeteorShower( n )
+	
+	rem make sure in range
+	if n < 0 or n > uMeteorShower.CurrentMax
+		AddTextToConsole( 3 , "MeteorShower index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if MeteorShower( n ).Active < 2
+		AddTextToConsole( 3 , "MeteorShower not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy
+	for k = 0 to MeteorShowerRockCount-1
+		hide object MeteorShowerObjectList( n , k ).Obj
+		Effects_Destroy3DFire( MeteorShowerObjectList( n , k ).Fire )
+	next k
+	MeteorShower( n ).Active = 1
+	
+endfunction n
+
+function CreateMeteorShowerDebris( x# , y# , z# , size# )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uMeteorShowerDebris.CurrentMax
+		if MeteorShowerDebris( n ).Active < 2 then exit
+	next n
+	
+	rem none found, create
+	if n = uMeteorShowerDebris.CurrentMax+1
+		inc uMeteorShowerDebris.CurrentMax
+		array insert at bottom MeteorShowerDebris()
+	endif
+	
+	rem load media
+	if MeteorShowerDebris( n ).Active = 0
+		
+		rem load rock
+		MeteorShowerDebris( n ).Obj = find free object()
+		LoadObject( "media\objects\abilities\MeteorShower\rock.x" , MeteorShowerDebris( n ).Obj )
+		
+	endif
+		
+	rem object properties
+	position object MeteorShowerDebris( n ).Obj , x# , y# , z#
+	show object MeteorShowerDebris( n ).Obj
+	scale object MeteorShowerDebris( n ).Obj , size# , size# , size#
+	
+	rem set parameters
+	MeteorShowerDebris( n ).Active = 2
+	MeteorShowerDebris( n ).pos.x# = x#
+	MeteorShowerDebris( n ).pos.y# = y#
+	MeteorShowerDebris( n ).pos.z# = z#
+	MeteorShowerDebris( n ).Direction# = rnd(360)
+	MeteorShowerDebris( n ).size# = size#
+	MeteorShowerDebris( n ).grav# = size#
+	
+	rem create hit flares
+	Effects_CreateFireHitflare( x# , y# , z# , size#*6 , 40 )
+	
+endfunction n
+
+function DestroyMeteorShowerDebris( n )
+	
+	rem destroy
+	hide object MeteorShowerDebris( n ).Obj
+	MeteorShowerDebris( n ).Active = 0
+
+endfunction
+
+function ControlMeteorShower()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active effects
+	for n = 0 to uMeteorShower.CurrentMax
+		if MeteorShower( n ).Active = 2
+			
+			rem move rocks down
+			for k = 0 to MeteorShowerRockCount-1
+				position object MeteorShowerObjectList( n , k ).Obj , object position x( MeteorShowerObjectList( n , k ).Obj ) , object position y( MeteorShowerObjectList( n , k ).Obj ) - (MeteorShower( n ).size#*0.5) , object position z( MeteorShowerObjectList( n , k ).Obj )
+				
+				rem if rock reaches bottom, position at top again
+				if MeteorShower( n ).life > 90
+					
+					rem reposition object and damage
+					if object position y( MeteorShowerObjectList( n , k ).Obj ) < MeteorShower( n ).pos.y# - (MeteorShower( n ).size#/2)
+						if rnd(2) then CreateMeteorShowerDebris( object position x(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).pos.y#+0.1 , object position z(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).Size#/3 )
+						if rnd(2) then CreateMeteorShowerDebris( object position x(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).pos.y#+0.1 , object position z(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).Size#/3 )
+						a# = rnd(360) : position object MeteorShowerObjectList( n , k ).Obj , cos(a#)*MeteorShower( n ).radius#*(rnd(100)/100.0)+MeteorShower( n ).pos.x# , MeteorShower( n ).pos.y#+(MeteorShower( n ).size#*20) + (MeteorShower( n ).size#*rnd(30)) , sin(a#)*MeteorShower( n ).radius#*(rnd(100)/100.0)+MeteorShower( n ).pos.z#
+						_Ability_MeteorShower_DamageUnits( MeteorShower( n ).pos.x# , MeteorShower( n ).pos.z# , MeteorShower( n ).radius# , MeteorShower( n ).damage# )
+					endif
+					
+				else
+					
+					rem reposition object and damage
+					if object position y( MeteorShowerObjectList( n , k ).Obj ) < MeteorShower( n ).pos.y# - (MeteorShower( n ).size#/2) and object position y( MeteorShowerObjectList( n , k ).Obj ) > MeteorShower( n ).pos.y# - (MeteorShower( n ).size#*2)
+						if rnd(2) then CreateMeteorShowerDebris( object position x(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).pos.y#+0.1 , object position z(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).Size#/3 )
+						if rnd(2) then CreateMeteorShowerDebris( object position x(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).pos.y#+0.1 , object position z(MeteorShowerObjectList( n , k ).Obj) , MeteorShower( n ).Size#/3 )
+						position object MeteorShowerObjectList( n , k ).Obj , 0 , 0 - (MeteorShower( n ).size#*500) , 0
+						_Ability_MeteorShower_DamageUnits( MeteorShower( n ).pos.x# , MeteorShower( n ).pos.z# , MeteorShower( n ).radius# , MeteorShower( n ).damage# )
+					endif
+					
+				endif
+			next k
+			
+			rem decrement life
+			if MeteorShower( n ).life > 1 then dec MeteorShower( n ).life
+			if MeteorShower( n ).life = 1 then DestroyMeteorShower( n )
+			
+		endif
+	next n
+	
+	rem loop through all active debris
+	for n = 0 to uMeteorShowerDebris.CurrentMax
+		if MeteorShowerDebris( n ).Active = 2
+			
+			rem rotate randomly
+			rotate object MeteorShowerDebris( n ).Obj , wrapvalue( object angle x( MeteorShowerDebris( n ).Obj ) + 2.5 ) , wrapvalue( object angle y( MeteorShowerDebris( n ).Obj ) + 3 ) , 0
+			
+			rem control gravity
+			dec MeteorShowerDebris( n ).Grav# , MeteorShowerDebris( n ).Size#*0.05
+			position object MeteorShowerDebris( n ).Obj , newxvalue( object position x(MeteorShowerDebris( n ).Obj) , MeteorShowerDebris( n ).Direction# , MeteorShowerDebris( n ).size#*0.2 ) , object position y( MeteorShowerDebris( n ).Obj ) + MeteorShowerDebris( n ).Grav# , newzvalue( object position z(MeteorShowerDebris( n ).Obj) , MeteorShowerDebris( n ).Direction# , MeteorShowerDebris( n ).size#*0.2 )
+			
+			rem bounce
+			if object position y( MeteorShowerDebris( n ).Obj ) < MeteorShowerDebris( n ).pos.y#
+				MeteorShowerDebris( n ).Grav# = (0-MeteorShowerDebris( n ).Grav#)*0.8
+				Effects_CreateFireHitflare( object position x(MeteorShowerDebris( n ).Obj) , MeteorShowerDebris( n ).pos.y#+0.1 , object position z(MeteorShowerDebris( n ).Obj) , MeteorShowerDebris( n ).size#*1.5 , 40 )
+				if MeteorShowerDebris( n ).Grav# < MeteorShowerDebris( n ).Size#*0.05
+					DestroyMeteorShowerDebris( n )
+					position object MeteorShowerDebris( n ).Obj , 0 , 0 - (MeteorShowerDebris( n ).Size#*400) , 0
+				endif
+			endif
+			
+		endif
+
+	next n
+	
+endfunction
+
+function _Ability_MeteorShower_DamageUnits( x# , z# , range# , damage# )
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active units
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1
+			if (Unit( n ).pos.x#-x#)^2 + (Unit( n ).pos.z#-z#)^2 < range#^2
+				DamageUnit( n , damage# , 0.0 )
+			endif
+		endif
+	next n
+	
+endfunction

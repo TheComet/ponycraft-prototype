@@ -1,0 +1,184 @@
+function WorldCreateVertexBrush( ViewRadius )
+	
+	rem local variables
+	local n as integer
+	
+	rem double radius and scale to grid size (1 unit distance = 0.666 grid distance), 2*0.666 = 1.333
+	ViewRadius = 1.3333*ViewRadius
+	
+	rem find vertex brush with this radius
+	for n = 0 to uWorld.FogOfWar.CurrentVertexBrushMax
+		if FogOfWarVertexBrush( n , 0 ).Radius = ViewRadius then exit
+	next n
+	
+	rem none found? Create new slot
+	if n = uWorld.FogOfWar.CurrentVertexBrushMax + 1
+		inc uWorld.FogOfWar.CurrentVertexBrushMax
+		global dim FogOfWarVertexBrush( n , uWorld.FogOfWar.CurrentVertexCountMax ) as FogOfWarVertexBrushAAT
+	endif
+	
+	rem check if array needs resizing to fit radius
+	if (ViewRadius+1)^2 > uWorld.FogOfWar.CurrentVertexCountMax
+		uWorld.FogOfWar.CurrentVertexCountMax = (ViewRadius+1)^2
+		global dim FogOfWarVertexBrush( n , uWorld.FogOfWar.CurrentVertexCountMax )
+	endif
+	
+	rem precalculate some data
+	FogOfWarVertexBrush( n , 0 ).Radius = ViewRadius/2
+	FogOfWarVertexBrush( n , 0 ).Diameter = ViewRadius
+	
+	rem generate data for brush
+	pos = 0
+	for x = 0 to ViewRadius
+		for y = 0 to ViewRadius
+			dist = ((x-FogOfWarVertexBrush( n , 0 ).Radius)^2) + ((y-FogOfWarVertexBrush( n , 0 ).Radius)^2)
+			if dist < (FogOfWarVertexBrush( n , 0 ).Radius-2)^2
+				FogOfWarVertexBrush( n , pos ).Color = 0x00000000
+			else
+				r = 255 - range( ((FogOfWarVertexBrush( n , 0 ).Radius^2) - dist) * 255 / (FogOfWarVertexBrush( n , 0 ).Radius^2 - ((FogOfWarVertexBrush( n , 0 ).Radius-2)^2) ) , 0 , 255 )
+				FogOfWarVertexBrush( n , pos ).Color = (r << 56)
+			endif
+			inc pos
+		next y
+	next x
+
+endfunction n
+
+function WorldAddVertexBrushToFormationBrush( n )
+	
+	rem local variables
+	local u as integer
+	local i as integer
+	local gx as integer
+	local gy as integer
+	local GridViewDistance as integer
+	local sx as integer
+	local sy as integer
+	local ex as integer
+	local ey as integer
+	local wx as integer
+	local wy as integer
+	local avgX as integer
+	local avgY as integer
+	local UnitVertexBrushID as integer
+	
+	remstart
+		
+		This algorithm creates a 2D box and stores its positions in sx,sy and ex,ey
+		According to the units added into this box, the size will expand.
+		sx,sy,ex,ey are later on used to create an array of that size and draw the unit's
+		vertex brushes onto it.
+		
+	remend
+	
+	rem reset size of box for first unit
+	sx = -1
+	
+	rem expand array size according to vertex brush positions and ranges
+	for u = 0 to uUnit.CurrentMax
+		if Unit( u ).Active > 1
+			if Unit( u ).UseFormation = n
+				if Unit( u ).Control = UNITCONTROL_PLAYER
+				
+					rem convert unit details to grid
+					gx = ((Unit( u ).pos.x# - uWorld.FogOfWar.StartX#) * uWorld.FogOfWar.ResolutionX) / (uWorld.FogOfWar.EndX# - uWorld.FogOfWar.StartX#)
+					gy = ((Unit( u ).pos.z# - uWorld.FogOfWar.Starty#) * uWorld.FogOfWar.ResolutionY) / (uWorld.FogOfWar.EndY# - uWorld.FogOfWar.StartY#)
+					if Unit( u ).HeightOffset# < 0.222 then GridViewDistance = FogOfWarVertexBrush( Unit( u ).GroundVertexBrushID ).Radius else GridViewDistance = FogOfWarVertexBrush( Unit( u ).AirVertexBrushID ).Radius
+					
+					rem if this is the first unit, directly copy details
+					if sx = -1
+						sx = gx - GridViewDistance
+						sy = gy - GridViewDistance
+						ex = gx + GridViewDistance
+						ey = gy + GridViewDistance
+						
+					rem expand dimensions
+					else
+						if sx > gx - GridViewDistance then sx = gx - GridViewDistance
+						if sy > gy - GridViewDistance then sy = gy - GridViewDistance
+						if ex < gx + GridViewDistance then ex = gx + GridViewDistance
+						if ey < gy + GridViewDistance then ey = gy + GridViewDistance
+						
+					endif
+					
+				endif
+			endif
+		endif
+	next u
+	
+	rem calculate size of array
+	gx = ex - sx + 2
+	gy = ey - sy + 2
+	if uWorld.FogOfWar.CurrentFormationVertexCountMax < gx * gy then uWorld.FogOfWar.CurrentFormationVertexCountMax = gx * gy
+
+	rem create array
+	dim FogOfWarFormationBrush( uUnit.CurrentFormationMax , uWorld.FogOfWar.CurrentFormationVertexCountMax ) as FogOfWarFormationBrushAAT
+	
+	rem store values
+	FogOfWarFormationBrush( n , 0 ).Size.x = gx-1
+	FogOfWarFormationBrush( n , 0 ).Size.y = gy-1
+	
+	rem reset array
+	wx = 0
+	for x = 0 to FogOfWarFormationBrush( n , 0 ).Size.x
+		for y = 0 to FogOfWarFormationBrush( n , 0 ).Size.y
+			FogOfWarFormationBrush( n , wx ).Color = 0xFFFFFFFF
+			inc wx
+		next y
+	next x
+	
+	rem for calculating the average position
+	i = 0
+	avgX = 0
+	avgY = 0
+	
+	rem copy unit vertex brush data into array
+	for u = 0 to uUnit.CurrentMax
+		if Unit( u ).Active > 1
+			if Unit( u ).UseFormation = n
+				if Unit( u ).Control = UNITCONTROL_PLAYER
+				
+					rem get grid coordinates
+					gx = (((Unit( u ).pos.x# - uWorld.FogOfWar.StartX#) * uWorld.FogOfWar.ResolutionX) / (uWorld.FogOfWar.EndX# - uWorld.FogOfWar.StartX#)) - sx
+					gy = (((Unit( u ).pos.z# - uWorld.FogOfWar.Starty#) * uWorld.FogOfWar.ResolutionY) / (uWorld.FogOfWar.EndY# - uWorld.FogOfWar.StartY#)) - sy
+					if Unit( u ).HeightOffset# < 0.222
+						GridViewDistance = FogOfWarVertexBrush( Unit( u ).GroundVertexBrushID ).Radius
+						UnitVertexBrushID = Unit( u ).GroundVertexBrushID
+					else
+						GridViewDistance = FogOfWarVertexBrush( Unit( u ).AirVertexBrushID ).Radius
+						UnitVertexBrushID = Unit( u ).AirVertexBrushID
+					endif
+					
+					rem add to average
+					inc avgX , gx
+					inc avgY , gy
+					inc i
+					
+					rem copy data requires top left corner, not center
+					gx = gx - GridViewDistance
+					gy = gy - GridViewDistance
+					
+					rem copy data
+					wy = 0
+					for x = 0 to FogOfWarVertexBrush( UnitVertexBrushID , 0 ).Diameter
+						for y = 0 to FogOfWarVertexBrush( UnitVertexBrushID , 0 ).Diameter
+							wx = (gx+x)*(FogOfWarFormationBrush( n , 0 ).Size.y+1) + gy+y
+							if wx > -1 and wx < (FogOfWarFormationBrush( n , 0 ).Size.y+1)*(FogOfWarFormationBrush( n , 0 ).Size.x+1)
+								if FogOfWarFormationBrush( n , wx ).Color > FogOfWarVertexBrush( UnitVertexBrushID , wy ).Color then FogOfWarFormationBrush( n , wx ).Color = FogOfWarVertexBrush( UnitVertexBrushID , wy ).Color
+							endif
+							inc wy
+						next y
+					next x
+				
+				endif
+			endif
+		endif
+	next u
+	
+	rem finish calculating average position
+	if i > 0
+		FogOfWarFormationBrush( n , 0 ).Center.x = avgX / i
+		FogOfwarFormationBrush( n , 0 ).Center.y = avgY / i - 1
+	endif
+
+endfunction n

@@ -1,0 +1,90 @@
+rem ---------------------------------------------------------------------------
+rem Drag Box - Controls selection of units by dragging a box
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type GUIDragBoxVT
+	logging                          as integer
+	state                            as integer
+	Active                           as integer
+	sx                               as integer
+	sy                               as integer
+	ex                               as integer
+	ey                               as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitGUIDragBox()
+
+	rem debug
+	DebugOutput( 0 , "Initialising GUI Drag Box" , DEBUG_NORMAL )
+
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+   rem ---------------------------------------------------------------------------
+
+	global GUIDragBox             as GUIDragBoxVT
+
+	rem ---------------------------------------------------------------------------
+	rem Global Arrays
+	rem ---------------------------------------------------------------------------
+
+endfunction
+
+function GUIDragBoxEnable()
+	if GUIDragBox.logging = 1 then AddTextToConsole( 0 , "GUIDragBoxEnable" )
+	GUIDragBox.state = _ENABLE
+	UnitSelection.state = _ENABLE
+endfunction
+
+function GUIDragBoxDisable()
+	if GUIDragBox.logging = 1 then AddTextToConsole( 0 , "GUIDragBoxDisable" )
+	GUIDragBox.state = _DISABLE
+	UnitSelection.state = _DISABLE
+endfunction
+
+function ControlGUIDragBox()
+	
+	rem check if enabled
+	if GUIDragBox.state = _ENABLE
+		
+		rem start drawing the box
+		if uMouse.click = 1 and uGUI.Mouse3DInvalid = 0
+			GUIDragBox.Active = 1
+			GUIDragBox.sx = uMouse.x
+			GUIDragBox.sy = uMouse.y
+			GUIDragBox.ex = uMouse.x
+			GUIDragBox.ey = uMouse.y
+		endif
+		
+		rem change size of box
+		if uMouse.click = 2
+			GUIDragBox.ex = uMouse.x
+			GUIDragBox.ey = uMouse.y
+		endif
+		
+		rem finish drawing the box
+		if uMouse.click = 3 and GUIDragBox.Active = 1
+			GUIDragBox.ex = uMouse.x
+			GUIDragBox.ey = uMouse.y
+			GUIDragBox.Active = 2          : rem this flag is detected in ProcessUnitSelection() - Previously in ControlUnit()
+		endif
+		
+		rem disable drag box
+		if uMouse.click = 0 then GUIDragBox.Active = 0
+		
+		rem draw box to screen
+		if GUIDragBox.Active > 0
+			a2fillbox GUIDragBox.sx , GUIDragBox.sy , GUIDragBox.ex , GUIDragBox.ey , 0x3000FFFF
+			a2box GUIDragBox.sx , GUIDragBox.sy , GUIDragBox.ex , GUIDragBox.ey , 0xFF00FFFF
+		endif
+		
+	endif
+
+endfunction

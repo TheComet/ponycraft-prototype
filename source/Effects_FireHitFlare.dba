@@ -1,0 +1,154 @@
+rem ----------------------------------------------------------------------------------
+rem Fire hit flare
+rem ----------------------------------------------------------------------------------
+
+rem ----------------------------------------------------------------------------------
+rem Constants
+rem ----------------------------------------------------------------------------------
+
+rem ----------------------------------------------------------------------------------
+rem User Defined Types
+rem ----------------------------------------------------------------------------------
+
+type Effects_FireHitFlareVT
+	CurrentMax												as integer
+	Img														as integer
+endtype
+
+type Effects_FireHitFlareAT
+	Active													as integer
+	scale#													as float
+	size#														as float
+	Life														as integer
+	Obj														as integer
+endtype
+
+rem ----------------------------------------------------------------------------------
+rem Initialise
+rem ----------------------------------------------------------------------------------
+
+function Effects_InitFireHitFlare()
+	
+	rem ----------------------------------------------------------------------------------
+	rem Global variables
+	rem ----------------------------------------------------------------------------------
+	
+	global uEffects_FireHitFlare						as Effects_FireHitFlareVT
+	
+	rem ----------------------------------------------------------------------------------
+	rem Global arrays
+	rem ----------------------------------------------------------------------------------
+	
+	global dim Effects_FireHitFlare()				as Effects_FireHitFlareAT
+	
+	rem load images
+	uEffects_FireHitFlare.Img = LoadImage( "media\images\effects\firehitflare\firehitflare.png" , 0 )
+	
+	rem initial values
+	uEffects_FireHitFlare.CurrentMax = -1
+	
+endfunction
+
+function Effects_CreateFireHitFlare( x# , y# , z# , size# , Life )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uEffects_FireHitFlare.CurrentMax
+		if Effects_FireHitFlare( n ).Active < 2 then exit
+	next n
+	
+	rem none found, create
+	if n = uEffects_FireHitFlare.CurrentMax + 1
+		inc uEffects_FireHitFlare.CurrentMax
+		array insert at bottom Effects_FireHitFlare()
+	endif
+	
+	rem load media
+	if Effects_FireHitFlare( n ).Active = 0
+		
+		rem create plain
+		Effects_FireHitFlare( n ).Obj = find free object()
+		make object plain Effects_FireHitFlare( n ).Obj , 100 , 100
+		xrotate object Effects_FireHitFlare( n ).Obj , 90
+		texture object Effects_FireHitFlare( n ).Obj , uEffects_FireHitFlare.Img
+		set object transparency Effects_FireHitFlare( n ).Obj , 2
+		disable object zwrite Effects_FireHitFlare( n ).Obj
+		set object light Effects_FireHitFlare( n ).Obj , 0
+		
+	endif
+	
+	rem get ground height
+	if SC_RayCastGroup( COL_TERRAIN , x# , 200 , z# , x# , -200 , z# , 0 )
+		y# = SC_GetStaticCollisionY()
+	endif
+	
+	rem object properties
+	position object Effects_FireHitFlare( n ).Obj , x# , y#+0.1 , z#
+	scale object Effects_FireHitFlare( n ).Obj , 0 , 0 , 0
+	show object Effects_FireHitFlare( n ).Obj
+	
+	rem set parameters
+	Effects_FireHitFlare( n ).Active = 2
+	Effects_FireHitFlare( n ).Scale# = 0
+	Effects_FireHitFlare( n ).Size# = size#
+	Effects_FireHitFlare( n ).Life = Life
+	
+endfunction n
+
+function Effects_DestroyFireHitFlare( n )
+	
+	rem destroy
+	hide object Effects_FireHitFlare( n ).Obj
+	Effects_FireHitFlare( n ).Active = 1
+	
+endfunction n
+
+function Effects_ControlFireHitflare()
+	
+	rem local variables
+	local n as integer
+	local f# as float
+	
+	rem loop through all active fire hit flares
+	for n = 0 to uEffects_FireHitFlare.CurrentMax
+		
+		rem scale up
+		if Effects_FireHitFlare( n ).Active = 2
+			inc Effects_FireHitFlare( n ).Scale# , 0.05
+			if Effects_FireHitFlare( n ).Scale# > 1.0
+				Effects_FireHitFlare( n ).Scale# = 1.0
+				Effects_FireHitFlare( n ).Active = 3
+			endif
+			f# = Effects_FireHitFlare( n ).Scale# * Effects_FireHitFlare( n ).Size#
+			scale object Effects_FireHitFlare( n ).Obj , f# , f# , f#
+		endif
+		
+		rem hold
+		if Effects_FireHitFlare( n ).Active = 3
+			
+			rem randomly scale a bit
+			f# = Effects_FireHitFlare( n ).Scale# * Effects_FireHitFlare( n ).Size# * ((rnd(20)/100.0)+0.8)
+			scale object Effects_FireHitFlare( n ).Obj , f# , f# , f#
+			
+			rem decrement life
+			if Effects_FireHitFlare( n ).Life > 1 then dec Effects_FireHitFlare( n ).Life
+			if Effects_FireHitFlare( n ).Life = 1 then Effects_FireHitFlare( n ).Active = 4
+			
+		endif
+		
+		rem shrink
+		if Effects_FireHitFlare( n ).Active = 4
+			dec Effects_FireHitFlare( n ).Scale# , 0.05
+			if Effects_FireHitFlare( n ).Scale# < 0.0
+				Effects_FireHitFlare( n ).Scale# = 0.0
+				Effects_DestroyFireHitFlare( n )
+			endif
+			f# = Effects_FireHitFlare( n ).Scale# * Effects_FireHitFlare( n ).Size#
+			scale object Effects_FireHitFlare( n ).Obj , f# , f# , f#
+		endif
+		
+	next n
+	
+endfunction

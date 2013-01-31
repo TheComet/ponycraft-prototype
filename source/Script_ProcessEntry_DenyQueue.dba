@@ -1,0 +1,383 @@
+function _Process_Command_Deny_Queue( slot , lin )
+	
+	rem ---------------------------------------------------------------------------
+	rem Help
+	rem ---------------------------------------------------------------------------
+   
+   rem help
+   if Script( slot , lin ).cmd = CMD_HELP
+		AddTextToConsole( 0 , "===================================================" )
+		AddTextToConsole( 0 , "Help Core                                 - Core Commands" )
+		AddTextToConsole( 0 , "Help GameControls                         - Change Game Controls" )
+		AddTextToConsole( 0 , "Help Logging                              - Change logging flags" )
+		AddTextToConsole( 0 , "Help Camera                               - Camera Commands" )
+		AddTextToConsole( 0 , "Help ClickObj                             - Click Object Commands" )
+		AddTextToConsole( 0 , "Help Distortion                           - Distortion Commands" )
+		AddTextToConsole( 0 , "Help GUI                                  - GUI Commands" )
+		AddTextToConsole( 0 , "Help Menu                                 - Menu Commands" )
+		AddTextToConsole( 0 , "Help Message                              - Message Commands" )
+		AddTextToConsole( 0 , "Help Script                               - Scripting Commands" )
+		AddTextToConsole( 0 , "Help TextEntry                            - Text Entry Commands" )
+		AddTextToConsole( 0 , "Help Trigger                              - Trigger Commands" )
+		AddTextToConsole( 0 , "Help Unit                                 - Unit Commands" )
+		AddTextToConsole( 0 , "Help World                                - World Commands" )
+		AddTextToConsole( 0 , "===================================================" )
+      exitfunction 0
+   endif
+	
+	rem help core
+   if Script( slot , lin ).cmd = CMD_HELPCORE
+       AddTextToConsole( 0 , "===================================================" )
+       AddTextToConsole( 0 , "SetConsoleSize                            - Sets the size of the Console" )
+       AddTextToConsole( 0 , "SetConsolePosition                        - Sets the position of the Console" )
+       AddTextToConsole( 0 , "OpenToRead <filename> <file index>        - Opens a file for reading" )
+		 AddTextToConsole( 0 , "OpenToWrite <filename> <file index>       - Opens a file for writing" )
+		 AddTextToConsole( 0 , "CloseFile <file index>                    - closes a file" )
+		 AddTextToConsole( 0 , "DeleteFile <file name>			             - deletes a file" )
+		 AddTextToConsole( 0 , "ReadFileBlock <file index> <output file>  - reads a fileblock from the file" )
+		 AddTextToConsole( 0 , "WriteFileBlock <file index> <input file>  - writes a fileblock to the file" )
+		 AddTextToConsole( 0 , "WriteLong <file index> <integer>          - writes an integer value to the file" )
+		 AddTextToConsole( 0 , "WriteFloat <file index> <float>           - writes a float to the file" )
+		 AddTextToConsole( 0 , "WriteByte <file index> <byte>             - writes a byte to the file" )
+		 AddTextToConsole( 0 , "WriteString <file index> <byte>				 - writes a string to the file" )
+		 AddTextToConsole( 0 , "===================================================" )
+      exitfunction 0
+   endif
+   
+   rem help game controls
+   if Script( slot , lin ).cmd = CMD_HELPGAMECONTROLS
+       AddTextToConsole( 0 , "===================================================" )
+       AddTextToConsole( 0 , "CTRL_Button <value>                       - activates / deactivates button control" )
+       AddTextToConsole( 0 , "CTRL_Camera <value>                       - activates / deactivates camera control" )
+		 AddTextToConsole( 0 , "CTRL_ClickObj <value>                     - activates / deactivates click object control" )
+		 AddTextToConsole( 0 , "CTRL_Console <value>                      - activates / deactivates console control" )
+       AddTextToConsole( 0 , "CTRL_Distortion <value>                   - activates / deactivates distortion control" )
+		 AddTextToConsole( 0 , "CTRL_GUI <value>                          - activates / deactivates GUI control" )
+       AddTextToConsole( 0 , "CTRL_Menu <value>                         - activates / deactivates menu commands" )
+		 AddTextToConsole( 0 , "CTRL_Message <value>                      - activates / deactivates message control" )
+		 AddTextToConsole( 0 , "CTRL_Mouse <value>                        - activates / deactivates mouse control" )
+		 AddTextToConsole( 0 , "CTRL_Script <value>                       - activates / deactivates script control" )
+		 AddTextToConsole( 0 , "CTRL_Slider <value>                       - activates / deactivates slider control" )
+		 AddTextToConsole( 0 , "CTRL_TextEntry <value>                    - activates / deactivates text input control" )
+		 AddTextToConsole( 0 , "CTRL_Trigger <value>                      - activates / deactivates trigger control" )
+       AddTextToConsole( 0 , "CTRL_Unit <value>                         - activates / deactivates unit control" )
+		 AddTextToConsole( 0 , "CTRL_World <value>                        - activates / deactivates world control" )
+		 AddTextToConsole( 0 , "===================================================" )
+      success = 1
+   endif
+	
+	rem logging
+	if Script( slot , lin ).cmd = CMD_HELPLOGGING
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "TurnAllLoggingOn                          - turns all logging on" )
+		 AddTextToConsole( 0 , "TurnAllLoggingOff                         - turns all logging off" )
+		 AddTextToConsole( 0 , "CameraLogging <value>                     - activates / deactivates camera logging" )
+		 AddTextToConsole( 0 , "ClickObjLogging <value>                   - activates / deactivates click object logging" )
+		 AddTextToConsole( 0 , "DistortionLogging <value>                 - activates / deactivates distortion logging" )
+		 AddTextToConsole( 0 , "GUILogging <value>                        - activates / deactivates GUI logging" )
+		 AddTextToConsole( 0 , "MenuLogging <value>                       - activates / deactivates menu logging" )
+		 AddTextToConsole( 0 , "MessageLogging <value>                    - activates / deactivates message logging" )
+		 AddTextToConsole( 0 , "TextEntryLogging <value>                  - activates / deactivates text entry logging" )
+		 AddTextToConsole( 0 , "TriggerLogging <value>                    - activates / deactivates trigger logging" )
+		 AddTextToConsole( 0 , "UnitLogging <value>                       - activates / deactivates unit logging" )
+		 AddTextToConsole( 0 , "WorldLogging <value>                      - activates / deactivates world logging" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+	
+	rem help camera
+	if Script( slot , lin ).cmd = CMD_HELPCAMERA
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "SetCameraMode <value>                     - Sets the camera mode" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+	
+	rem help click object
+	if Script( slot , lin ).cmd = CMD_HELPCLICKOBJ
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "CreateClickObj <x> <y> <z> <color> <life> <ForceCreation> <FollowObj> - Creates a click object" )
+		 AddTextToConsole( 0 , "DestroyClickObj <index>                   - Destroys a click object" )
+		 AddTextToConsole( 0 , "CreateClickObjConnection <index> <obj1> <obj2> - Creates a click object connection" )
+		 AddTextToConsole( 0 , "DestroyClickObjConnection <index>         - Destroys a click object connection" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+
+   rem help distortion
+   if Script( slot , lin ).cmd = CMD_HELPDISTORTION
+       AddTextToConsole( 0 , "===================================================" )
+       AddTextToConsole( 0 , "CreateDistortion <x> <y> <z> <bend> <bend_dec> <speed> <sector> - Creates a distortion" )
+       AddTextToConsole( 0 , "DestroyDistortion <index>                 - Distroys a distortion" )
+       AddTextToConsole( 0 , "===================================================" )
+      exitfunction 0
+   endif
+	
+	rem help GUI
+	if Script( slot , lin ).cmd = CMD_HELPGUI
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "GUIAddStaticImage <ID> <x> <y> <Filename>      - Adds a static image to the scene" )
+		 AddTextToConsole( 0 , "GUIDestroyElement <ID>                         - Destroys a GUI element" )
+		 AddTextToConsole( 0 , "GUIAddButton <ID> <x> <y> <KeyBind> <BackFile> <GlowFile> <PressFile> <LockedFile> - Creates a button" )
+		 AddTextToConsole( 0 , "GUILockButton <ID>                             - Makes the button non clickable" )
+		 AddTextToConsole( 0 , "GUIUnlockButton <ID>                           - Makes the button clickable" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+
+   rem help menu
+   if Script( slot , lin ).cmd = CMD_HELPMENU
+       AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "CreateSplash                              - Creates the splash screen" )
+		 AddTextToConsole( 0 , "DestroySplash                             - Destroys the splash screen" )
+       AddTextToConsole( 0 , "CreateMenu <Menu Index>                   - Creates a menu" )
+       AddTextToConsole( 0 , "DestroyMenu                               - Destroys the menu" )
+       AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+	
+	rem help message
+	if Script( slot , lin ).cmd = CMD_HELPMESSAGE
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "CreateMessage <x> <y> <life> <color> <text> - Creates a message to display on screen" )
+		 AddTextToConsole( 0 , "DestroyMessage <index>                      - Destroys a message" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+	
+	rem help script
+	if Script( slot , lin ).cmd = CMD_HELPSCRIPT
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "LoadScript <FileName> <Index>               - Loads a script" )
+		 AddTextToConsole( 0 , "RunScript <Index>                           - Runs a script" )
+		 AddTextToConsole( 0 , "StopScript <Index>                          - Stops a script" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+	
+	rem help trigger
+	if Script( slot , lin ).cmd = CMD_HELPTRIGGER
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "CreatePositionTrigger <x> <y> <z> <radius> <one_time_execute> <ScriptIndex> <ScriptFile> - Loads a script and binds it to a trigger" )
+		 AddTextToConsole( 0 , "CreateTimerTrigger <one_time_execute> <time> <ScriptIndex> <ScriptFile> - Loads a script and binds it to a trigger" )
+		 AddTextToConsole( 0 , "CreateUnitTimerTrigger <one_time_execute> <time> <ScriptIndex> <ScriptFile> - Loads a script and binds it to a unit trigger" )
+		 AddTextToConsole( 0 , "DestroyTrigger <index>                      - Destroys a trigger" )
+		 AddTextToConsole( 0 , "ShowTrigger <index>                         - Shows the boundaries of a trigger" )
+		 AddTextToConsole( 0 , "ShowTriggers                                - Shows the boundaries of all triggers" )
+		 AddTextToConsole( 0 , "HideTriggers                                - Hides the boundaries of all triggers" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+	
+	rem help unit
+	if Script( slot , lin ).cmd = CMD_HELPUNIT
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "CreateUnit <x> <y> <z> <control> <Filename> - creates a unit" )
+		 AddTextToConsole( 0 , "UnitAddAbility <ability> <ButtonID>         - Appends an ability to the last unit loaded" )
+		 AddTextToConsole( 0 , "DestroyUnit <index>                         - destroys a unit" )
+		 AddTextToConsole( 0 , "UnitPosition <x> <y> <z>                    - Positions the unit" )
+		 AddTextToConsole( 0 , "UnitScale <x> <y> <z>                       - Scales the unit" )
+		 AddTextToConsole( 0 , "UnitLockAbility <ability>                   - Locks the button for that ability" )
+		 AddTextToConsole( 0 , "UnitUnlockAbility <ability>                 - Unlocks the button for that ability" )
+		 AddTextToConsole( 0 , "UnitSetAbilityRange <ability> <range>       - Sets the ability range" )
+		 AddTextToConsole( 0 , "UnitSetAbilityGlobal <ability>              - The ability only needs one click to activate all unist" )
+		 AddTextToConsole( 0 , "UnitSetAbilityLocal <ability>               - The ability will need one click per unit to activate" )
+		 AddTextToConsole( 0 , "UnitSetAbilityHealthDamage <ability> <value> - Sets the damage of this ability" )
+		 AddTextToConsole( 0 , "UnitSetAbilityManaDamage <ability> <value>  - Sets the mana damage of this ability" )
+		 AddTextToConsole( 0 , "UnitUseAbility <UnitID> <ability> <x#> <z#> <TargetUnit> <Keys> - Forces the unit to use an ability. X and Z for mouse click" )
+		 AddTextToConsole( 0 , "UnitDrawPath                                - enables path drawing for debug" )
+		 AddTextToConsole( 0 , "UnitHidePath                                - disables path drawing for debug" )
+		 AddTextToConsole( 0 , "UnitDrawFormation									- enables formation drawing for debug" )
+		 AddTextToConsole( 0 , "UnitHideFormation									- disables formation drawing for debug" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+	
+	rem help world
+	if Script( slot , lin ).cmd = CMD_HELPWORLD
+		 AddTextToConsole( 0 , "===================================================" )
+		 AddTextToConsole( 0 , "DestroyWorld                                - Destroys the world" )
+		 AddTextToConsole( 0 , "WorldAddTerrainObject <Filename>            - Object file to add" )
+		 AddTextToConsole( 0 , "WorldCreatePathfinder <StartX> <StartY> <EndX> <EndY> <ResX> <ResY> <Threshold> <Filename>" )
+		 AddTextToConsole( 0 , "WorldShowPathmap                            - Shows the pathmap" )
+		 AddTextToConsole( 0 , "WorldHidePathmap                            - Hides the pathmap" )
+		 AddTextToConsole( 0 , "WorldCreateFogOfWar <StartX> <StartY> <EndX> <EndY> <ResX> <ResY> - Creates the world's fog of war" )
+		 AddTextToConsole( 0 , "WorldDestroyFogOfWar                        - Destroys the fog of war" )
+		 AddTextToConsole( 0 , "===================================================" )
+		exitfunction 0
+	endif
+
+	rem ---------------------------------------------------------------------------
+	rem Core Commands
+	rem ---------------------------------------------------------------------------
+	
+	rem commands with allow queue duplicates can only be executed if iteration really is disabled
+	if Script( slot , 0 ).DisableIteration = 1
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER_DENYQUEUE
+			ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat = ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERFLOAT_DENYQUEUE
+			ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat = ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATINTEGER_DENYQUEUE
+			ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# = ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT_DENYQUEUE
+			ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# = ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_SETVARIABLESTRING_DENYQUEUE
+			ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ = ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER_DENYQUEUE
+			inc ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_INTEGER_DENYQUEUE
+			inc ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_FLOAT_DENYQUEUE
+			inc ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_FLOAT_DENYQUEUE
+			inc ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER_DENYQUEUE
+			dec ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_INTEGER_DENYQUEUE
+			dec ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_FLOAT_DENYQUEUE
+			dec ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_FLOAT_DENYQUEUE
+			dec ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat#
+			exitfunction 0
+		endif
+		if Script( slot , lin ).cmd = CMD_RESETFORLOOPVARIABLE
+			ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat = ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat-1
+			exitfunction 0
+		endif
+		
+	rem if one of these commands was going to be executed, but iteration is enabled, silently exit
+	else
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERFLOAT_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATINTEGER_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_SETVARIABLESTRING_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_INTEGER_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_FLOAT_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_FLOAT_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_INTEGER_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_FLOAT_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_FLOAT_DENYQUEUE then exitfunction 0
+		if Script( slot , lin ).cmd = CMD_RESETFORLOOPVARIABLE then exitfunction 0
+	endif
+	
+	if Script( slot , lin ).cmd = CMD_SETCONSOLESIZE
+		uConsole.Resize = 1
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETCONSOLEPOSITION
+		uConsole.Move = 1
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_JUMPLINE
+		Script( slot , 0 ).CurrentLine = ScriptIntegerdata(ScriptDataList(slot,lin,0).Index).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_CONDITIONALJUMPNEGATIVE
+		result = ScriptProcessExpression( ScriptDataList( slot , lin , 0 ).Index )
+		if result = 0 then Script( slot , 0 ).CurrentLine = ScriptIntegerData(ScriptDataList(slot,lin,1).Index).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_CONDITIONALJUMP
+		result = ScriptProcessExpression( ScriptDataList( slot , lin , 0 ).Index )
+		if result <> 0 then Script( slot , 0 ).CurrentLine = ScriptIntegerData(ScriptDataList(slot,lin,1).Index).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_FORNEXT
+		rem slot 0 --> counting variable
+		rem slot 1 --> lower value
+		rem slot 2 --> higher value
+		rem slot 3 --> line to jump to
+		rem count upwards or downwards depending on limit values
+		if ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat < ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat
+			if ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat < ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat then Script( slot , 0 ).CurrentLine = ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat
+			rem inc ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		else
+			if ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat > ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat then Script( slot , 0 ).CurrentLine = ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat
+			rem dec ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		endif
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_EVENT
+		Script( slot , 0 ).CurrentLine = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_ENDSCRIPT
+		StopScript( slot-1 )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SYNCRATE
+		sync rate ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Script
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_LOADSCRIPT
+		LoadScript( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_RUNSCRIPT
+		RunScript( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_STOPSCRIPT
+		StopScript( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_DESTROYSCRIPT
+		DestroyScript( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+
+	rem ---------------------------------------------------------------------------
+	rem Unit
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_UNITDRAWPATH
+		uUnit.DrawPath = 1
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITHIDEPATH
+		uUnit.DrawPath = 0
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITDRAWFORMATION
+		uUnit.DrawFormation = 1
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_UNITHIDEFORMATION
+		uUnit.DrawFormation = 0
+		exitfunction 0
+	endif
+	
+endfunction -1

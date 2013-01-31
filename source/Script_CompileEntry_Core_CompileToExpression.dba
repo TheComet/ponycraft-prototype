@@ -1,0 +1,298 @@
+function _Script_CompileEntry_Core_CompileToExpression( slot )
+	
+	remstart
+	-------------------------------------------------------------------------------
+		There are a total of 3 passes in order to maintain a hierarchy.
+		Arithmetic operations are processed in the first pass, +, -, *, /, ^, %
+		Boolean operations order 1 are processed in the second pass, =, <, >, <=, >=, !=
+		Boolean operations order 2 are processed in the third pass, and, or, xor
+		
+		The data is extracted in this order and stored in a list in this order.
+		This makes processing the list later on much easier, because one only needs
+		to pass through the list once in order to reconstruct said hierarchy.
+	-------------------------------------------------------------------------------
+	remend
+	remstart
+	rem local variables
+	local s as integer
+	local r as integer
+
+	rem error
+	if ConsoleCmd$(1) = ""
+		AddTextToConsole( 3 , "Expression requires at least one argument" )
+		exitfunction -1
+	endif
+	
+	rem create expression
+	s = ScriptAddDataExpression()
+
+	rem add index of first argument to expression list
+	inc ScriptExpression( s , 0 ).Count
+	r = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+	if r > -1
+		
+		rem strings aren't supported
+		if ScriptVariableList( slot , r ).DatType = SCRIPTDATA_STRING
+			AddTextToConsole( 3 , "Strings aren't supported in operations!" )
+			ScriptRemoveDataExpression( s )
+			exitfunction -1
+		endif
+
+		rem add variable
+		ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = ScriptVariableList( slot , r ).DatType
+		ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptVariableList( slot , r ).Index
+		ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 1
+
+	else
+	
+		rem strings aren't supported
+		if asc(ConsoleCmd$(1)) < 48 or asc(ConsoleCmd$(1)) > 57
+			AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " not found!" )
+			ScriptRemoveDataExpression( s )
+			exitfunction -1
+		endif
+		
+		rem floats
+		if instr( ConsoleCmd$(1) , "." )
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_FLOAT
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+			
+		rem integers
+		else
+		
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_INTEGER
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+			
+		endif
+	endif
+	
+	rem first pass, process arithmetic operations +, -, *, /, ^, %
+	for n = 2 to ConsoleArgExtractMax
+		
+		rem end processing
+		if ConsoleCmd$( n ) = "" then exit
+		
+		rem find an arithmetic operator
+		if ConsoleCmd$( n ) = "+" or ConsoleCmd$( n ) = "-" or ConsoleCmd$( n ) = "*" or ConsoleCmd$( n ) = "/" or ConsoleCmd$( n ) = "%" or ConsoleCmd$( n ) = "^"
+			
+			rem resize array if needed
+			if ScriptExpression( s , 0 ).Count + 3 > uScript.CurrentExpressionListMax
+				inc uScript.CurrentExpressionListMax , 2
+				dim ScriptExpression( uScript.CurrentExpressionMax , uScript.CurrentExpressionListMax )
+			endif
+			
+			rem add operator to list
+			inc ScriptExpression( s , 0 ).Count
+			if ConsoleCmd$( n ) = "+" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_ADD
+			if ConsoleCmd$( n ) = "-" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_SUBTRACT
+			if ConsoleCmd$( n ) = "*" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_MULTIPLY
+			if ConsoleCmd$( n ) = "/" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_DIVIDE
+			if ConsoleCmd$( n ) = "^" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_EXPONENT
+			if ConsoleCmd$( n ) = "%" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_MODULO
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+			
+			rem add following argument to list
+			inc ScriptExpression( s , 0 ).Count
+			r = ScriptGetVariableID( slot , ConsoleCmd$( n+1 ) )
+			if r > -1
+				
+				rem strings aren't supported
+				if ScriptVariableList( slot , r ).DatType = SCRIPTDATA_STRING
+					AddTextToConsole( 3 , "Strings aren't supported in operations!" )
+					ScriptRemoveDataExpression( s )
+					exitfunction -1
+				endif
+				
+				rem integers
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = ScriptVariableList( slot , r ).DatType
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptVariableList( slot , r ).Index
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 1
+				
+			else
+			
+				rem strings aren't supported
+				if asc(ConsoleCmd$(n+1)) < 48 or asc(ConsoleCmd$(n+1)) > 57
+					AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(n+1) + chr$(34) + " not found!" )
+					ScriptRemoveDataExpression( s )
+					exitfunction -1
+				endif
+				
+				rem floats
+				if instr( ConsoleCmd$(n+1) , "." )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_FLOAT
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataFloat( val(ConsoleCmd$(n+1)) )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+					
+				rem integers
+				else
+				
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_INTEGER
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataInteger( val(ConsoleCmd$(n+1)) )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+				
+				endif
+			endif
+			
+			rem since an operator was found we can skip the next index
+			inc n
+			
+		endif
+	next n
+	
+	rem second pass, process order 1 boolean operators, =, <, >, !=, <=, >=
+	for n = 2 to ConsoleArgExtractMax
+		
+		rem end processing
+		if ConsoleCmd$( n ) = "" then exit
+		
+		rem != is the same as <>
+		if ConsoleCmd$( n ) = "<>" then ConsoleCmd$( n ) = "!="
+		
+		rem <= is the same as =<
+		if ConsoleCmd$( n ) = "=<" then ConsoleCmd$( n ) = "<="
+		
+		rem >= is the same as =>
+		if ConsoleCmd$( n ) = "=>" then ConsoleCmd$( n ) = ">="
+		
+		rem find an arithmetic operation
+		if ConsoleCmd$( n ) = "=" or ConsoleCmd$( n ) = ">=" or ConsoleCmd$( n ) = "<=" or ConsoleCmd$( n ) = "!=" or ConsoleCmd$( n ) = "<" or ConsoleCmd$( n ) = ">"
+			
+			rem resize array if needed
+			if ScriptExpression( s , 0 ).Count + 3 > uScript.CurrentExpressionListMax
+				inc uScript.CurrentExpressionListMax , 3
+				dim ScriptExpression( uScript.CurrentExpressionMax , uScript.CurrentExpressionListMax )
+			endif
+			
+			rem add index to first value to expression list
+			inc ScriptExpression( s , 0 ).Count
+			r = ScriptGetVariableID( slot , ConsoleCmd$( n-1 ) )
+			if r > -1
+				
+				rem strings aren't supported
+				if ScriptVariableList( slot , r ).DatType = SCRIPTDATA_STRING
+					AddTextToConsole( 3 , "Strings aren't supported in operations!" )
+					ScriptRemoveDataExpression( s )
+					exitfunction -1
+				endif
+
+				rem add variable
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = ScriptVariableList( slot , r ).DatType
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptVariableList( slot , r ).Index
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 1
+
+			else
+			
+				rem strings aren't supported
+				if asc(ConsoleCmd$(n-1)) < 48 or asc(ConsoleCmd$(n-1)) > 57
+					AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(n-1) + chr$(34) + " not found!" )
+					ScriptRemoveDataExpression( s )
+					exitfunction -1
+				endif
+				
+				rem floats
+				if instr( ConsoleCmd$(n-1) , "." )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_FLOAT
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataFloat( val(ConsoleCmd$(n-1)) )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+					
+				rem integers
+				else
+				
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_INTEGER
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataInteger( val(ConsoleCmd$(n-1)) )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+					
+				endif
+			endif
+			
+			rem add operation
+			inc ScriptExpression( s , 0 ).Count
+			if ConsoleCmd$( n ) = "=" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_EQUALS
+			if ConsoleCmd$( n ) = ">" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_LARGERTHAN
+			if ConsoleCmd$( n ) = "<" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_SMALLERTHAN
+			if ConsoleCmd$( n ) = "!=" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			if ConsoleCmd$( n ) = ">=" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_LARGEREQUALS
+			if ConsoleCmd$( n ) = "<=" then ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_SMALLEREQUALS
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+			
+			rem add second value
+			inc ScriptExpression( s , 0 ).Count
+			r = ScriptGetVariableID( slot , ConsoleCmd$( n+1 ) )
+			if r > -1
+				
+				rem strings aren't supported
+				if ScriptVariableList( slot , r ).DatType = SCRIPTDATA_STRING
+					AddTextToConsole( 3 , "Strings aren't supported in operations!" )
+					ScriptRemoveDataExpression( s )
+					exitfunction -1
+				endif
+				
+				rem integers
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = ScriptVariableList( slot , r ).DatType
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptVariableList( slot , r ).Index
+				ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 1
+				
+			else
+			
+				rem strings aren't supported
+				if asc(ConsoleCmd$(n+1)) < 48 or asc(ConsoleCmd$(n+1)) > 57
+					AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(n+1) + chr$(34) + " not found!" )
+					ScriptRemoveDataExpression( s )
+					exitfunction -1
+				endif
+				
+				rem floats
+				if instr( ConsoleCmd$(n+1) , "." )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_FLOAT
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataFloat( val(ConsoleCmd$(n+1)) )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+					
+				rem integers
+				else
+				
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_INTEGER
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Index = ScriptAddDataInteger( val(ConsoleCmd$(n+1)) )
+					ScriptExpression( s , ScriptExpression( s , 0 ).Count ).Linked = 0
+				
+				endif
+			endif
+			
+		endif
+	next n
+
+	rem third pass, process class 2 boolean operators
+	for n = 4 to ConsoleArgExtractMax
+		
+		rem end processing
+		if ConsoleCmd$( n ) = "" then exit
+		
+		rem resize array if needed
+		if ScriptExpression( s , 0 ).Count + 1 > uScript.CurrentExpressionListMax
+			inc uScript.CurrentExpressionListMax
+			dim ScriptExpression( uScript.CurrentExpressionMax , uScript.CurrentExpressionListMax )
+		endif
+		
+		rem AND
+		if ConsoleCmd$( n ) = "and"
+			inc ScriptExpression( s , 0 ).Count
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_AND
+		endif
+		
+		rem OR
+		if ConsoleCmd$( n ) = "or"
+			inc ScriptExpression( s , 0 ).Count
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_OR
+		endif
+		
+		rem XOR
+		if ConsoleCmd$( n ) = "xor"
+			inc ScriptExpression( s , 0 ).Count
+			ScriptExpression( s , ScriptExpression( s , 0 ).Count ).DatType = SCRIPTDATA_EXPRESSION_XOR
+		endif
+		
+	next n
+	remend
+
+endfunction s

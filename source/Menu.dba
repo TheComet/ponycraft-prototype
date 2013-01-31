@@ -1,0 +1,240 @@
+rem --------------------------------------------------------------------------
+rem menu
+rem by TheComet
+rem --------------------------------------------------------------------------
+
+rem --------------------------------------------------------------------------
+rem constants
+rem --------------------------------------------------------------------------
+
+#constant ButtonMax                 100
+#constant SliderMax                 100
+
+rem --------------------------------------------------------------------------
+rem User Defined Types
+rem --------------------------------------------------------------------------
+
+type ButtonAT
+   active as integer
+   pos as vec2
+   img as integer
+endtype
+
+type ButtonVT
+   clicked as integer
+endtype
+
+type SliderAT
+	Active as integer
+	pos as vec2
+	MaxValue as integer
+	MinValue as integer
+	CurrentValue as integer
+	Info$ as string
+endtype
+
+type SliderVT
+	drag as integer
+	UpdateValue as integer
+endtype
+
+type MenuVT
+	logging as integer
+   CurrentMenu as integer
+   ErrorMessage as integer
+   SplashObj as word
+   VolumeSlider as integer
+endtype
+
+rem --------------------------------------------------------------------------
+rem initialize
+rem --------------------------------------------------------------------------
+
+function InitMenu()
+
+   rem debug
+   DebugOutput( 0 , "Initializing menu, ButtonMax=" + str$(ButtonMax) , DEBUG_NORMAL )
+
+   rem --------------------------------------------------------------------------
+   rem global variables
+   rem --------------------------------------------------------------------------
+
+   global Menu                      as MenuVT
+	global Slider                    as SliderVT
+   
+   rem --------------------------------------------------------------------------
+   rem global arrays
+   rem --------------------------------------------------------------------------
+
+   global dim Button( ButtonMax ) as ButtonAT
+	global dim Slider( SliderMax ) as SliderAT
+   
+   rem --------------------------------------------------------------------------
+   rem set values
+   rem --------------------------------------------------------------------------
+
+   Menu.CurrentMenu = -1   
+	Slider.drag = -1
+	Slider.UpdateValue = -1
+
+endfunction
+
+function CreateSplash()
+	
+	rem logging
+	if Menu.logging = 1 then AddTextToConsole( 0 , "CreateSplash" )
+
+   rem if not created, create
+   if Menu.SplashObj = 0
+      Menu.SplashObj = find free object()
+      make object plain Menu.SplashObj , 640 , 480
+      lock object on Menu.SplashObj
+      position object Menu.SplashObj , 0 , 0 , 400
+      texture object Menu.SplashObj , SplashIMG
+   endif
+   
+   rem show splash object
+   show object Menu.SplashObj
+
+endfunction
+
+function DestroySplash()
+	
+	rem logging
+	if Menu.logging = 1 then AddTextToConsole( 0 , "DestroySplash" )
+
+   rem destroy splash object
+   hide object Menu.SplashObj
+
+endfunction
+
+function CreateMenu(n)
+
+   rem logging
+   if Menu.logging = 1 then AddTextToConsole( 0 , "CreateMenu " + str$(n) )
+   Menu.CurrentMenu = n
+
+endfunction
+
+function DestroyMenu()
+
+   rem locals
+   local n as integer
+	
+	rem logging
+	if Menu.logging = 1 then AddTextToConsole( 0 , "DestroyMenu" )
+	
+	rem destroy all sliders
+	for n = 0 to SliderMax
+		if Slider(n).Active > 1 then DestroySlider( n )
+	next n
+	
+	rem destroy splash screen
+   DestroySplash()
+   
+   rem current menu
+   Menu.CurrentMenu = -1
+
+endfunction
+
+function ControlMenu()
+
+   rem local variables
+   local n as integer
+   
+endfunction
+
+function CreateSlider(x , y , min_value , max_value , current_value , info$)
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if Menu.logging = 1 then AddTextToConsole( 0 , "CreateSlider " + str$(x) + "," + str$(y) + "," + str$(min_value) + "," + str$(max_value) + "," + str$(current_value) + "," + info$ )
+	
+	rem find free slot
+	for n = 0 to SliderMax
+		if Slider( n ).active < 2 then exit
+	next n
+	
+	rem no free slot found
+	if n = SliderMax + 1
+		if Menu.logging = 1 then AddTextToConsole( 3 , "No free slot!" )
+		exitfunction -1
+	endif
+	
+	rem set values
+	Slider( n ).active = 2
+	Slider( n ).pos.x = x
+	Slider( n ).pos.y = y
+	Slider( n ).MaxValue = max_value
+	Slider( n ).MinValue = min_value
+	Slider( n ).CurrentValue = current_value
+	Slider( n ).Info$ = info$
+	
+endfunction n
+
+function DestroySlider( n )
+	
+	rem logging
+	if Menu.logging = 1 then AddTextToConsole( 0 , "DestroySlider " + str$(n) )
+	
+	rem make sure it's active
+	if Slider( n ).active < 2
+		AddTextToConsole( 3 , "Slider not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy slider
+	Slider( n ).active = 0
+	
+endfunction n
+
+function ControlSlider()
+	
+	rem local variables
+	local n as integer
+	local x as integer
+	local y as integer
+	
+	rem loop through all active sliders
+	for n = 0 to SliderMax
+		if Slider( n ).active = 2
+			
+			rem paste slider
+			paste image SliderIMG , Slider( n ).pos.x , Slider( n ).pos.y , 1
+						
+			rem if button is being dragged, calculate current value
+			if Slider.drag = n
+				x = mousex() - Slider( n ).pos.x - 25
+				if x < 0 then x = 0
+				if x > 150 then x = 150
+				Slider( n ).Currentvalue = x * ( Slider( n ).MaxValue - Slider( n ).MinValue ) / 150.0 + Slider( n ).MinValue
+			endif
+			
+			rem calculate slider button positions
+			x = Slider( n ).pos.x + ( ( Slider( n ).CurrentValue - Slider( n ).MinValue ) * 150.0 / ( Slider( n ).MaxValue - Slider( n ).MinValue ) ) + 17
+			y = Slider( n ).pos.y - 4
+			paste image SliderButtonIMG , x , y , 1
+			
+			rem show current value
+			a2text FontID , Slider( n ).pos.x + 200 , Slider( n ).pos.y , str$( Slider( n ).CurrentValue ) , 0xFFFFFFFF
+			
+			rem info
+			a2text FontID , Slider( n ).pos.x , Slider( n ).pos.y - 20 , Slider( n ).Info$ , 0xF0B0B0B0
+			
+			rem drag button
+			if mousex() > x and mousey() > y and mousex() < x + 16 and mousey() < y + 16
+				paste image SliderButtonLightIMG , x , y , 1
+				if uMouse.Click = 1 then Slider.drag = n
+			endif
+			
+			rem let go
+			if uMouse.click = 3 and Slider.drag = n
+				Slider.drag = -1
+				Slider.UpdateValue = n
+			endif
+		endif
+	next n
+	
+endfunction

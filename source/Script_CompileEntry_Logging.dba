@@ -1,0 +1,275 @@
+function _ScriptCompileEntryLogging( slot , lin )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	local r as integer
+	
+	rem ---------------------------------------------------------------------------
+	rem logging
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "turnallloggingon"
+		Script( slot , lin ).cmd = CMD_TURNALLLOGGINGON
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "turnallloggingoff"
+		Script( slot , lin ).cmd = CMD_TURNALLLOGGINGOFF
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "cameralogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CameraLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CAMERALOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "clickobjlogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "ClickObjLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CLICKOBJLOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "distortionlogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "DistortionLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_DISTORTIONLOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "forcefieldlogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "ForceFieldLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_FORCEFIELDLOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "guilogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUILogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUILOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "menulogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "MenuLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_MENULOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "messagelogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "MessageLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_MESSAGELOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "scriptlogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "ScriptLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_SCRIPTLOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "triggerlogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "TriggerLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_TRIGGERLOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitlogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "UnitLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create commnad
+		Script( slot , lin ).cmd = CMD_UNITLOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "worldlogging"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "WorldLogging expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WORLDLOGGING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+endfunction -3

@@ -1,0 +1,185 @@
+rem ---------------------------------------------------------------------------
+rem Camera control code
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type CameraVT
+	logging                          as integer
+	Mode                             as integer
+	Height#                          as float
+	Pos                              as vec3
+	MaxPos                           as vec3
+	MinPos                           as vec3
+	angle                            as vec3
+	Destination								as vec3
+	topLeft									as vec2
+	topRight									as vec2
+	bottomLeft								as vec2
+	bottomRight								as vec2
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitCamera()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising Camera" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+	rem ---------------------------------------------------------------------------
+	
+	global uCamera                   as CameraVT
+
+	rem ---------------------------------------------------------------------------
+	rem Global Arrays
+	rem ---------------------------------------------------------------------------
+	
+	rem ---------------------------------------------------------------------------
+	rem Initial values
+	rem ---------------------------------------------------------------------------
+	
+	uCamera.Mode = 1
+	uCamera.angle.x# = 60
+	uCamera.Height# = 22
+	uCamera.Pos.y# = 22
+	
+endfunction
+
+function SetCameraMode( n )
+	if uCamera.logging = 1 then AddTextToConsole( 0 , "SetCameraMode " + str$(n) )
+	uCamera.Mode = n
+endfunction
+
+function ControlCamera()
+	
+	rem normal mode
+	if uCamera.Mode = 1
+		
+		rem player is not box selecting
+		if GUIDragBox.Active = 0
+			
+			rem scroll around map with mouse
+			if uMouse.click = 0
+				if mousex() < 20 then dec uCamera.Pos.x# , (20 - mousex()) * 0.16 * TBM.delta#
+				if mousex() > uScreen.scw - 20 then dec uCamera.Pos.x# , (uScreen.scw - 20 - mousex()) * 0.16 * TBM.delta#
+				if mousey() < 20 then inc uCamera.Pos.z# , (20 - mousey()) * 0.16 * TBM.delta#
+				if mousey() > uScreen.sch - 20 then inc uCamera.Pos.z# , (uScreen.sch - 20 - mousey()) * 0.16 * TBM.delta#
+			endif
+			
+			rem scroll around map with keys
+			if upkey() then inc uCamera.Pos.z# , 1.5 * TBM.delta#
+			if downkey() then dec uCamera.Pos.z# , 1.5 * TBM.delta#
+			if leftkey() then dec uCamera.Pos.x# , 1.5 * TBM.delta#
+			if rightkey() then inc uCamera.Pos.x# , 1.5 * TBM.delta#
+			
+			rem middle mouse button
+			if uMouse.click = 8 or keystate(56)
+				dec uCamera.Pos.x# , uMouse.movex * 0.03
+				inc uCamera.Pos.z# , uMouse.Movey * 0.03
+			endif
+			
+			rem camera limits
+			if uCamera.pos.x# > uCamera.MaxPos.x# then uCamera.Pos.x# = uCamera.MaxPos.x#
+			if uCamera.Pos.x# < uCamera.MinPos.x# then uCamera.Pos.x# = uCamera.MinPos.x#
+			if uCamera.Pos.z# > uCamera.MaxPos.z# then uCamera.Pos.z# = uCamera.MaxPos.z#
+			if uCamera.Pos.z# < uCamera.MinPos.z# then uCamera.Pos.z# = uCamera.MinPos.z#
+			
+			rem height
+			dec uCamera.Height# , range( uMouse.Movez , -1 , 1 ) * ((uCamera.Height#-1)/10.0)
+			if uCamera.Height# < 1 then uCamera.Height# = 1
+			if uCamera.Height# > 22 then uCamera.Height# = 22
+			uCamera.angle.x# = curveangle( uCamera.Height# + 44 , uCamera.angle.x# , 10.0 / TBM.delta# )
+			
+			rem find camera height
+			if SC_RayCastGroup( 1 , uCamera.Pos.x# , 200 , uCamera.Pos.z# + 8 , uCamera.Pos.x# , -200 , uCamera.Pos.z# + 8 , 0 )
+				uCamera.Pos.y# = curvevalue( SC_GetStaticCollisionY() + uCamera.Height# , uCamera.Pos.y# , 5 / TBM.delta# )
+			endif
+			
+		endif
+	endif
+
+	rem pan camera
+	if uCamera.Mode = 2
+		
+		rem pan camera
+		if customABS( uCamera.Destination.x# - uCamera.Pos.x# ) > 4 or customABS( uCamera.Destination.z# - uCamera.Pos.z# ) > 4
+			uCamera.Pos.x# = curvevalue( uCamera.Destination.x# , uCamera.Pos.x# , 10.0 / TBM.delta# )
+			uCamera.Pos.z# = curvevalue( uCamera.Destination.z# , uCamera.Pos.z# , 10.0 / TBM.delta# )
+		else
+			uCamera.Mode = 1
+		endif
+		
+	endif
+	
+	rem update camera
+	position camera uCamera.Pos.x# , uCamera.Pos.y# , uCamera.Pos.z#
+	rotate camera uCamera.angle.x# , uCamera.angle.y# , uCamera.angle.z#
+
+	rem get camera projection on terrain
+	if pick object( 0 , 0 , 1 , uWorld.PickSearchObj )
+		uCamera.topLeft.x = get pick vector x() + camera position x()
+		uCamera.topLeft.y = get pick vector z() + camera position z()
+	endif
+	if pick object( uScreen.scw , 0 , 1 , uWorld.PickSearchObj )
+		uCamera.topRight.x = get pick vector x() + camera position x()
+		uCamera.topRight.y = get pick vector z() + camera position z()
+	endif
+	if pick object( 0 , uScreen.sch , 1 , uWorld.PickSearchObj )
+		uCamera.bottomLeft.x = get pick vector x() + camera position x()
+		uCamera.bottomLeft.y = get pick vector z() + camera position z()
+	endif
+	if pick object( uScreen.scw , uScreen.sch , 1 , uWorld.PickSearchObj )
+		uCamera.bottomRight.x = get pick vector x() + camera position x()
+		uCamera.bottomRight.y = get pick vector z() + camera position z()
+	endif
+		
+	rem light
+	set vector4 2 , camera position x() + 4 , camera position y() , camera position z() + 4 , 0
+	set effect constant vector NormalMappingFX , "LightPosition" , 2
+	
+endfunction
+
+function PanCamera( destX# , destZ# )
+	
+	rem set destination coordinates
+	uCamera.Mode = 2
+	uCamera.Destination.x# = destX#
+	uCamera.Destination.z# = destZ#
+	
+endfunction
+
+Function SetOrthoCamera(Camera)
+   Near#=1.0
+   Far#=3000.0
+   Width#=Screen Width()*0.07
+   Height#=Screen Height()*0.07
+	CameraDLL = 1
+
+   Load Dll "DBProCameraDebug.dll", CameraDll
+   `Get pointer on internal structure of camera
+   CID=Call Dll(1, "?GetInternalData@@YAPAXH@Z", Camera)
+   `Get camera Projection matrix
+   m00=CID         : m01=CID+4        : m02=CID+8                   : m03=CID+12
+   m10=CID+16      : m11=CID+20       : m12=CID+24                  : m13=CID+28
+   m20=CID+32      : m21=CID+36       : m22=CID+40                  : m23=CID+44
+   m30=CID+48      : m31=CID+52       : m32=CID+56                  : m33=CID+60
+   `Replace camera Projection matrix with Ortho matrix
+   *m00=2.0/Width# : *m01=0.0         : *m02=0.0                    : *m03=0.0
+   *m10=0.0        : *m11=2.0/Height# : *m12=0.0                    : *m13=0.0
+   *m20=0.0        : *m21=0.0         : *m22=1.0/(Far#-Near#)       : *m23=0.0
+   *m30=0.0        : *m31=0.0         : *m32=1.0*Near#/(Near#-Far#) : *m33=1.0
+	
+	delete dll CameraDLL
+EndFunction

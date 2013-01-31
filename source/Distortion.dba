@@ -1,0 +1,212 @@
+rem ---------------------------------------------------------------------------
+rem Distortion
+rem by TheComet
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type DistortionVT
+   logging                                	as integer
+	CurrentMax											as integer
+endtype
+
+type DistortionAT
+   pos                                    	as vec3
+   active                                 	as byte
+   bend#                                  	as float
+   bend_dec#                              	as float
+   speed#                                 	as float
+   sector                                 	as integer
+   radius#                                	as float
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialize
+rem ---------------------------------------------------------------------------
+
+function InitDistortion()
+
+   rem debug
+   DebugOutput( 0 , "Initializing distortions" , DEBUG_NORMAL )
+
+   rem ---------------------------------------------------------------------------
+   rem Global Variables
+   rem ---------------------------------------------------------------------------
+
+   global uDistortion                      	as DistortionVT
+
+   rem ---------------------------------------------------------------------------
+   rem Global Arrays
+   rem ---------------------------------------------------------------------------
+
+   global dim Distortion() 						as DistortionAT
+   global dim vertexindex( 50 , 50 )				as dword
+
+	rem initial values
+	uDistortion.CurrentMax = -1
+
+   rem vertexdata index for distortion
+   i = -1
+   for y = 50 to 0 step -1
+      for x = 0 to 50
+         inc i
+         vertexindex( x , y ) = i
+      next x
+   next y
+
+   rem make a dummy object
+   make object cube 1000 , 1
+   hide object 1000
+
+   rem make distortion object
+   make object plain 1001 , 40 , 30 , 50 , 50
+   position object 1001 , 0 , 0 , 25
+   lock object on 1001
+	set object ambient 1001 , 0
+   set object light 1001 , 0
+	set object filter 1001 , 0
+	set object mask 1001,2
+
+endfunction
+
+function CreateDistortion( x# , y# , z# , bend# , bend_dec# , speed# , sector )
+
+   rem locals
+   local n as integer
+	
+	  rem log in console
+   if uDistortion.logging = 1 then AddTextToConsole( 0 , "CreateDistortion " + str$(n) + "," + str$(x#) + "," + str$(y#) + "," + str$(z#) + "," + str$(bend#) + "," + str$(bend_dec#) + "," + str$(speed#) + "," + str$(sector) )
+
+   rem search for free distortion
+   for n = 0 to uDistortion.CurrentMax
+      if distortion( n ).active = 0 then exit
+   next n
+
+   rem no free distortion available, create
+   if n = uDistortion.CurrentMax + 1
+      array insert at bottom Distortion()
+		inc uDistortion.CurrentMax
+   endif
+
+   rem set distortion parameters
+   distortion( n ).active    = 2
+   distortion( n ).pos.x#    = x#
+   distortion( n ).pos.y#    = y#
+   distortion( n ).pos.z#    = z#
+   distortion( n ).bend#     = bend#
+   distortion( n ).bend_dec# = bend_dec#
+   distortion( n ).speed#    = speed#
+   distortion( n ).sector    = sector
+   distortion( n ).radius#   = 0.0
+
+endfunction n
+
+function DestroyDistortion( n )
+	
+	rem logging
+	if uDistortion.logging = 1 then AddTextToConsole( 0 , "DestroyDistortion " + str$(n) )
+
+   rem make sure distortion is active
+   if distortion( n ).active < 2
+		if uDistortion.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+
+	rem destroy
+	Distortion( n ).Active = 1
+
+endfunction n
+
+function ControlDistortion()
+
+   rem locals
+   local x as integer
+   local y as integer
+   local i as integer
+   local n as integer
+   local x1# as float
+   local x2# as float
+   local y1# as float
+   local y2# as float
+   local x1 as integer
+   local x2 as integer
+   local y1 as integer
+   local y2 as integer
+
+   rem lock vertexdata for editing
+   lock vertexdata for limb 1001 , 0
+
+      rem slowly reset all vertex positions
+      for y = 0 to 50
+         for x = 0 to 50
+				x1# = uScreen.scw : y1# = uScreen.sch
+				x1# = (x1#/y1#)/1.33333
+            x2# = (x*0.8*x1#) - (20.03125*x1#)
+            y2# = (y*0.6) - 14.96875
+            x1# = get vertexdata position x(vertexindex(x,y))
+            y1# = get vertexdata position y(vertexindex(x,y))
+            if x1# <> x2# or y1# <> y2#
+               set vertexdata position vertexindex( x , y ) , curvevalue( x2# , x1# , 1 / TBM.delta# ) , curvevalue( y2# , y1# , 1 / TBM.delta# ) , 0
+               if abs( x1# -x2# ) < 0.01 and abs( y1# - y2#) < 0.001 then set vertexdata position vertexindex( x , y ) , x2# , y2# , 0
+            endif
+         next x
+      next y
+
+      rem loop through all active distortions
+      for n = 0 to uDistortion.CurrentMax
+         if distortion( n ).active = 2
+
+            rem convert real world coordinates to locked screen coordinates using a dummy object
+            position object 1000 , distortion( n ).pos.x# , distortion( n ).pos.y# , distortion( n ).pos.z#
+            x1 = object screen x( 1000 ) / (uScreen.scw / 25)
+            y1 = object screen y( 1000 ) / (uScreen.sch / 25)
+
+            rem invert y axis
+            y1 = 50 - y1
+
+            rem interpolate 4 steps
+            for r = 1 to 4
+
+               rem decrement bend factor
+               dec distortion( n ).bend# , distortion( n ).bend_dec# * 0.25 * TBM.delta#
+               if distortion( n ).bend# < 0
+						distortion( n ).bend# = 0
+						DestroyDistortion( n )
+						exit
+					endif
+
+               rem increment radius
+               inc distortion( n ).radius# , distortion( n ).speed# * 0.25 * TBM.delta#
+
+               rem calculate 2d size and bend of 3d distortion
+               x1# = sqrt( (camera position x() - distortion(n).pos.x#)^2 + (camera position y() - distortion(n).pos.y#)^2 + (camera position z() - distortion(n).pos.z#)^2 )
+               x2# = distortion( n ).bend# / (x1# * 0.04)
+               x1# = distortion( n ).radius# / (x1# * 0.04)
+
+               rem calculate which verticies should distort
+               for t = 0 to 360 step distortion( n ).sector
+                  x2 = ( cos(t) * x1# ) + x1
+                  y2 = ( sin(t) * x1# ) + y1
+
+                  rem check if distortion is in range
+                  if x2 > 0 and x2 < 50 and y2 > 0 and y2 < 50
+
+                     rem distort
+                     set vertexdata position vertexindex( x2 , y2 ) , curvevalue( (cos(t) * x2#) + ((x2 * 0.8) - 20) , get vertexdata position x( vertexindex( x2 , y2 ) ) , 10 ) , curvevalue((sin(t) * x2#) + ((y2 * 0.6) - 15) , get vertexdata position y( vertexindex( x2 , y2 ) ) , 10 / TBM.delta# ) , 0
+
+                  endif
+               next t
+            next r
+         endif
+      next n
+
+   rem unlock vertexdata
+   unlock vertexdata
+
+endfunction

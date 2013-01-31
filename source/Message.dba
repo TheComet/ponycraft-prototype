@@ -1,0 +1,192 @@
+rem ---------------------------------------------------------------------------
+rem Messages
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type MessageVT
+	logging 												as integer
+	CurrentMax											as integer
+endtype
+
+type MessageAT
+   active 												as integer
+   pos 													as vec2
+   life 													as integer
+   color 												as dword
+   text$ 												as string
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitMessage()
+
+   rem debug
+   DebugOutput( 0 , "Initialising messages" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uMessage 									as MessageVT
+
+   rem ---------------------------------------------------------------------------
+   rem global arrays
+   rem ---------------------------------------------------------------------------
+
+   global dim Message() 							as MessageAT
+	
+	rem initial values
+	uMessage.CurrentMax = -1
+   
+endfunction
+
+function CreateMessage( x , y , text$ , life , color$ )
+
+   rem locals
+   local n as integer
+	local color as dword
+
+	rem logging
+	if uMessage.logging = 1 or 1 = 1 then AddTextToConsole( 0 , "CreateMessage " + str$(x) + "," + str$(y) + "," + chr$(34) + text$ + chr$(34) + "," + str$(life) + "," + color$ )
+   
+   rem find free slot for message
+   for n = 0 to uMessage.CurrentMax
+      if Message( n ).active = 0 then exit
+   next n
+   
+   rem no free slot, create
+   if n = uMessage.CurrentMax + 1
+		array insert at bottom Message()
+		inc uMessage.CurrentMax
+	endif
+	
+	rem convert colour to value
+	if left$( color$ , 2 ) = "0x"
+		color = hex to decimal( color$ )
+	else
+		color = val( color$ )
+	endif
+   
+   rem create message
+   Message( n ).text$ = text$
+   
+   rem set parameters
+   Message( n ).active = 2
+   Message( n ).pos.x = GetRealScreenX( x )
+   Message( n ).pos.y = GetRealScreenY( y )
+   Message( n ).life = TBM.Ticks + life
+   Message( n ).color = color
+	
+	rem infinite time
+	if life = 0 then Message( n ).life = 0
+   
+endfunction n
+
+function DestroyMessage( n )
+	
+	rem logging
+	if uMessage.logging = 1 then AddTextToConsole( 0 , "DestroyMessage " + str$(n) )
+
+	rem make sure index is in range
+	if n < 0 or n > uMessage.CurrentMax
+		if uMessage.logging = 1 then AddTextToConsole( 3 , "Index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure message is active
+   if Message( n ).active < 2
+		if uMessage.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+   
+	rem destroy message
+	Message( n ).Active = 1
+   
+endfunction n
+
+function UpdateMessagePosition( n , x , y )
+	
+	rem logging
+	if uMessage.logging = 1 then AddTextToConsole( 0 , "UpdateMessagePosition " + str$(n) + "," + str$(nx) + "," + str$(y) )
+	
+	rem make sure index is in range
+	if n < 0 or n > uMessage.CurrentMax
+		if uMessage.logging = 1 then AddTextToConsole( 3 , "Index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure message is active
+	if Message( n ).Active < 2
+		if uMessage.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem update
+	Message( n ).pos.x = GetRealScreenX( x )
+	Message( n ).pos.y = GetRealScreenY( y )
+	
+endfunction n
+
+function UpdateMessageText( n , text$ , color$ )
+	
+	rem logging
+	if uMessage.logging = 1 then AddTextToConsole( 0 , "UpdateMessageText " + str$(n) + "," + chr$(34) + text$ + chr$(34) + "," + color$ )
+	
+	rem make sure index is in range
+	if n < 0 or n > uMessage.CurrentMax
+		if uMessage.logging = 1 then AddTextToConsole( 3 , "Index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if Message( n ).Active < 2
+		if uMessage.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem local variables
+	local color as dword
+	
+	rem convert colour to value
+	if left$( color$ , 2 ) = "0x"
+		color = hex to decimal( color$ )
+	else
+		color = val( color$ )
+	endif
+
+	rem update message
+	Message( n ).text$ = text$
+	Message( n ).color = color
+	
+endfunction n
+
+function ControlMessage()
+
+   rem locals
+   local n as integer
+   
+   rem loop through all active messages
+   for n = 0 to uMessage.CurrentMax
+      if Message( n ).active = 2
+      
+         rem print message to screen
+         a2text FontID , Message( n ).pos.x , Message( n ).pos.y , Message( n ).text$ , Message( n ).color
+         
+         rem decrement life of message
+			if Message( n ).life <> 0
+				if Message( n ).life - TBM.ticks < 0 then DestroyMessage( n )
+			endif
+         
+      endif
+   next n
+   
+endfunction

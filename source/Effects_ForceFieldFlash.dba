@@ -1,0 +1,138 @@
+rem ---------------------------------------------------------------------------
+rem Force Field Flash - Flash effect when force field is placed
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant Effects_ForceFieldFlashSpeed				0.25
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type Effects_ForceFieldFlashVT
+	CurrentMax												as integer
+endtype
+
+type Effects_ForceFieldFlashAT
+	Active													as integer
+	Obj														as integer
+	scale#													as float
+	size#														as float
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function Effects_InitForceFieldFlash()
+	
+	rem ---------------------------------------------------------------------------
+	rem Global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uEffects_ForceFieldFlash					as Effects_ForceFieldFlashVT
+	
+	rem ---------------------------------------------------------------------------
+	rem Global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim Effects_ForceFieldFlash()			as Effects_ForceFieldFlashAT
+	
+	rem initial values
+	uEffects_ForceFieldFlash.CurrentMax = -1
+	
+endfunction
+
+function Effects_CreateForceFieldFlash( x# , y# , z# , size# )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uEffects_ForceFieldFlash.CurrentMax
+		if Effects_ForceFieldFlash( n ).Active < 2 then exit
+	next n
+	
+	rem none found, create
+	if n = uEffects_ForceFieldFlash.CurrentMax + 1
+		inc uEffects_ForceFieldFlash.CurrentMax
+		array insert at bottom Effects_ForceFieldFlash()
+	endif
+	
+	rem load media
+	if Effects_ForceFieldFlash( n ).Active = 0
+		
+		rem load flash object
+		Effects_ForceFieldFlash( n ).Obj = find free object()
+		LoadObject( "media\objects\effects\forcefieldflash\forcefieldflash.x" , Effects_ForceFieldFlash( n ).Obj )
+		set object transparency Effects_ForceFieldFlash( n ).Obj , 2
+		disable object zwrite Effects_ForceFieldFlash( n ).Obj
+		set object light Effects_ForceFieldFlash( n ).Obj , 0
+		
+	endif
+	
+	rem properties
+	show object Effects_ForceFieldFlash( n ).Obj
+	position object Effects_ForceFieldFlash( n ).Obj , x# , y# , z#
+	scale object Effects_ForceFieldFlash( n ).Obj , size# , 0 , size#
+	TiltObjectToTerrain( Effects_ForceFieldFlash( n ).Obj , 0 )
+	
+	rem set parameters
+	Effects_ForceFieldFlash( n ).Active = 2
+	Effects_ForceFieldFlash( n ).size# = size#
+	Effects_ForceFieldFlash( n ).scale# = 0
+	
+endfunction n
+
+function Effects_DestroyForceFieldFlash( n )
+	
+	rem destroy
+	hide object Effects_ForceFieldFlash( n ).Obj
+	Effects_ForceFieldFlash( n ).Active = 1
+	
+endfunction
+
+function Effects_ControlForceFieldFlash()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active effects
+	for n = 0 to uEffects_ForceFieldFlash.CurrentMax
+		
+		rem scale up
+		if Effects_ForceFieldFlash( n ).Active = 2
+			inc Effects_ForceFieldFlash( n ).scale# , Effects_ForceFieldFlashSpeed
+			if Effects_ForceFieldFlash( n ).scale# > 1.5
+				Effects_ForceFieldFlash( n ).scale# = 1.5
+				Effects_ForceFieldFlash( n ).Active = 3
+			endif
+			scale object Effects_ForceFieldFlash( n ).Obj , Effects_ForceFieldFlash( n ).size# , Effects_ForceFieldFlash( n ).size#*Effects_ForceFieldFlash( n ).scale# , Effects_ForceFieldFlash( n ).size#
+		endif
+		
+		rem hold
+		if Effects_ForceFieldFlash( n ).Active = 3
+			inc Effects_ForceFieldFlash( n ).scale#
+			scale object Effects_ForceFieldFlash( n ).Obj , Effects_ForceFieldFlash( n ).size# , Effects_ForceFieldFlash( n ).size#*(rnd(100)/100.0)*1.5 , Effects_ForceFieldFlash( n ).size#
+			if Effects_ForceFieldFlash( n ).scale# > 2.5
+				Effects_ForceFieldFlash( n ).scale# = 1.0
+				Effects_ForceFieldFlash( n ).Active = 4
+			endif
+		endif
+		
+		rem scale down
+		if Effects_ForceFieldFlash( n ).Active = 4
+			dec Effects_ForceFieldFlash( n ).scale# , Effects_ForceFieldFlashSpeed
+			if Effects_ForceFieldFlash( n ).scale# < 0.0
+				Effects_ForceFieldFlash( n ).scale# = 0.0
+				Effects_DestroyForceFieldFlash( n )
+			endif
+			scale object Effects_ForceFieldFlash( n ).Obj , Effects_ForceFieldFlash( n ).size# , Effects_ForceFieldFlash( n ).size#*Effects_ForceFieldFlash( n ).scale# , Effects_ForceFieldFlash( n ).size#
+		endif
+		
+	next n
+	
+endfunction

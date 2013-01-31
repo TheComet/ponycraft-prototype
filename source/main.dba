@@ -1,0 +1,829 @@
+rem ----------------------------------------------------------------------
+rem PonyCraft - Tainted Skies
+rem ----------------------------------------------------------------------
+rem This game is based on the show "My Little Pony - Friendship is Magic"
+rem ----------------------------------------------------------------------
+rem Author                    : TheComet (Alex Murray)
+rem Programmer                : TheComet (Alex Murray)
+rem Start Date                : 06. March 2012
+rem End Date                  : 
+rem ----------------------------------------------------------------------
+
+rem ----------------------------------------------------------------------
+rem choose resolution
+rem ----------------------------------------------------------------------
+
+rem try to use desktop resolution
+load dll "user32.dll",1
+scw=call dll(1,"GetSystemMetrics",0)
+sch=call dll(1,"GetSystemMetrics",1)
+scd=call dll(1,"GetSysColor",0)
+if scd=13160664 then scd=16
+if scd=13158600 then scd=32
+if scd=13160660 then scd=32
+delete dll 1
+
+rem if not valid, find next best resolution
+if check display mode( scw , sch , scd ) = 0
+
+	rem maximum display size
+	perform checklist for display modes
+	scw = 0
+	sch = 0
+	scd = 0
+	for r = 1 to checklist quantity()
+		if scw < checklist value a(r) or sch < checklist value b(r) or scd < checklist value c(r)
+			if check display mode( checklist value a(r) , checklist value b(r) , checklist value c(r) )
+				if (checklist value a(r)*3)/checklist value b(r) > 3.9
+					scw = checklist value a(r)
+					sch = checklist value b(r)
+					scd = checklist value c(r)
+				endif
+			endif
+		endif
+	next r
+	
+endif
+
+rem setup screen
+set display mode scw , sch , scd
+sync on
+sync rate 0
+backdrop on
+color backdrop 0
+show mouse
+autocam off
+position mouse scw/2,sch/2
+disable escapekey
+
+rem ----------------------------------------------------------------------
+rem Constants
+rem ----------------------------------------------------------------------
+
+rem global states
+#constant _ENABLE							1
+#constant _DISABLE						0
+
+rem game speed
+#constant GameFPS                   60
+
+rem images
+global IMGBlack as integer
+global IMGWhite as integer
+global IMGUnitSelectFriendly as integer
+global IMGUnitSelectNeutral as integer
+global IMGUnitSelectHostile as integer
+global IMGFlutterShyALotOfCode as integer
+global IMGClickObjConnection as integer
+global IMGForceField as integer
+global IMGForceFieldNormal as integer
+
+rem effects
+#constant NormalMappingFX         	1
+#constant ToonBloomFX					2
+#constant QuadFX							3
+#constant FastBoneFX						4
+#constant RefractionFX					5
+
+rem ----------------------------------------------------------------------
+rem User Defined Types
+rem ----------------------------------------------------------------------
+
+rem vectors
+type vec2
+   int x                            as integer
+   int y                            as integer
+endtype
+
+type vec3
+   x#                               as float
+   y#                               as float
+   z#                               as float
+endtype
+
+type rect
+	sx											as integer
+	sy											as integer
+	ex											as integer
+	ey											as integer
+endtype
+
+rem screen
+type ScreenVT
+	scw as integer
+	sch as integer
+	sc_sx as integer
+	sc_wx as integer
+endtype
+
+rem timer based movement
+type TBMVT
+   CurrentTime                      as float
+   LastTime#                        as float
+   Delta#                           as float
+	Ticks										as dword
+	TickTracker								as dword
+	TotalElapsedTime						as integer
+endtype
+
+rem controls
+type CTRLVT
+	Animation                        as integer
+	Camera                           as integer
+	ClickObj                         as integer
+   Console                          as integer
+   Distortion                       as integer
+	Effects									as integer
+	ForceField								as integer
+	GUI                              as integer
+	MagicMissile                     as integer
+   Menu                             as integer
+	MeteorShower                     as integer
+   Message                          as integer
+	Minimap									as integer
+   Mouse                            as integer
+	Script                           as integer
+	Slider                           as integer
+	TeleportEffect                   as integer
+   TextEntry                        as integer
+	Trigger                          as integer
+	Unit                             as integer
+	World                            as integer
+endtype
+
+rem misc data
+type MiscVT
+	pos2D										as vec2
+	ScreenFPS								as integer
+	mousetimer								as integer
+	textentrytimer							as integer
+	guitimer									as integer
+	selectionlisttimer					as integer
+	unitqueuetimer							as integer
+	animationtimer							as integer
+	cameratimer								as integer
+	clickobjtimer							as integer
+	distortiontimer						as integer
+	magicmissiletimer						as integer
+	menutimer								as integer
+	messagetimer							as integer
+	minimaptimer							as integer
+	scripttimer								as integer
+	slidertimer								as integer
+	teleporteffecttimer					as integer
+	triggertimer							as integer
+	unittimer								as integer
+	worldtimer								as integer
+	consoletimer							as integer
+	synctimer								as integer
+	forcefieldtimer						as integer
+	meteorshowertimer						as integer
+	effecttimer								as integer
+	unitscreendrawtimer					as integer
+endtype
+
+rem ----------------------------------------------------------------------
+rem Global Variables
+rem ----------------------------------------------------------------------
+
+rem control enables
+global CTRL as CTRLVT
+
+rem timer based movement
+global TBM as TBMVT
+
+rem misc data
+global Misc as MiscVT
+
+rem screen
+global uScreen as ScreenVT
+uScreen.scw = screen width()
+uScreen.sch = screen height()
+uScreen.sc_sx = (uScreen.scw - ((uScreen.sch*4)/3))/2
+uScreen.sc_wx = (uScreen.scw-(uScreen.sc_sx*2))
+
+rem global font
+global FontID as integer
+FontID = a2CreateFont("ariel", 14, a2Size_Char(), a2Style_Normal())
+
+rem some global vectors
+r = make vector3(1)
+r = make vector4(2)
+
+rem ----------------------------------------------------------------------
+rem Initialise
+rem ----------------------------------------------------------------------
+
+rem game controls
+CTRL.Animation                      = 1
+CTRL.Camera                         = 1
+CTRL.ClickObj                       = 1
+CTRL.Console                        = 1
+CTRL.Distortion                     = 1
+CTRL.Effects                        = 1
+CTRL.ForceField                     = 1
+CTRL.GUI                            = 1
+CTRL.MagicMissile                   = 1
+CTRL.Menu                           = 1
+CTRL.Message                        = 1
+CTRL.MeteorShower                   = 1
+CTRL.Minimap                        = 1
+CTRL.Mouse                          = 1
+CTRL.Script                         = 1
+CTRL.Slider                         = 1
+CTRL.TeleportEffect                 = 1
+CTRL.TextEntry                      = 1
+CTRL.Trigger                        = 1
+CTRL.Unit                           = 1
+CTRL.World                          = 1
+
+rem ----------------------------------------------------------------------
+rem Load Media
+rem ----------------------------------------------------------------------
+
+rem enable debugging
+InitConsole()
+InitDebug()
+
+rem images to be used for game mechanics
+IMGBlack = LoadImage( "media\images\core\black.bmp" , 0 )
+IMGWhite = LoadImage( "media\images\core\white.bmp" , 0 )
+IMGClickObjConnection = LoadImage( "media\objects\clickobj\connection.png" , 0 )
+IMGFlutterShyALotOfCode = LoadImage( "media\images\console\Fluttershylotofcode.png" , 0 )
+IMGUnitSelectFriendly = LoadImage( "media\images\unitselect\friendly.png" , 0 )
+IMGUnitSelectNeutral = LoadImage( "media\images\unitselect\neutral.png" , 0 )
+IMGUnitSelectHostile = LoadImage( "media\images\unitselect\hostile.png" , 0 )
+IMGForceField = LoadImage( "media\objects\abilities\force_field\force_field.png" , 0 )
+IMGForceFieldNormal = LoadImage( "media\objects\abilities\force_field\force_field_normal.png" , 0 )
+
+rem effects
+LoadEffect( "media\FX\NormalMapping.fx",                           	NormalMappingFX            	)
+LoadCameraEffect( "media\FX\toon_bloom.fx",									ToonBloomFX							)
+LoadEffect( "media\FX\Quad.fx",													QuadFX								)
+LoadEffect( "media\FX\fastbone.fx",												FastBoneFX							)
+LoadEffect( "media\FX\Refraction.fx",											RefractionFX						)
+
+rem initialise game elements
+InitAnimation()
+InitCamera()
+InitClickObj()
+InitCommandQueue()
+InitDistortion()
+InitForceField()
+Effects_Init3DFire()
+Effects_Init3DSpark()
+Effects_Init3DTrail()
+Effects_Init3DSmoke()
+Effects_InitEyeGlow()
+Effects_InitFireHitFlare()
+Effects_InitForceFieldFlash()
+Effects_InitTeleport()
+Effects_InitTeleportSparks()
+InitGUI()
+InitMagicMissile()
+InitMenu()
+InitMessage()
+InitMeteorShower()
+InitMinimap()
+InitMouse()
+InitScript()
+InitTextEntry()
+InitTrigger()
+InitUnit()
+InitWorld()
+
+rem setup cameras
+make camera 1
+position camera 1 , 0 , 0 , 100000
+color backdrop 1 , 0
+rem set camera effect 0 , ToonBloomFX , 1001
+set camera to image 0 , 1001 , uScreen.scw , uScreen.sch
+rem set camera view 0 , 0 , scw , sch
+set current camera 0
+
+rem ----------------------------------------------------------------------
+rem Main Loop
+rem ----------------------------------------------------------------------
+
+rem debugging info
+DebugOutput( 1 , "Done Loading, Executing StartupScrip.pony -------------------------------" , DEBUG_NORMAL )
+uDebug.refresh = 0
+uConsole.active = 0
+
+rem run startup script
+LoadScript( "scripts\StartupScript.pony" , 0 )
+RunScript( 0 )
+ControlScript()
+
+rem clip the mouse to the window
+ClipMouse()
+
+rem entering game loop
+DebugOutput( 1 , "Entering Game Loop -------------------------------" , DEBUG_NORMAL )
+
+rem load and loop music
+load music "media\music\music.mp3" , 1
+set music volume 1 , 50
+loop music 1
+
+rem ----------------------------------------------------------------------------------
+
+rem start of main loop
+ResetGameTimer()
+TriggerResetTimers()
+do
+	
+	rem re-clip mouse if necessary
+	if screen invalid()
+		ClipMouse()
+	endif
+	
+	rem exit game
+	if escapekey()
+		UnclipMouse()
+		end
+	endif
+	
+	remstart props
+	if press = 0
+		if controlkey()
+			
+			msg$ = ""
+			print "1: Grass_1x1"
+			print "2: Grass_2x2"
+			print "3: Grass_3x3"
+			print "4: Plant_01"
+			print "5: Plant_01a"
+			print "6: Plant_02"
+			print "7: Stone_01"
+			print "8: Stone_02"
+			print "9: Stone_03"
+			print "0: Stone_W_01"
+			print "T: Stone_W_02"
+			print "Z: Stone_W_03"
+			print "U: Tree_01"
+			print "Y: Ruins1"
+			print "X: Ruins2"
+			print "C: Ruins3"
+			print "V: Ruins4"
+			print "B: Ruins5"
+			print "N: Ruins6"
+			print "M: Ruins7"
+			print ",: Ruins8"
+			print ".: Ruins9"
+			print "-: Ruins10"
+			print "D: Ruins11"
+			print "F: Ruins12"
+			print "G: Ruins13"
+			print "H: Ruins14"
+			print "J: Ruins15"
+			print "K: Ruins16"
+			print "L: Ruins17"
+			print "Ö: Ruins18"
+			print "Ä: Ruins19"
+			print "$: Ruins20"
+			print "I: Ruins21"
+			print "O: Ruins22"
+			print "P: Ruins23"
+			print "Ü: Ruins24"
+			print "!: Ruins25"
+			if keystate(2) then msg$ = "WorldAddSceneryObject media\objects\props\Grass_1x1.x media\objects\props\GRASS_1" : press = 1
+			if keystate(3) then msg$ = "WorldAddSceneryObject media\objects\props\Grass_2x2.x media\objects\props\GRASS_1" : press = 1
+			if keystate(4) then msg$ = "WorldAddSceneryObject media\objects\props\Grass_3x3.x media\objects\props\GRASS_1" : press = 1
+			if keystate(5) then msg$ = "WorldAddSceneryObject media\objects\props\Plant_01.x media\objects\props\PLANT_1" : press = 1
+			if keystate(6) then msg$ = "WorldAddSceneryObject media\objects\props\Plant_01.x media\objects\props\PLANT_1a" : press = 1
+			if keystate(7) then msg$ = "WorldAddSceneryObject media\objects\props\Plant_02.x media\objects\props\PLANT_2" : press = 1
+			if keystate(8) then msg$ = "WorldAddSceneryObject media\objects\props\Stone_01.x media\objects\props\stone" : press = 1
+			if keystate(9) then msg$ = "WorldAddSceneryObject media\objects\props\Stone_02.x media\objects\props\stone" : press = 1
+			if keystate(10) then msg$ = "WorldAddSceneryObject media\objects\props\Stone_03.x media\objects\props\stone" : press = 1
+			if keystate(11) then msg$ = "WorldAddSceneryObject media\objects\props\Stone_W_01.x media\objects\props\stone" : press = 1
+			if keystate(20) then msg$ = "WorldAddSceneryObject media\objects\props\Stone_W_02.x media\objects\props\stone" : press = 1
+			if keystate(21) then msg$ = "WorldAddSceneryObject media\objects\props\Stone_W_03.x media\objects\props\stone" : press = 1
+			if keystate(22) then msg$ = "WorldAddSceneryObject media\objects\props\Tree_01.x media\objects\props\bark" : press = 1
+			if keystate(44) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins1_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(45) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins2_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(46) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins3_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(47) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins4_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(48) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins5_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(49) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins6_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(50) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins7_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(51) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins8_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(52) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins9_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(53) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins10_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(32) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins11_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(33) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins12_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(34) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins13_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(35) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins14_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(36) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins15_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(37) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins16_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(38) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins17_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(39) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins18_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(40) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins19_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(41) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins20_lod0.x media\objects\maps\derp\ruins" : press = 1
+			
+			if keystate(23) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins21_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(24) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins22_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(25) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins23_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(26) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins24_lod0.x media\objects\maps\derp\ruins" : press = 1
+			if keystate(27) then msg$ = "WorldAddSceneryObject media\objects\maps\derp\ruins25_lod0.x media\objects\maps\derp\ruins" : press = 1
+			
+			if msg$ <> ""
+				rem prepare processing
+				_Script_Prepare_Dynamic_Values( 0 )
+				
+				rem process entered command
+				AddTextToConsole( 5 , msg$ )
+				if CompileEntry( msg$ , 0 , 0 ) > -1 then ProcessEntry( 0 , 0 , _ENABLE , _ENABLE )
+				ClearTextEntry()
+				DestroyScript( -1 )
+			endif
+		endif
+	else
+		if scancode()=0 then press = 0
+	endif
+	remend
+	
+   rem control timer based movement
+   TBM.LastTime# = TBM.CurrentTime
+   TBM.CurrentTime = hitimer(1000)
+   TBM.Delta# = curvevalue( (TBM.CurrentTime - TBM.LastTime#) / GameFPS , TBM.Delta# , 2 )
+	
+	rem increment loop counter, should increment 60 times every second
+	TBM.Ticks = (hitimer(1000)-TBM.TotalElapsedTime)/17
+	
+	rem get screen fps
+	misc.ScreenFPS = screen fps()
+	
+	remstart
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Control = UNITCONTROL_PLAYER
+			if Unit( n ).Active > 1
+				print "Unit ";n
+				print
+				for g = 0 to MaxUnitAbility
+					print "    (";g;") - button: ";UnitAbility( n , g ).BindButton;", hide: ";UnitAbility( n , g ).HideButton
+				next g
+			endif
+		endif
+	next n
+	remend
+	
+	if uUnit.CurrentMax > -1
+		print "active: ";Unit( 0 ).Active
+		print "ability: ";Unit( 0 ).Ability.Active
+		print "automatic ability: ";Unit( 0 ).Ability.Automatic
+		print "attack: ";Unit( 0 ).AttackActive
+		print "follow: ";Unit( 0 ).FollowUnit
+		print "size: ";Unit( 0 ).Size#
+		print "HeightOffset: ";Unit( 0 ).HeightOffset#
+		print "Source ID: ";Unit( 0 ).SourceModelID
+		print "x: ";Unit( 0 ).pos.x#
+		print "z: ";Unit( 0 ).pos.z#
+		print UnitAbility( 0 , UNITABILITY_FORCE_FIELD ).ManaDrain#
+		print Unit( 0 ).Stats.CurrentMana#
+		print "Command chain: ";UnitCommandChain( 0 , 0 ).Count
+		for n = 0 to UnitCommandChain( 0 , 0 ).Count
+			print "    ability: ";UnitCommandChain( 0 , n ).Ability
+		next n
+	endif
+	
+	remstart
+	b = 0
+	for n = 0 to uScript.CurrentIntegerDataMax
+		if ScriptIntegerData( n ).Active = 2
+			inc b
+		endif
+	next n
+	for n = 0 to uScript.CurrentFloatDataMax
+		if ScriptFloatData( n ).Active = 2
+			inc b
+		endif
+	next n
+	for n = 0 to uScript.CurrentStringDataMax
+		if ScriptStringData( n ).Active = 2
+			inc b
+		endif
+	next n
+	print b
+	remend
+	
+	rem control game elements
+   ControlGameElements()
+	
+	remstart world edit position
+	if controlkey()
+		if uMouse.Click = 2
+			position object World( uWorld.SlotPointer ).Obj , uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z#
+		endif
+		if uMouse.Click = 3
+			AddTextToConsole( 2 , "x: " + str$(object position x(World( uWorld.SlotPointer ).Obj)) + ", y: " + str$(object position y(World( uWorld.SlotPointer ).Obj)) + ", z: " + str$(object position z(World( uWorld.SlotPointer ).Obj)) )
+		endif
+		if uMouse.Click = 5
+			yrotate object World( uWorld.SlotPointer ).Obj , wrapvalue( object angle y( World( uWorld.SlotPointer ).Obj ) + uMouse.Movex )
+		endif
+		if uMouse.Click = 6
+			AddTextToConsole( 2 , "angle: " + str$(object angle y( World( uWorld.SlotPointer ).Obj )) )
+		endif
+		if keystate(17) then inc World( uWorld.SlotPointer ).scale# , World( uWorld.SlotPointer ).scale# * 0.05
+		if keystate(31) then dec World( uWorld.SlotPointer ).scale# , World( uWorld.SlotPointer ).scale# * 0.05
+		scale object World( uWorld.SlotPointer ).Obj , World( uWorld.SlotPointer ).scale# , World( uWorld.SlotPointer ).scale# , World( uWorld.SlotPointer ).scale#
+		if uMouse.Click = 6
+			AddTextToConsole( 2 , "scale: " + str$(World( uWorld.SlotPointer ).scale#) )
+		endif
+	endif
+	if shiftkey()
+		if uMouse.Click = 2
+			position object World( uWorld.SlotPointer ).Obj , uMouse.Click3D.x# , object position y( World( uWorld.SlotPointer ).Obj ) , uMouse.Click3D.z#
+		endif
+	endif
+	
+	rem timer info
+	print "MouseTimer: ";misc.mousetimer
+	print "TextEntryTimer: ";misc.textentrytimer
+	print "GUITimer: ";misc.guitimer
+	print "SelectionListTimer: ";misc.selectionlisttimer
+	print "UnitQueueTimer: ";misc.unitqueuetimer
+	print "AnimationTimer: ";misc.animationtimer
+	print "ForceFieldTimer: ";misc.forcefieldtimer
+	print "MagicMissileTimer: ";misc.magicmissiletimer
+	print "MeteorShowerTimer: ";misc.meteorshowertimer
+	print "ScriptTimer: ";misc.scripttimer
+	print "TeleportEffectTimer: ";misc.teleporteffecttimer
+	print "UnitTimer: ";misc.unittimer
+	print "WorldTimer: ";misc.worldtimer
+	print "EffectTimer: ";misc.effecttimer
+	print "ClickObjTimer: ";misc.clickobjtimer
+	print "CameraTimer: ";misc.cameratimer
+	print "DistortionTimer: ";misc.distortiontimer
+	print "MenuTimer: ";misc.menutimer
+	print "MessageTimer: ";misc.messagetimer
+	print "MinimapTimer: ";misc.minimaptimer
+	print "SliderTimer: ";misc.slidertimer
+	print "TriggerTimer: ";misc.triggertimer
+	print "UnitScreenDrawTimer: ";misc.unitscreendrawtimer
+	print "SyncTimer: ";misc.synctimer
+	print "World.FogOfWar.VertexUpdateAmount: ";uWorld.FogOfWar.VertexUpdateAmount
+	print "uUnit.CurrentFormationMax: ";uUnit.CurrentFormationMax
+	remend
+
+	rem Advanced 2D fix
+   a2setlineAA 0
+	
+   rem refresh screen
+	misc.synctimer = hitimer(1000000)
+	sync
+	misc.synctimer = hitimer(1000000) - misc.synctimer
+
+rem end of main loop
+loop
+
+rem end program
+end
+
+rem ----------------------------------------------------------------------
+rem Subroutines
+rem ----------------------------------------------------------------------
+
+
+
+rem ----------------------------------------------------------------------
+rem Functions
+rem ----------------------------------------------------------------------
+
+function ControlGameElements()
+
+   rem reset cursor
+   set cursor 0 , 0
+	
+	rem screen fps
+	print "Screen FPS: ";misc.ScreenFPS
+	
+	rem reset flags
+	rem reset formation calculated flag
+	uUnit.FormationWasCalculated = 0
+	
+	rem higher functionality elements (order of execution is relevant)
+	misc.mousetimer = hitimer(1000000)
+	if CTRL.Mouse                    = 1 then ControlMouse() : misc.mousetimer = hitimer(1000000) - misc.mousetimer
+	misc.textentrytimer = hitimer(1000000)
+	if CTRL.TextEntry                = 1 then ControlTextEntry() : misc.textentrytimer = hitimer(1000000) - misc.textentrytimer
+	misc.guitimer = hitimer(1000000)
+	if CTRL.GUI                      = 1 then ControlGUI() : misc.guitimer = hitimer(1000000) - misc.guitimer
+	misc.selectionlisttimer = hitimer(1000000)
+	if CTRL.Unit							= 1 then UnitProcessSelectionList() : misc.selectionlisttimer = hitimer(1000000) - misc.selectionlisttimer
+	misc.unitqueuetimer = hitimer(1000000)
+	if CTRL.Unit							= 1 then UnitQueueAbilities() : misc.unitqueuetimer = hitimer(1000000) - misc.unitqueuetimer
+	
+	rem tick based controls (dependant on network code and tick counter)
+	while TBM.TickTracker < TBM.Ticks
+		
+		rem read from network buffer
+		while PokeCommandQueue() = TBM.TickTracker
+			ReadCommandFromQueue()
+		endwhile
+		
+		rem process tick
+		misc.animationtimer = hitimer(1000000)
+		if CTRL.Animation                = 1 then ControlAnimation() : misc.animationtimer = hitimer(1000000) - misc.animationtimer
+		misc.forcefieldtimer = hitimer(1000000)
+		if CTRL.ForceField					= 1 then ControlForceField() : misc.forcefieldtimer = hitimer(1000000) - misc.forcefieldtimer
+		if CTRL.GUI                      = 1 then GUIUpdateFrame()
+		misc.magicmissiletimer = hitimer(1000000)
+		if CTRL.MagicMissile             = 1 then ControlMagicMissile() : misc.magicmissiletimer = hitimer(1000000) - misc.magicmissiletimer
+		misc.meteorshowertimer = hitimer(1000000)
+		if CTRL.MeteorShower					= 1 then ControlMeteorShower() : misc.meteorshowertimer = hitimer(1000000) - misc.meteorshowertimer
+		misc.scripttimer = hitimer(1000000)
+		if CTRL.Script                   = 1 then ControlScript() : misc.scripttimer = hitimer(1000000) - misc.scripttimer
+		misc.unittimer = hitimer(1000000)
+		if CTRL.Unit                     = 1 then ControlUnit() : misc.unittimer = hitimer(1000000) - misc.unittimer
+		misc.worldtimer = hitimer(1000000)
+		if CTRL.World                    = 1 then ControlWorld() : misc.worldtimer = hitimer(1000000) - misc.worldtimer
+		misc.effecttimer = hitimer(1000000)
+		if CTRL.Effects						= 1
+																Effects_Control3DFire()
+																Effects_Control3DSparks()
+																Effects_Control3DTrails()
+																Effects_Control3DSmoke()
+																Effects_ControlEyeGlow()
+																Effects_ControlFireHitFlare()
+																Effects_ControlForceFieldFlash()
+																Effects_ControlTeleport()
+																Effects_ControlTeleportSparks()
+		endif
+		misc.effecttimer = hitimer(1000000) - misc.effecttimer
+		
+		rem next tick
+		inc TBM.TickTracker
+	endwhile
+	
+	rem timer based controls (not dependant on tick counter, such as interface and effects)
+	rem some of these are controlled by ticks, but don't have the need to be called exactly the same as the ticks.
+	rem these were moved here for refresh reasons.
+	misc.clickobjtimer = hitimer(1000000)
+	if CTRL.ClickObj                 = 1 then ControlClickObj() : misc.clickobjtimer = hitimer(1000000) - misc.clickobjtimer
+	misc.cameratimer = hitimer(1000000)
+	if CTRL.Camera                   = 1 then ControlCamera() : misc.cameratimer = hitimer(1000000) - misc.cameratimer
+	misc.distortiontimer = hitimer(1000000)
+   if CTRL.Distortion               = 1 then ControlDistortion() : misc.distortiontimer = hitimer(1000000) - misc.distortiontimer
+   misc.menutimer = hitimer(1000000)
+	if CTRL.Menu                     = 1 then ControlMenu() : misc.menutimer = hitimer(1000000) - misc.menutimer
+	misc.messagetimer = hitimer(1000000)
+	if CTRL.Message                  = 1 then ControlMessage() : misc.messagetimer = hitimer(1000000) - misc.messagetimer
+	misc.minimaptimer = hitimer(1000000)
+	if CTRL.Minimap						= 1 then ControlMinimap() : misc.minimaptimer = hitimer(1000000) - misc.minimaptimer
+	misc.slidertimer = hitimer(1000000)
+	if CTRL.Slider                   = 1 then ControlSlider() : misc.slidertimer = hitimer(1000000) - misc.slidertimer
+	misc.triggertimer = hitimer(1000000)
+	if CTRL.Trigger                  = 1 then ControlTrigger() : misc.triggertimer = hitimer(1000000) - misc.triggertimer
+	misc.unitscreendrawtimer = hitimer(1000000)
+	if CTRL.Unit							= 1 then ControlUnitScreenDraws() : misc.unitscreendrawtimer = hitimer(1000000) - misc.unitscreendrawtimer
+	
+	rem higher drawing priority elements
+	misc.consoletimer = hitimer(1000000)
+	if CTRL.Console                  = 1 then ControlConsole() : misc.consoletimer = hitimer(1000000) - misc.consoletimer
+	
+	rem distortion object
+	texture object 1001,1001
+
+endfunction
+
+function customABS( value# )
+	if value# > 0 then exitfunction value#
+	value# = 0 - value#
+endfunction value#
+
+function ResetGameTimer()
+	TBM.CurrentTime = hitimer(1000)
+	TBM.TotalElapsedTime = hitimer(1000)
+endfunction
+
+function SetObjectDiffuse( Obj , color )
+	
+	rem local variables
+	local i as integer
+	local limb as integer
+	
+	rem edit diffuse data of each vertex
+	perform checklist for object limbs Obj
+	for limb = 0 to checklist quantity() - 1
+		lock vertexdata for limb Obj , limb
+			for i = 0 to get vertexdata vertex count() - 1
+				set vertexdata diffuse i , (get vertexdata diffuse(i) && 0xFF000000) || (color && 0x00FFFFFF)
+			next i
+		unlock vertexdata
+	next limb
+	
+endfunction
+
+function ConvertObjectFVFTo338( Obj )
+	
+	rem local variables
+	local i as integer
+	local limb as integer
+	
+	rem convert
+	convert object fvf Obj , 338
+	
+	rem edit diffuse data of each vertex to be white
+	perform checklist for object limbs Obj
+	for limb = 0 to checklist quantity() - 1
+		lock vertexdata for limb Obj , limb
+			for i = 0 to get vertexdata vertex count() - 1
+				set vertexdata diffuse i , 0xFFFFFFFF
+			next i
+		unlock vertexdata
+	next limb
+	
+endfunction
+
+function ObjectInScreen( Obj )
+	
+	rem local variables
+	local x as integer
+	local y as integer
+	
+	rem get screen coordinates
+	x = object screen x( Obj )
+	y = object screen y( Obj )
+	
+	rem if screen coordinates are on screen then return success
+	if x > 0 and x < uScreen.scw and y > 0 and y < uScreen.sch then exitfunction 1
+	
+endfunction 0
+
+function ClipMouse()
+
+	rem needed to get data from DLL
+	dim upperleft(0) as vec2
+	dim client(0) as rect
+	
+	rem load dll
+	load dll "user32.dll", 1
+	
+	rem get the window
+	hWnd = call dll( 1, "GetActiveWindow" )
+	
+	rem get top left coordinates
+	call dll 1, "GetClientRect", hWnd, client()
+	upperleft(0).x = client(0).sx
+	upperleft(0).y = client(0).sy
+	
+	rem clip the cursor
+	call dll 1, "ClientToScreen", hWnd, upperleft()
+	call dll 1, "OffsetRect", client(), upperleft(0).x, upperleft(0).y
+	call dll 1, "ClipCursor", client()
+	
+	undim upperleft()
+	undim client()
+	delete dll 1
+	
+endfunction
+
+function UnclipMouse()
+
+	rem load dll
+	load dll "user32.dll", 1
+	
+	rem unclip
+	call dll 1, "ClipCursor", 0
+	
+	rem clean up
+	delete dll 1
+	
+endfunction
+
+function GetRealScreenX( x )
+	
+	rem convert to real screen coordinates
+	x = ((x*uScreen.sc_wx)/1600.0) + uScreen.sc_sx
+	
+endfunction x
+
+function GetRealScreenY( y )
+	
+	rem convert to real screen coordinates
+	y = (y*uScreen.sch)/1200.0
+	
+endfunction y
+
+rem ----------------------------------------------------------------------
+rem Data Statements
+rem ----------------------------------------------------------------------
+
+remstart
+------------------------------------------------------
+3D rotation matrices
+------------------------------------------------------
+        / 1        0        0        \
+Rx(a) = | 0        cos(a)   -sin(a)  |
+        \ 0        sin(a)   cos(a)   /
+
+        / cos(a)   0        -sin(a)  \
+Ry(a) = | 0        1        0        |
+        \ sin(a)   0        cos(a)   /
+
+        / cos(a)   -sin(a)  0        \
+Rz(a) = | sin(a)   cos(a)   0        |
+        \ 0        0        1        /
+------------------------------------------------------
+remend

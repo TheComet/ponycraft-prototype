@@ -1,0 +1,147 @@
+rem ---------------------------------------------------------------------------
+rem Teleport sparks - Effect when unit teleports
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant Effects_TeleportSparksGravity			0.01
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type Effects_TeleportSparksVT
+	CurrentMax												as integer
+	IMG														as integer
+endtype
+
+type Effects_TeleportSparksAT
+	Active													as integer
+	pos														as vec3
+	gravConstant#											as float
+	grav#														as float
+	size#														as float
+	angle#													as float
+	speed#													as float
+	Obj														as integer
+	Life														as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function Effects_InitTeleportSparks()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising Teleport Sparks" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uEffects_TeleportSparks					as Effects_TeleportSparksVT
+	
+	rem ---------------------------------------------------------------------------
+	rem global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim Effects_TeleportSparks()				as Effects_TeleportSparksAT
+	
+	rem initial values
+	uEffects_TeleportSparks.CurrentMax = -1
+	
+	rem load media
+	uEffects_TeleportSparks.IMG = LoadImage( "media\objects\effects\teleport\tpspark.png" , 0 )
+	
+endfunction
+
+function Effects_CreateTeleportSparks( x# , y# , z# , size# , Life )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uEffects_TeleportSparks.CurrentMax
+		if Effects_TeleportSparks( n ).Active < 2 then exit
+	next n
+	
+	rem none found, create slot
+	if n = uEffects_TeleportSparks.CurrentMax + 1
+		array insert at bottom Effects_TeleportSparks()
+		inc uEffects_TeleportSparks.CurrentMax
+	endif
+	
+	rem load objects
+	if Effects_TeleportSparks( n ).Active = 0
+		
+		rem create plain
+		Effects_TeleportSparks( n ).Obj = find free object()
+		make object plain Effects_TeleportSparks( n ).Obj , 100 , 100
+		texture object Effects_TeleportSparks( n ).Obj , uEffects_TeleportSparks.IMG
+		set object transparency Effects_TeleportSparks( n ).Obj , 2
+		set object light Effects_TeleportSparks( n ).Obj , 0
+		disable object zwrite Effects_TeleportSparks( n ).Obj
+		
+	endif
+	
+	rem object properties
+	show object Effects_TeleportSparks( n ).Obj
+	position object Effects_TeleportSparks( n ).Obj , x# , y# , z#
+	scale object Effects_TeleportSparks( n ).Obj , size# , size# , size#
+	
+	rem set parameters
+	Effects_TeleportSparks( n ).Active = 2
+	Effects_TeleportSparks( n ).pos.x# = x#
+	Effects_TeleportSparks( n ).pos.y# = y#
+	Effects_TeleportSparks( n ).pos.z# = z#
+	Effects_TeleportSparks( n ).gravConstant# = size# * Effects_TeleportSparksGravity 
+	Effects_TeleportSparks( n ).grav# = size# * ((rnd(50)+50.0) / 200.0)
+	Effects_TeleportSparks( n ).angle# = rnd(360)
+	Effects_TeleportSparks( n ).speed# = size# * (rnd(100) / 800.0)
+	Effects_TeleportSparks( n ).Life = Life
+	
+endfunction n
+
+function Effects_DestroyTeleportSparks( n )
+	
+	rem check if active
+	if Effects_TeleportSparks( n ).Active < 2 then exitfunction -1
+	
+	rem destroy
+	hide object Effects_TeleportSparks( n ).Obj
+	Effects_TeleportSparks( n ).Active = 1
+	
+endfunction n
+
+function Effects_ControlTeleportSparks()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active effects
+	for n = 0 to uEffects_TeleportSparks.CurrentMax
+		if Effects_TeleportSparks( n ).Active = 2
+			
+			rem move in direction
+			Effects_TeleportSparks( n ).pos.x# = newxvalue( Effects_TeleportSparks( n ).pos.x# , Effects_TeleportSparks( n ).angle# , Effects_TeleportSparks( n ).speed# )
+			Effects_TeleportSparks( n ).pos.z# = newzvalue( Effects_TeleportSparks( n ).pos.z# , Effects_TeleportSparks( n ).angle# , Effects_TeleportSparks( n ).speed# )
+			
+			rem apply gravity
+			dec Effects_TeleportSparks( n ).grav# , Effects_TeleportSparks( n ).gravConstant#
+			inc Effects_TeleportSparks( n ).pos.y# , Effects_TeleportSparks( n ).grav#
+			
+			rem update object position
+			position object Effects_TeleportSparks( n ).Obj , Effects_TeleportSparks( n ).pos.x# , Effects_TeleportSparks( n ).pos.y# , Effects_TeleportSparks( n ).pos.z#
+			set object to camera orientation Effects_TeleportSparks( n ).Obj
+			
+			rem decrement life
+			dec Effects_TeleportSparks( n ).Life
+			if Effects_TeleportSparks( n ).Life = 0 then Effects_DestroyTeleportSparks( n )
+		
+		endif
+	next n
+	
+endfunction

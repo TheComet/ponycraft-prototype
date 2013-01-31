@@ -1,0 +1,407 @@
+rem ---------------------------------------------------------------------------
+rem Triggers
+rem by TheComet
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant TRIGGER_JUNCTION_OR						1
+#constant TRIGGER_JUNCTION_AND					2
+#constant TRIGGER_JUNCTION_NOR					3
+#constant TRIGGER_JUNCTION_NAND					4
+#constant TRIGGER_JUNCTION_INV_OR				5
+#constant TRIGGER_JUNCTION_INV_AND				6
+
+#constant TRIGGER_TYPE_UNIT						1
+#constant TRIGGER_TYPE_UNIT_COUNT				2
+#constant TRIGGER_TYPE_UNIT_CONTROL				3
+#constant TRIGGER_TYPE_UNIT_DEATH				4
+#constant TRIGGER_TYPE_TIMER						5
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type TriggerVT
+   logging                                   as integer
+	CurrentMax											as integer
+	CurrentElementMax									as integer
+endtype
+
+type TriggerAT
+	Active												as integer
+	pos													as vec3
+	Obj													as integer
+	radius#												as float
+	toggle												as integer
+	once													as integer
+	ScriptID												as integer
+	ElementCount										as integer
+endtype
+
+type TriggerAAT
+	junctionTyp											as integer
+	typ													as integer
+	value													as integer
+	resetvalue											as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialize
+rem ---------------------------------------------------------------------------
+
+function InitTrigger()
+
+   DebugOutput( 0 , "Initializing Triggers" , DEBUG_NORMAL )
+
+   rem ---------------------------------------------------------------------------
+   rem Global variables
+   rem ---------------------------------------------------------------------------
+
+   global uTrigger                           as TriggerVT
+
+   rem ---------------------------------------------------------------------------
+   rem Global Arrays
+   rem ---------------------------------------------------------------------------
+
+   global dim Trigger()            				as TriggerAT
+	global dim TriggerElement()					as TriggerAAT
+	
+	rem initial values
+	uTrigger.CurrentMax = -1
+	uTrigger.CurrentElementMax = -1
+
+endfunction
+
+function CreateTrigger( x# , y# , z# , radius# , one_time_execute , script$ , ScriptIndex )
+	
+	rem make sure script exists
+   if file exist( script$ ) = 0
+      AddTextToConsole( 3 , "Script " + chr$(34) + script$ + chr$(34) + " does not exist" )
+      exitfunction -1
+   endif
+
+   rem load script
+   if LoadScript( Script$ , ScriptIndex ) = -1
+		AddTextToConsole( 3 , "Unable to load script" )
+		exitfunction -1
+	endif
+	
+	rem local variables
+   local n as integer
+	
+   rem find free slot
+   for n = 0 to uTrigger.CurrentMax
+      if Trigger( n ).active < 2 then exit
+   next n
+
+   rem no free slot
+   if n = uTrigger.CurrentMax + 1
+      array insert at bottom Trigger()
+		inc uTrigger.CurrentMax
+		dim TriggerElement( uTrigger.CurrentMax , uTrigger.CurrentElementMax ) as TriggerAAT
+   endif
+
+   rem set values
+   Trigger( n ).active       = 2
+   Trigger( n ).pos.x#       = x#
+   Trigger( n ).pos.y#       = y#
+   Trigger( n ).pos.z#       = z#
+   Trigger( n ).radius#      = radius#
+   Trigger( n ).scriptID     = ScriptIndex
+   Trigger( n ).once         = one_time_execute
+	Trigger( n ).ElementCount = -1
+	Trigger( n ).toggle       = 1
+
+endfunction n
+
+function DestroyTrigger( n )
+	
+	rem debug
+   if uTrigger.logging = 1 then AddTextToConsole( 0 , "DestroyTrigger " + str$(n) )
+
+   rem if not active, exit
+   if Trigger( n ).active < 2
+      AddTextToConsole( 3 , "Not Active!" )
+      exitfunction -1
+   endif
+
+   rem destroy trigger
+   Trigger( n ).active = 0
+	if Trigger( n ).obj > 0
+		if object exist( Trigger( n ).obj ) then delete object Trigger( n ).obj
+	endif
+   Trigger( n ).obj = 0
+
+endfunction n
+
+function AddTriggerCondition( n , junctionTyp , typ , value )
+
+	rem debug
+	if uTrigger.logging = 1 then AddTextToConsole( 0 , "AddTriggerCondition " + str$(n) + "," + str$(junctionTyp) + "," + str$(typ) + "," + str$(value) )
+	
+	rem make sure in range
+	if n < 0 or n > uTrigger.CurrentMax
+		AddTextToConsole( 3 , "Trigger index not found!" )
+		exitfunction
+	endif
+	
+	rem make sure active
+	if Trigger( n ).Active < 2
+		AddTextToConsole( 3 , "Trigger not active!" )
+		exitfunction
+	endif
+	
+	rem increment counter and resize array
+	inc Trigger( n ).ElementCount
+	if Trigger( n ).ElementCount > uTrigger.CurrentElementMax
+		inc uTrigger.CurrentElementMax
+		dim TriggerElement( uTrigger.CurrentMax , uTrigger.CurrentElementMax ) as TriggerAAT
+	endif
+	
+	rem add condition
+	TriggerElement( n , Trigger( n ).ElementCount ).junctionTyp = junctionTyp
+	TriggerElement( n , Trigger( n ).ElementCount ).typ = typ
+	TriggerElement( n , Trigger( n ).ElementCount ).value = value
+	TriggerElement( n , Trigger( n ).ElementCount ).resetvalue = value
+
+endfunction
+
+function ShowTrigger( n )
+	
+	rem logging
+   if uTrigger.logging = 1 then AddTextToConsole( 0 , "ShowTrigger " + str$(n) )
+
+   rem if not active, exit
+   if Trigger( n ).active < 2
+      if uTrigger.logging = 1 then AddTextToConsole( 3 , "Does Not Exist!" )
+      exitfunction -1
+   endif
+
+   rem create sphere
+   if Trigger( n ).obj = 0
+      Trigger( n ).obj = find free object()
+      make object sphere Trigger( n ).obj , Trigger( n ).radius#*2
+      position object Trigger( n ).obj , Trigger( n ).pos.x# , Trigger( n ).pos.y# , Trigger( n ).pos.z#
+      set object wireframe Trigger( n ).obj , 1
+   endif
+
+endfunction n
+
+function ShowTriggers()
+
+   rem local variables
+   local n as integer
+
+   rem show all triggers
+   for n = 0 to uTrigger.CurrentMax
+      if Trigger( n ).Active > 1 then ShowTrigger( n )
+   next n
+
+endfunction
+
+function HideTriggers()
+
+   rem logging
+   if uTrigger.logging = 1 then AddTextToConsole( 0 , "HideTriggers" )
+
+   rem local variables
+   local n as integer
+
+   rem delete all objects
+   for n = 0 to uTrigger.CurrentMax
+      if Trigger( n ).obj > 0
+         if object exist( Trigger( n ).obj ) then delete object Trigger( n ).obj
+         Trigger( n ).obj = 0
+      endif
+   next n
+
+endfunction
+
+function TriggerResetTimers()
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	AddTextToConsole( 0 , "Initialising trigger timers" )
+	
+	rem loop through all triggers
+	for n = 0 to uTrigger.CurrentMax
+		if Trigger( n ).Active = 2
+			for p = 0 to Trigger( n ).ElementCount
+				if TriggerElement( n , p ).typ = TRIGGER_TYPE_TIMER
+					TriggerElement( n , p ).value = timer() + TriggerElement( n , p ).resetvalue
+				endif
+			next p
+		endif
+	next n
+	
+endfunction
+
+function ControlTrigger()
+
+   rem local variables
+   local n as integer
+   local p as integer
+	local a as integer
+	local b as integer
+   local success as integer
+
+   rem loop through all active triggers
+   for n = 0 to uTrigger.CurrentMax
+      if Trigger( n ).Active = 2
+			
+			rem loop through trigger's elements
+			success = -1
+			for p = 0 to Trigger( n ).ElementCount
+				
+				rem specific unit in area
+				if TriggerElement( n , p ).typ = TRIGGER_TYPE_UNIT
+					
+					rem check if true
+					a = 0
+					if TriggerElement( n , p ).value >= 0 and TriggerElement( n , p ).value <= uUnit.CurrentMax
+						if (Unit( TriggerElement( n , p ).value ).pos.x#-Trigger( n ).pos.x#)^2 + (Unit( TriggerElement( n , p ).value ).pos.y#-Trigger( n ).pos.y#)^2 + (Unit( TriggerElement( n , p ).value ).pos.z#-Trigger( n ).pos.z#)^2 < Trigger( n ).radius# * Trigger( n ).radius#
+							success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 1 )
+							a = 1
+						endif
+					endif
+					
+					rem check if false
+					if a = 0
+						success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 0 )
+					endif
+					
+				endif
+				
+				rem unit count in an area
+				if Triggerelement( n , p ).typ = TRIGGER_TYPE_UNIT_COUNT
+					
+					rem check if true
+					b = 0
+					for a = 0 to uUnit.CurrentMax
+						if Unit( a ).Active > 1
+							if (Unit( a ).pos.x#-Trigger( n ).pos.x#)^2 + (Unit( a ).pos.y#-Trigger( n ).pos.y#)^2 + (Unit( a ).pos.z#-Trigger( n ).pos.z#)^2 < Trigger( n ).radius#*Trigger( n ).radius#
+								inc b
+								if b >= TriggerElement( n , p ).value then exit
+							endif
+						endif
+					next a
+					if a < uUnit.CurrentMax+1
+						success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 1 )
+					
+					rem not true
+					else
+						success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 0 )
+					endif
+				
+				endif
+				
+				rem unit control type in an area
+				if Triggerelement( n , p ).typ = TRIGGER_TYPE_UNIT_CONTROL
+					
+					rem check if true
+					for a = 0 to uUnit.CurrentMax
+						if Unit( a ).Active > 1
+							if (Unit( a ).pos.x#-Trigger( n ).pos.x#)^2 + (Unit( a ).pos.y#-Trigger( n ).pos.y#)^2 + (Unit( a ).pos.z#-Trigger( n ).pos.z#)^2 < Trigger( n ).radius#*Trigger( n ).radius#
+								if TriggerElement( n , p ).value <> Unit( a ).Control then exit
+							endif
+						endif
+					next a
+					if a = uUnit.CurrentMax+1
+						success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 1 )
+					
+					rem not true
+					else
+						success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 0 )
+					endif
+				
+				endif
+				
+				rem unit death
+				if TriggerElement( n , p ).typ = TRIGGER_TYPE_UNIT_DEATH
+					
+					rem check if true
+					a = 0
+					if TriggerElement( n , p ).value >= 0 and TriggerElement( n , p ).value <= uUnit.CurrentMax
+						if Unit( TriggerElement( n , p ).value ).Active < 2
+							success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 1 )
+							a = 1
+						endif
+					endif
+					
+					rem check if not true
+					if a = 0
+						success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 0 )
+					endif
+					
+				endif
+				
+			next p
+			
+			rem trigger was successful
+			if success = 1
+				if Trigger( n ).toggle = 0
+					Trigger( n ).toggle = 1
+					
+					rem execute script
+					RunScript( Trigger( n ).ScriptID )
+					
+					rem if it's a one time only trigger, destroy
+					if Trigger( n ).once = 1 then DestroyTrigger( n )
+					
+				endif
+			else
+				Trigger( n ).toggle = 0
+			endif
+			
+		endif
+	next n
+			
+		remstart unit counter trigger
+		if Trigger( n ).active = 4
+			
+			rem check if time is up
+			if Trigger( n ).time - timer() < 0
+				
+				rem execute script
+				RunScript( Trigger( n ).Script )
+				
+				rem if it's a one time only trigger, destroy
+				if Trigger( n ).once = 1
+					DestroyTrigger( n )
+					
+				rem reset time
+				else
+					Trigger( n ).time = timer() + Trigger( n ).resettime
+					
+				endif
+			
+			endif
+		endif
+		
+   next n
+	remend
+
+endfunction
+
+function _Get_Trigger_State( success , junctionTyp , booleanValue )
+	
+	rem first time
+	if success = -1
+		success = booleanValue
+	
+	rem not first time
+	else
+		if junctionTyp = TRIGGER_JUNCTION_OR then success = (success or booleanValue)
+		if junctionTyp = TRIGGER_JUNCTION_AND then success = (success and booleanValue)
+		if junctionTyp = TRIGGER_JUNCTION_NOR then success = 1-(success or booleanValue)
+		if junctionTyp = TRIGGER_JUNCTION_NAND then success = 1-(success and booleanValue)
+		if junctionTyp = TRIGGER_JUNCTION_INV_OR then success = (success or (1-booleanValue))
+		if junctionTyp = TRIGGER_JUNCTION_INV_AND then success = (success and (1-booleanValue))
+	endif
+	
+endfunction success

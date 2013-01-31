@@ -1,0 +1,380 @@
+rem ---------------------------------------------------------------------------
+rem Click object - Effect when mouse clicks terrain
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type ClickObjVT
+	logging                          			as integer
+	CurrentMax											as integer
+endtype
+
+type ClickObjAT
+	Active                           			as integer
+	ConnectionActive                 			as integer
+	pos                              			as vec3
+	Life                             			as integer
+	Obj                              			as word
+	ConnectObj                       			as word
+	Obj1                             			as word
+	Obj2                             			as word
+	color                            			as dword
+	FollowObj											as dword
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitClickObj()
+
+	rem debug
+	DebugOutput( 0 , "Initialising click object" , DEBUG_NORMAL )
+
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+   rem ---------------------------------------------------------------------------
+
+	global uClickObj                  			as ClickObjVT
+
+	rem ---------------------------------------------------------------------------
+	rem Global Arrays
+	rem ---------------------------------------------------------------------------
+
+	global dim ClickObj() 							as ClickObjAT
+	
+	rem initial values
+	uClickObj.CurrentMax = -1
+
+endfunction
+
+function CreateClickObj( x# , y# , z# , Color , Life , ForceCreation , FollowObj )
+
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "CreateClickObj " + str$(x#) + "," + str$(y#) + "," + str$(z#) + "," + str$(Color) + "," + str$(Life) + "," + str$(ForceCreation) + "," + str$(FollowObj) )
+	
+	rem find a click object already there
+	if ForceCreation = 0
+		for n = 0 to uClickObj.CurrentMax
+			if ClickObj( n ).Active = 2
+				if ClickObj( n ).pos.x# = x# and ClickObj( n ).pos.z# = z#
+					if ClickObj( n ).Life = Life then exitfunction n
+					if ClickObj( n ).Life <> 0 and Life <> 0 then exitfunction n
+				endif
+			endif
+		next n
+	endif
+	
+	rem find free slot
+	for n = 0 to uClickObj.CurrentMax
+		if ClickObj( n ).Active < 2 then exit
+	next n
+	
+	rem no free slot, create
+	if n = uClickObj.CurrentMax + 1
+		array insert at bottom ClickObj()
+		inc uClickObj.CurrentMax
+	endif
+	
+	rem load object
+	if ClickObj( n ).Active = 0
+		ClickObj( n ).Obj = find free object()
+		
+		rem check if it needs to be loaded
+		if n = 0
+			LoadObject( "media\objects\clickobj\clickobj.x" , ClickObj( n ).Obj )
+			ConvertObjectFVFTo338( ClickObj( n ).Obj )
+			set object transparency ClickObj( n ).Obj , 3
+			set object cull ClickObj( n ).Obj , 0
+			disable object zwrite ClickObj( n ).Obj
+			set object light ClickObj( n ).Obj , 0
+			
+		rem clone it
+		else
+			clone object ClickObj( n ).Obj , ClickObj( 0 ).Obj , 1
+			set object transparency ClickObj( n ).Obj , 3
+		endif
+	endif
+
+	rem set object properties
+	show object ClickObj( n ).Obj
+	SetObjectDiffuse( ClickObj( n ).Obj , Color )
+	position object ClickObj( n ).Obj , x# , y# , z#
+	PlayObject( ClickObj( n ).Obj , 0 , 64 , 0.64 )
+	
+	rem set parameters
+	ClickObj( n ).Active = 2
+	if Life <> 0 then ClickObj( n ).Life = Life + hitimer( 1000 ) else ClickObj( n ).Life = 0
+	ClickObj( n ).pos.x# = x#
+	ClickObj( n ).pos.y# = y#
+	ClickObj( n ).pos.z# = z#
+	ClickObj( n ).Color = color
+	ClickObj( n ).FollowObj = FollowObj
+	
+	rem if creation was forced, hide if another one is already at it's position
+	if ForceCreation = 1
+		for s = 0 to uClickObj.CurrentMax
+			if s <> n
+				if ClickObj( s ).Active > 1
+					if ClickObj( s ).pos.x# = x# and ClickObj( s ).pos.z# = z# and ClickObj( s ).Life = 0
+						HideClickObj( n )
+						exit
+					endif
+				endif
+			endif
+		next s
+	endif
+	
+endfunction n
+
+function DestroyClickObj( n )
+	
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "DestroyClickObj " + str$(n) )
+	
+	rem make sure active
+	if ClickObj( n ).Active < 2
+		if uClickObj.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy
+	hide object ClickObj( n ).Obj
+	StopObject( ClickObj( n ).Obj )
+	ClickObj( n ).Active = 1
+	if ClickObj( n ).ConnectObj > 0 then hide object ClickObj( n ).ConnectObj
+	ClickObj( n ).ConnectionActive = 0
+	
+endfunction n
+
+function HideClickObj( n )
+	
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "HideClickObj " + str$(n) )
+	
+	rem make sure active
+	if ClickObj( n ).Active < 2
+		if uClickObj.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem hide
+	hide object ClickObj( n ).Obj
+	ClickObj( n ).Active = 3
+
+endfunction n
+
+function HideClickObjConnection( n )
+	
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "HideClickObjConnection " + str$(n) )
+	
+	rem make sure active
+	if ClickObj( n ).Active < 2
+		if uClickObj.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem hide
+	if ClickObj( n ).ConnectObj > 0 then hide object ClickObj( n ).ConnectObj
+
+endfunction n
+
+function ShowClickObj( n )
+
+	rem local variables
+	local s as integer
+	
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "ShowClickObj " + str$(n) )
+	
+	rem make sure active
+	if ClickObj( n ).Active < 2
+		if uClickObj.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem check if any other click objects are at the same position
+	for s = 0 to uClickObj.CurrentMax
+		if s <> n
+			if ClickObj( s ).Active = 2
+				if ClickObj( s ).pos.x# = ClickObj( n ).pos.x# and ClickObj( s ).pos.z# = ClickObj( n ).pos.z# and ClickObj( s ).Life = ClickObj( n ).Life
+					exitfunction -1
+				endif
+			endif
+		endif
+	next s
+	
+	rem show
+	show object ClickObj( n ).Obj
+	if ClickObj( n ).ConnectionActive = 1 then show object ClickObj( n ).ConnectObj
+	ClickObj( n ).Active = 2
+
+endfunction n
+
+function ShowClickObjConnection( n )
+	
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "ShowClickObjConnection" + str$(n) )
+	
+	rem make sure active
+	if ClickObj( n ).Active < 2
+		if uClickObj.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem show
+	if ClickObj( n ).ConnectObj > 0 then show object ClickObj( n ).ConnectObj
+	
+endfunction n
+
+function CreateClickObjConnection( n , Obj1 , Obj2 )
+
+	rem local variables
+	local pos1 as vec3
+	local pos2 as vec3
+	local angle# as float
+
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "CreateClickObjConnection " + str$(n) + "," + str$(Obj1) + "," + str$(Obj2) )
+	
+	rem make sure active
+	if ClickObj( n ).Active < 2
+		if uClickObj.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem create object if necessary
+	if ClickObj( n ).ConnectObj = 0
+		
+		rem create object
+		ClickObj( n ).ConnectObj = find free object()
+		make object plain ClickObj( n ).ConnectObj , 1 , 1
+		ConvertObjectFVFTo338( ClickObj( n ).ConnectObj )
+		position object ClickObj( n ).ConnectObj , 0 , 0 , 0
+		texture object ClickObj( n ).ConnectObj , IMGClickObjConnection
+		set object transparency ClickObj( n ).ConnectObj , 1
+		disable object zdepth ClickObj( n ).ConnectObj
+		set object light ClickObj( n ).ConnectObj , 0
+		set object cull ClickObj( n ).ConnectObj , 0
+		set object radius ClickObj( n ).ConnectObj , -1
+		
+		rem edit diffuse data
+		lock vertexdata for limb ClickObj( n ).ConnectObj , 0
+			set vertexdata diffuse 0 , 0x00FFFFFF
+			set vertexdata diffuse 1 , 0x00FFFFFF
+			set vertexdata diffuse 2 , 0xFFFFFFFF
+			set vertexdata diffuse 3 , 0x00FFFFFF
+			set vertexdata diffuse 4 , 0xFFFFFFFF
+			set vertexdata diffuse 5 , 0xFFFFFFFF
+		unlock vertexdata
+		
+	endif
+	
+	rem object properties
+	SetObjectDiffuse( ClickObj( n ).ConnectObj , ClickObj( n ).Color )
+	show object ClickObj( n ).ConnectObj
+	
+	rem set active
+	ClickObj( n ).ConnectionActive = 1
+	ClickObj( n ).Obj1 = Obj1
+	ClickObj( n ).Obj2 = Obj2
+	
+	rem position correctly
+	ControlClickObj()
+
+endfunction n
+
+function DestroyClickObjConnection( n )
+	
+	rem logging
+	if uClickObj.logging = 1 then AddTextToConsole( 0 , "DestroyClickObjConnection " + str$(n) )
+	
+	rem make sure active
+	if ClickObj( n ).Active < 2
+		if uClickObj.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy
+	if ClickObj( n ).ConnectObj > 0 then hide object ClickObj( n ).ConnectObj
+	ClickObj( n ).ConnectionActive = 0
+
+endfunction n
+
+function ControlClickObj()
+	
+	rem local variables
+   local n as integer
+	local pos1 as vec3
+	local pos2 as vec3
+	local angle# as float
+
+	rem loop through all active click objects
+   for n = 0 to uClickObj.CurrentMax
+		if ClickObj( n ).Active = 2
+			
+			rem animation
+			if ObjectPlaying( ClickObj( n ).Obj ) = 0 then PlayObject( ClickObj( n ).Obj , 0 , 64 , 0.64 )
+			
+			rem angle
+			TiltObjectToTerrain( ClickObj( n ).Obj , 2 )
+			
+			rem follow object
+			if ClickObj( n ).FollowObj > 0
+				if object exist( ClickObj( n ).FollowObj )
+					ClickObj( n ).pos.x# = object position x( ClickObj( n ).FollowObj )
+					ClickObj( n ).pos.y# = object position y( ClickObj( n ).FollowObj )
+					ClickObj( n ).pos.z# = object position z( ClickObj( n ).FollowObj )
+					position object ClickObj( n ).Obj , ClickObj( n ).pos.x# , ClickObj( n ).pos.y# , ClickObj( n ).pos.z#
+				endif
+			endif
+			
+			rem life has run out
+			if ClickObj( n ).Life <> 0
+				if ClickObj( n ).Life - hitimer( 1000 ) < 0 then DestroyClickObj( n )
+			endif
+			
+		endif
+		
+		rem connection
+		if ClickObj( n ).Active > 1
+			if ClickObj( n ).ConnectionActive = 1
+				
+				rem get object positions
+				pos1.x# = object position x( ClickObj( n ).Obj1 )
+				pos1.y# = object position y( ClickObj( n ).Obj1 )
+				pos1.z# = object position z( ClickObj( n ).Obj1 )
+				pos2.x# = object position x( ClickObj( n ).Obj2 )
+				pos2.y# = object position y( ClickObj( n ).Obj2 )
+				pos2.z# = object position z( ClickObj( n ).Obj2 )
+				
+				rem calculate angle
+				angle# = wrapvalue( 270 - atanfull( pos1.z# - pos2.z# , pos1.x# - pos2.x# ) )
+				
+				rem object properties
+				lock vertexdata for limb ClickObj( n ).ConnectObj , 0
+					set vertexdata position 0 , 0-newxvalue( pos1.x# , angle# + 90 , 0.1 ) , pos1.y# , 0-newzvalue( pos1.z# , angle# + 90 , 0.1 )
+					set vertexdata position 1 , 0-newxvalue( pos1.x# , angle# - 90 , 0.1 ) , pos1.y# , 0-newzvalue( pos1.z# , angle# - 90 , 0.1 )
+					set vertexdata position 3 , 0-newxvalue( pos1.x# , angle# - 90 , 0.1 ) , pos1.y# , 0-newzvalue( pos1.z# , angle# - 90 , 0.1 )
+					set vertexdata position 2 , 0-newxvalue( pos2.x# , angle# + 90 , 0.1 ) , pos2.y# , 0-newzvalue( pos2.z# , angle# + 90 , 0.1 )
+					set vertexdata position 4 , 0-newxvalue( pos2.x# , angle# - 90 , 0.1 ) , pos2.y# , 0-newzvalue( pos2.z# , angle# - 90 , 0.1 )
+					set vertexdata position 5 , 0-newxvalue( pos2.x# , angle# + 90 , 0.1 ) , pos2.y# , 0-newzvalue( pos2.z# , angle# + 90 , 0.1 )
+				unlock vertexdata
+				
+			endif
+		endif
+		
+	next n
+
+endfunction

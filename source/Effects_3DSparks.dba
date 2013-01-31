@@ -1,0 +1,385 @@
+rem --------------------------------------------------------------
+rem 3D Spark
+rem --------------------------------------------------------------
+
+rem --------------------------------------------------------------
+rem User Defined Types
+rem --------------------------------------------------------------
+
+type Effects_3DSparkVT
+	CurrentMax												as integer
+   vect1														as integer
+   vect2														as integer
+   vect3														as integer
+   vect4														as integer
+	IMG1														as dword
+	IMG2														as dword
+endtype
+
+type Effects_3DSparkAT
+   Active													as integer
+   pos1														as vec3
+   pos2														as vec3
+   Force														as vec3
+   SparkObj													as word
+   Obj1														as word
+   Obj2														as word
+   Divisions												as integer
+   Size#														as float
+   Scatter#													as float
+   FollowObj1												as word
+   FollowLimb1												as word
+   FollowObj2												as word
+   FollowLimb2												as word
+   Update													as integer
+   UpdateCounter											as integer
+endtype
+
+rem --------------------------------------------------------------
+rem Initialization
+rem --------------------------------------------------------------
+
+function Effects_Init3DSpark()
+
+   rem --------------------------------------------------------------
+   rem Global variables
+   rem --------------------------------------------------------------
+      
+   global uEffects_3DSpark								as Effects_3DSparkVT
+   
+   rem --------------------------------------------------------------
+   rem arrays
+   rem --------------------------------------------------------------
+   
+   global dim Effects_3DSpark()						as Effects_3DSparkAT
+   
+   rem --------------------------------------------------------------
+   rem images
+   rem --------------------------------------------------------------
+   
+   uEffects_3DSpark.IMG1 = find free image()
+   load image "media\images\effects\sparks\spark2.png" , uEffects_3DSpark.IMG1
+   uEffects_3DSpark.IMG2 = find free image()
+   load image "media\images\effects\sparks\spark1.png" , uEffects_3DSpark.IMG2
+   
+   rem --------------------------------------------------------------
+   rem make vectors
+   rem --------------------------------------------------------------
+
+   uEffects_3DSpark.vect1 = find free vector() : r = make vector3( uEffects_3DSpark.vect1 )
+   uEffects_3DSpark.vect2 = find free vector() : r = make vector3( uEffects_3DSpark.vect2 )
+   uEffects_3DSpark.vect3 = find free vector() : r = make vector3( uEffects_3DSpark.vect3 )
+   uEffects_3DSpark.vect4 = find free vector() : r = make vector3( uEffects_3DSpark.vect4 )
+	
+	rem initial values
+	uEffects_3DSpark.CurrentMax = -1
+
+endfunction
+
+rem --------------------------------------------------------------
+rem functions
+rem --------------------------------------------------------------
+
+function Effects_Create3DSpark( Divisions , size# )
+
+   rem local variables
+   local n as integer
+   
+   rem find free slot for 3D Spark
+   for n = 0 to uEffects_3DSpark.CurrentMax
+      if Effects_3DSpark( n ).Active < 2 then exit
+   next n
+   
+   rem no free slot available? Create
+   if n = uEffects_3DSpark.CurrentMax+1
+		inc uEffects_3DSpark.CurrentMax
+		array insert at bottom Effects_3DSpark()
+	endif
+   
+   rem slot is being used for the first time
+   if Effects_3DSpark( n ).Active = 0
+      
+      rem create subdivided plain
+      Effects_3DSpark( n ).SparkObj = find free object()
+      make object plain Effects_3DSpark( n ).SparkObj , 10 , 10 , 1 , Divisions
+      texture object Effects_3DSpark( n ).SparkObj , uEffects_3DSpark.IMG1
+      ghost object on Effects_3DSpark( n ).SparkObj
+      set object radius Effects_3DSpark( n ).SparkObj , -1
+      set object transparency Effects_3DSpark( n ).SparkObj , 4
+      set object cull Effects_3DSpark( n ).SparkObj , 0
+      disable object zwrite Effects_3DSpark( n ).SparkObj
+      
+      rem create flare objects
+      Effects_3DSpark( n ).Obj1 = find free object()
+      make object plain Effects_3DSpark( n ).Obj1 , 0 , 0
+      i = find free object()
+      make object plain i , 2 , 2
+      make mesh from object 1 , i
+      delete object i
+      add limb Effects_3DSpark( n ).Obj1 , 1 , 1
+      texture object Effects_3DSpark( n ).Obj1 , uEffects_3DSpark.IMG2
+      ghost object on Effects_3DSpark( n ).Obj1
+      set object transparency Effects_3DSpark( n ).Obj1 , 4
+      disable object zwrite Effects_3DSpark( n ).Obj1
+
+      Effects_3DSpark( n ).Obj2 = find free object()
+      make object plain Effects_3DSpark( n ).Obj2 , 0 , 0
+      add limb Effects_3DSpark( n ).Obj2 , 1 , 1
+      delete mesh 1
+      texture object Effects_3DSpark( n ).Obj2 , uEffects_3DSpark.IMG2
+      ghost object on Effects_3DSpark( n ).Obj2
+      set object transparency Effects_3DSpark( n ).Obj2,4
+      disable object zwrite Effects_3DSpark( n ).Obj2
+
+   endif
+   
+   rem set parameters
+   Effects_3DSpark( n ).Active = 2
+   Effects_3DSpark( n ).Divisions = Divisions
+   Effects_3DSpark( n ).Size# = size#
+   Effects_3DSpark( n ).Update = 0
+   show object Effects_3DSpark( n ).SparkObj
+   show object Effects_3DSpark( n ).Obj1
+   show object Effects_3DSpark( n ).Obj2
+   set object diffuse Effects_3DSpark( n ).SparkObj , rgb(102 , 242 , 242 )
+   set object diffuse Effects_3DSpark( n ).Obj1 , rgb( 102 , 242 , 242 )
+   set object diffuse Effects_3DSpark( n ).Obj2 , rgb( 102 , 242 , 242 )
+   scale object Effects_3DSpark( n ).Obj1 , size#*100 , size#*100 , size#*100
+   scale object Effects_3DSpark( n ).Obj2 , size#*100 , size#*100 , size#*100
+   set object normals Effects_3DSpark( n ).Obj1
+   set object normals Effects_3DSpark( n ).Obj2
+
+endfunction n
+
+function Effects_Destroy3DSpark( n )
+
+   rem if not active, exit
+   if Effects_3DSpark( n ).Active < 2 then exitfunction -1
+   
+   rem destroy spark
+   hide object Effects_3DSpark( n ).SparkObj
+   hide object Effects_3DSpark( n ).Obj1
+   hide object Effects_3DSpark( n ).Obj2
+
+   rem reset follow values
+   Effects_3DSpark( n ).FollowObj1 = 0
+   Effects_3DSpark( n ).FollowObj2 = 0
+
+endfunction n
+
+function Effects_DestroyAll3DSparks( n )
+
+   rem local variables
+   local n as integer
+   
+   rem destroy all Sparks
+   for n = 0 to uEffects_3DSpark.CurrentMax
+      Effects_Destroy3DSpark( n )
+   next n
+   
+endfunction
+
+function Effects_Position3DSpark( n , x1# , y1# , z1# , x2# , y2# , z2# )
+
+   rem if not active, exit
+   if Effects_3DSpark( n ).Active < 2 then exitfunction -1
+   
+   rem update positions
+   Effects_3DSpark( n ).pos1.x# = x1#
+   Effects_3DSpark( n ).pos1.y# = y1#
+   Effects_3DSpark( n ).pos1.z# = z1#
+   Effects_3DSpark( n ).pos2.x# = x2#
+   Effects_3DSpark( n ).pos2.y# = y2#
+   Effects_3DSpark( n ).pos2.z# = z2#
+
+endfunction n
+
+function Effects_SetScatter3DSpark( n ,scatter# )
+
+   rem if not active, exit
+   if Effects_3DSpark( n ).Active < 2 then exitfunction -1
+   
+   rem set scatter value
+   Effects_3DSpark( n ).Scatter# = scatter#
+   
+endfunction n
+
+function Effects_SetForce3DSpark( n , x# , y# , z# )
+
+   rem if not active, exit
+   if Effects_3DSpark( n ).Active < 2 then exitfunction -1
+   
+   rem set force values
+   Effects_3DSpark( n ).Force.x# = x#
+   Effects_3DSpark( n ).Force.y# = y#
+   Effects_3DSpark( n ).Force.z# = z#
+
+endfunction n
+
+function Effects_SetFollow3DSpark( n , FollowObj1 , FollowLimb1 , FollowObj2 , FollowLimb2 )
+
+   rem if not active, exit
+   if Effects_3DSpark( n ).Active < 2 then exitfunction -1
+   
+   rem set follow data
+   Effects_3DSpark( n ).FollowObj1 = FollowObj1
+   Effects_3DSpark( n ).FollowLimb1 = FollowLimb1
+   Effects_3DSpark( n ).FollowObj2 = FollowObj2
+   Effects_3DSpark( n ).FollowLimb2 = FollowLimb2
+
+endfunction n
+
+function Effects_Color3DSpark( n , color )
+
+   rem if not active, exit
+   if Effects_3DSpark( n ).Active < 2 then exitfunction -1
+   
+   rem color object
+   set object diffuse Effects_3DSpark( n ).SparkObj , color
+   set object diffuse Effects_3DSpark( n ).Obj1 , color
+   set object diffuse Effects_3DSpark( n ).Obj2 , color
+   
+endfunction n
+
+function Effects_SetUpdate3DSpark( n , update )
+
+   rem if not active, exit
+   if Effects_3DSpark( n ).Active < 2 then exitfunction -1
+   
+   rem set update value
+   Effects_3DSpark( n ).Update = update
+
+endfunction n
+
+function Effects_Control3DSparks()
+
+   rem local variables
+   local n as integer
+   local dist# as float
+   local jumpdist# as float
+   local x1# as float
+   local x2# as float
+   local y1# as float
+   local y2# as float
+   local z1# as float
+   local z2# as float
+   local rand# as float
+   
+   rem loop through all active effects
+   for n = 0 to uEffects_3DSpark.CurrentMax
+      if Effects_3DSpark( n ).active = 2
+      
+         rem update counter
+         inc Effects_3DSpark( n ).UpdateCounter
+         if Effects_3DSpark( n ).UpdateCounter > Effects_3DSpark( n ).Update then Effects_3DSpark( n ).UpdateCounter=0
+         
+         if Effects_3DSpark( n ).UpdateCounter = 0
+         
+            rem check if spark is following anything
+            if Effects_3DSpark( n ).FollowObj1 > 0
+					if object exist( Effects_3DSpark( n ).FollowObj1 )
+						Effects_3DSpark( n ).pos1.x# = limb position x( Effects_3DSpark( n ).FollowObj1 , Effects_3DSpark( n ).FollowLimb1 )
+						Effects_3DSpark( n ).pos1.y# = limb position y( Effects_3DSpark( n ).FollowObj1 , Effects_3DSpark( n ).FollowLimb1 )
+						Effects_3DSpark( n ).pos1.z# = limb position z( Effects_3DSpark( n ).FollowObj1 , Effects_3DSpark( n ).FollowLimb1 )
+					endif
+				endif
+            if Effects_3DSpark( n ).FollowObj2 > 0
+					if object exist( Effects_3DSpark( n ).FollowObj2 )
+						Effects_3DSpark( n ).pos2.x# = limb position x( Effects_3DSpark( n ).FollowObj2 , Effects_3DSpark( n ).FollowLimb2 )
+						Effects_3DSpark( n ).pos2.y# = limb position y( Effects_3DSpark( n ).FollowObj2 , Effects_3DSpark( n ).FollowLimb2 )
+						Effects_3DSpark( n ).pos2.z# = limb position z( Effects_3DSpark( n ).FollowObj2 , Effects_3DSpark( n ).FollowLimb2 )
+					endif
+				endif
+      
+            rem position flares
+            position object Effects_3DSpark( n ).Obj1 , Effects_3DSpark( n ).pos1.x# , Effects_3DSpark( n ).pos1.y# , Effects_3DSpark( n ).pos1.z#
+            position object Effects_3DSpark( n ).Obj2 , Effects_3DSpark( n ).pos2.x# , Effects_3DSpark( n ).pos2.y# , Effects_3DSpark( n ).pos2.z#
+            rotate limb Effects_3DSpark( n ).Obj1 , 1 , 0 , 0 , rnd( 360 )
+            rotate limb Effects_3DSpark( n ).Obj2 , 1 , 0 , 0 , rnd( 360 )
+            point object Effects_3DSpark( n ).Obj1 , camera position x() , camera position y() , camera position z()
+            point object Effects_3DSpark( n ).Obj2 , camera position x() , camera position y() , camera position z()
+            
+            rem calculate step distance
+            jumpdist# = ((Effects_3DSpark( n ).pos1.x# - Effects_3DSpark( n ).pos2.x# )^2 + ( Effects_3DSpark( n ).pos1.y# - Effects_3DSpark( n ).pos2.y# )^2 + ( Effects_3DSpark( n ).pos1.z# - Effects_3DSpark( n ).pos2.z# )^2 )^0.5 / Effects_3DSpark( n ).Divisions
+            
+            rem edit vertexdata
+            dist#=0
+            lock vertexdata for limb Effects_3DSpark( n ).SparkObj , 0
+               for i = 0 to Effects_3DSpark( n ).Divisions*2 step 2
+               
+                  rem store positions
+                  x1# = Effects_3DSpark( n ).pos1.x#
+                  y1# = Effects_3DSpark( n ).pos1.y#
+                  z1# = Effects_3DSpark( n ).pos1.z#
+                  x2# = Effects_3DSpark( n ).pos2.x#
+                  y2# = Effects_3DSpark( n ).pos2.y#
+                  z2# = Effects_3DSpark( n ).pos2.z#
+
+                  rem add bend
+                  rand# = sin( 180.0 * dist# / ( jumpdist# * Effects_3DSpark( n ).Divisions ) )
+                  inc x1# , Effects_3DSpark( n ).Force.x# * rand#
+                  inc y1# , Effects_3DSpark( n ).Force.y# * rand#
+                  inc z1# , Effects_3DSpark( n ).Force.z# * rand#
+                  inc x2# , Effects_3DSpark( n ).Force.x# * rand#
+                  inc y2# , Effects_3DSpark( n ).Force.y# * rand#
+                  inc z2# , Effects_3DSpark( n ).Force.z# * rand#
+
+                  rem scatter
+                  if i > 0 and i < Effects_3DSpark( n ).Divisions*2
+                     rand# = ( 10-rnd(20) ) * Effects_3DSpark( n ).Scatter# / 20.0
+                     inc x1# , rand#
+                     inc x2# , rand#
+                     rand# = ( 10-rnd(20) ) * Effects_3DSpark( n ).Scatter# / 20.0
+                     inc y1# , rand#
+                     inc y2# , rand#
+                     rand# = ( 10-rnd(20) ) * Effects_3DSpark( n ).Scatter# / 20.0
+                     inc z1# , rand#
+                     inc z2# , rand#
+                  endif
+                  
+                  rem store positions of spark start, spark end, and camera into vectors 1,2 and 4
+                  set vector3 uEffects_3DSpark.vect1 , x1# , y1# , z1#
+                  set vector3 uEffects_3DSpark.vect2 , x2# , y2# , z2#
+                  set vector3 uEffects_3DSpark.vect4 , camera position x() , camera position y() , camera position z()
+                  
+                  rem calculate linear point C between A and B
+                  subtract vector3 uEffects_3DSpark.vect3 , uEffects_3DSpark.vect1 , uEffects_3DSpark.vect2
+                  normalize vector3 uEffects_3DSpark.vect3 , uEffects_3DSpark.vect3
+                  multiply vector3 uEffects_3DSpark.vect3 , dist#
+                  add vector3 uEffects_3DSpark.vect3 , uEffects_3DSpark.vect2 , uEffects_3DSpark.vect3
+                  
+                  rem calculate angle for two end points X and Y
+                  subtract vector3 uEffects_3DSpark.vect1 , uEffects_3DSpark.vect1 , uEffects_3DSpark.vect2
+                  subtract vector3 uEffects_3DSpark.vect2 , uEffects_3DSpark.vect4 , uEffects_3DSpark.vect3
+                  cross product vector3 uEffects_3DSpark.vect4 , uEffects_3DSpark.vect1 , uEffects_3DSpark.vect2
+                  normalize vector3 uEffects_3DSpark.vect4 , uEffects_3DSpark.vect4
+                  copy vector3 uEffects_3DSpark.vect1 , uEffects_3DSpark.vect4
+                  
+                  rem calculate end points using angle
+                  multiply vector3 uEffects_3DSpark.vect4 , Effects_3DSpark( n ).Size#
+                  multiply vector3 uEffects_3DSpark.vect1 , 0 - Effects_3DSpark( n ).Size#
+                  add vector3 uEffects_3DSpark.vect4 , uEffects_3DSpark.vect4 , uEffects_3DSpark.vect3
+                  add vector3 uEffects_3DSpark.vect1 , uEffects_3DSpark.vect1 , uEffects_3DSpark.vect3
+                  
+                  rem set values
+                  x1# = x vector3( uEffects_3DSpark.vect4 )
+                  y1# = y vector3( uEffects_3DSpark.vect4 )
+                  z1# = z vector3( uEffects_3DSpark.vect4 )
+                  x2# = x vector3( uEffects_3DSpark.vect1 )
+                  y2# = y vector3( uEffects_3DSpark.vect1 )
+                  z2# = z vector3( uEffects_3DSpark.vect1 )
+                  
+                  rem position vertices
+                  set vertexdata position i , x1# , y1# , z1#
+                  set vertexdata position i+1 , x2# , y2# , z2#
+                  
+                  rem update dummy object
+                  inc dist# , jumpdist#
+
+               next i
+            unlock vertexdata
+         endif
+      endif
+   next n
+
+endfunction

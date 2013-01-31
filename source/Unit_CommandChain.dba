@@ -1,0 +1,405 @@
+rem ---------------------------------------------------------------------------
+rem Unit command chain - Handles storage of all abilities
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User defined types
+rem ---------------------------------------------------------------------------
+
+type UnitCommandChainVT
+	CurrentMax												as integer
+endtype
+
+type UnitCommandChainAAT
+	Count														as integer
+	pos														as vec3
+	ability													as integer
+	ClickObjID												as integer
+	TargetUnit												as integer
+	PatrolPointer											as integer
+	PatrolPointerDirection								as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitUnitCommandChain()
+	
+	rem ---------------------------------------------------------------------------
+	rem Global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uUnitCommandChain							as UnitCommandChainVT
+	
+	rem ---------------------------------------------------------------------------
+	rem Global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim UnitCommandChain()						as UnitCommandChainAAT
+	
+	rem initial values
+	uUnitCommandChain.CurrentMax = -1
+	
+endfunction
+
+function AddAbilityToUnitCommandChain( UnitID , ability , x# , z# , TargetUnit )
+
+	rem next slot
+	inc UnitCommandChain( UnitID , 0 ).Count
+	
+	rem expand array if needed
+	if UnitCommandChain( UnitID , 0 ).Count > uUnitCommandChain.CurrentMax
+		inc uUnitCommandChain.CurrentMax
+		dim UnitCommandChain( uUnit.CurrentMax , uUnitCommandChain.CurrentMax ) as UnitCommandChainAAT
+	endif
+	
+	rem store in last index, if available
+	UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).ability = ability
+	UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).pos.x# = x#
+	UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).pos.z# = z#
+	UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).TargetUnit = TargetUnit
+	UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).ClickObjID = -1
+	
+	rem get object to follow
+	if TargetUnit > -1 then FollowObj = Unit( TargetUnit ).Obj else FollowObj = 0
+	
+	rem get height of terrain
+	if SC_RayCastGroup( COL_TERRAIN , x# , 200 , z# , x# , -200 , z# , 0 )
+		y# = SC_GetStaticCollisionY()
+	endif
+	
+	rem color of path red if unit is attacking
+	rem color path purple if unit is patrolling
+	color = 0xFF00FFFF
+	if ability = UNITABILITY_ATTACK then color = 0xFFFF4040
+	if ability = UNITABILITY_MAGIC_MISSILE then color = 0xFFFF4040
+	if ability = UNITABILITY_PATROL then color = 0xFFB115C8
+	
+	rem if this is the first command in the chain, create click object and hide it
+	if UnitCommandChain( UnitID , 0 ).Count = 0
+		UnitCommandChain( UnitID , 0 ).ClickObjID = CreateClickObj( x# , y# , z# , color , 0 , 1 , FollowObj )
+		HideClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID )
+	endif
+	
+	rem second command creates a connection
+	if UnitCommandChain( UnitID , 0 ).Count = 1
+		
+		rem next click object
+		ShowClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID )
+		UnitCommandChain( UnitID , 1 , 0 ).ClickObjID = CreateClickObj( x# , y# , z# , color , 0 , 0 , FollowObj )
+		
+		rem create connections
+		CreateClickObjConnection( UnitCommandChain( UnitID , 0 ).ClickObjID , Unit( UnitID ).Obj , ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).Obj )
+		CreateClickObjConnection( UnitCommandChain( UnitID , 1 ).ClickObjID , ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).Obj , ClickObj( UnitCommandChain( UnitID , 1 ).ClickObjID ).Obj )
+		
+	endif
+	
+	rem more than 2 commands queued
+	if UnitCommandChain( UnitID , 0 ).Count > 1
+		
+		rem add next click object with connection
+		UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).ClickObjID = CreateClickObj( x# , y# , z# , color , 0 , 0 , FollowObj )
+		CreateClickObjConnection( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).ClickObjID , ClickObj( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count - 1 ).ClickObjID ).Obj , ClickObj( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count ).ClickObjID ).Obj )
+	
+	endif
+
+	rem if the ability is patrol, replace last ability with a patrol as well
+	if ability = UNITABILITY_PATROL
+		
+		rem replace last command
+		if UnitCommandChain( UnitID , 0 ).Count > 0
+			UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count-1 ).ability = UNITABILITY_PATROL
+			
+			rem re-colour click object
+			if UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count-1 ).ClickObjID > -1
+				SetObjectDiffuse( ClickObj( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).Count-1 ).ClickObjID ).Obj , color )
+			endif
+			
+		rem if last command doesn't exist, create it
+		else
+		
+			rem if unit is in a formation, get formation positions, else use unit positions
+			if Unit( UnitID ).UseFormation > -1
+				x# = UnitFormation( Unit( UnitID ).UseFormation ).AveragePos.x#
+				z# = UnitFormation( Unit( UnitID ).UseFormation ).AveragePos.z#
+			else
+				x# = Unit( UnitID ).pos.x#
+				z# = Unit( UnitID ).pos.z#
+			endif
+			
+			rem add to chain
+			AddAbilityToUnitCommandChain( UnitID , ability , x# , z# , TargetUnit )
+			
+			rem swap data
+			x# = UnitCommandChain( UnitID , 0 ).pos.x#
+			z# = UnitCommandChain( UnitID , 0 ).pos.z#
+			TargetUnit = UnitCommandChain( UnitID , 0 ).ClickObjID
+			UnitCommandChain( UnitID , 0 ).pos = UnitCommandChain( UnitID , 1 ).pos
+			UnitCommandChain( UnitID , 0 ).ClickObjID = UnitCommandChain( UnitID , 1 ).ClickObjID
+			UnitCommandChain( UnitID , 1 ).pos.x# = x#
+			UnitCommandChain( UnitID , 1 ).pos.z# = z#
+			UnitCommandChain( UnitID , 1 ).ClickObjID = TargetUnit
+			
+		endif
+	endif
+
+endfunction
+
+function ExecuteAbilityFromUnitCommandChain( UnitID )
+
+	rem check if there is a slot
+	if UnitCommandChain( UnitID , 0 ).Count = -1 then exitfunction
+	
+	rem special case with patrol ability, don't remove any data
+	if UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ability = UNITABILITY_PATROL
+		
+		rem store previous pointer
+		s = UnitCommandChain( UnitID , 0 ).PatrolPointer
+		
+		rem increment patrol pointer until the next one is found
+		repeat
+			inc UnitCommandChain( UnitID , 0 ).PatrolPointer , UnitCommandChain( UnitID , 0 ).PatrolPointerDirection
+			if UnitCommandChain( UnitID , 0 ).PatrolPointer > UnitCommandChain( UnitID , 0 ).Count or UnitCommandChain( UnitID , 0 ).PatrolPointer < 0
+				UnitCommandChain( UnitID , 0 ).PatrolPointerDirection = UnitCommandChain( UnitID , 0 ).PatrolPointerDirection * (-1)
+				UnitCommandChain( UnitID , 0 ).PatrolPointer = range( UnitCommandChain( UnitID , 0 ).PatrolPointer , 0 , UnitCommandChain( UnitID ).Count )
+			endif
+		until UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ability = UNITABILITY_PATROL
+		
+		rem update previous connection so it binds to both waypoints again
+		if UnitCommandChain( UnitID , s ).ClickObjID > -1
+			DestroyClickObjConnection( UnitCommandChain( UnitID , s ).ClickObjID )
+			CreateClickObjConnection( UnitCommandChain( UnitID , s ).ClickObjID , ClickObj( UnitCommandChain( UnitID , s ).ClickObjID ).Obj , ClickObj( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID ).Obj )
+			if Unit( UnitID ).Selected < 2 then HideClickObjConnection( UnitCommandChain( UnitID , s ).ClickObjID )
+		endif
+		
+		rem update next connection so it binds to the player instead of the waypoint
+		if UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID > -1
+			DestroyClickObjConnection( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID )
+			CreateClickObjConnection( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID , Unit( UnitID ).Obj , ClickObj( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID ).Obj )
+			if Unit( UnitID ).Selected < 2 then HideClickObjConnection( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID )
+		endif
+		
+		rem get positions
+		if UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID > -1
+			x# = ClickObj( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID ).pos.x#
+			z# = ClickObj( UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ClickObjID ).pos.z#
+		else
+			x# = UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).pos.x#
+			z# = UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).pos.z#
+		endif
+		
+		rem execute ability
+		UnitUseAbility( UnitID , UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).ability , x# , z# , UnitCommandChain( UnitID , UnitCommandChain( UnitID , 0 ).PatrolPointer ).TargetUnit , -1 )
+		
+		rem exit
+		exitfunction
+		
+	endif
+	
+	rem destroy click object
+	if UnitCommandChain( UnitID , 0 ).ClickObjID > -1
+		
+		rem check if any other units are using this click object
+		for s = 0 to uUnit.CurrentMax
+			if s <> UnitID and Unit( s ).Active > 1
+				for r = 0 to UnitCommandChain( s , 0 ).Count
+					if UnitCommandChain( s , r ).ClickObjID > -1
+						if UnitCommandChain( s , r ).ClickObjID = UnitCommandChain( UnitID , 0 ).ClickObjID then exit
+					endif
+				next r
+				if r < UnitCommandChain( s , 0 ).Count + 1 then exit
+			endif
+		next s
+		
+		rem if none other was found, destroy
+		if s = uUnit.CurrentMax + 1
+			DestroyClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID )
+			UnitCommandChain( UnitID , 0 ).ClickObjID = -1
+		endif
+
+	endif
+	
+	rem shift stack down
+	for n = 0 to UnitCommandChain( UnitID , 0 ).Count-1
+		UnitCommandChain( UnitID , n ).ability = UnitCommandChain( UnitID , n+1 ).ability
+		UnitCommandChain( UnitID , n ).pos.x# = UnitCommandChain( UnitID , n+1 ).pos.x#
+		UnitCommandChain( UnitID , n ).pos.z# = UnitCommandChain( UnitID , n+1 ).pos.z#
+		UnitCommandChain( UnitID , n ).TargetUnit = UnitCommandChain( UnitID , n+1 ).TargetUnit
+		UnitCommandChain( UnitID , n ).ClickObjID = UnitCommandChain( UnitID , n+1 ).ClickObjID
+	next n
+	
+	rem create new click object if required (only works if next ability is not patrol)
+	if UnitCommandChain( UnitID , 0 ).ClickObjID > -1
+		
+		rem check if any other units are using this click object
+		for s = 0 to uUnit.CurrentMax
+			if s <> UnitID and Unit( s ).Active > 1
+				for r = 0 to UnitCommandChain( s , 0 ).Count
+					if UnitCommandChain( s , r ).ClickObjID > -1
+						if UnitCommandChain( s , r ).ClickObjID = UnitCommandChain( UnitID , 0 ).ClickObjID then exit
+					endif
+				next r
+				if r < UnitCommandChain( s , 0 ).Count + 1 then exit
+			endif
+		next s
+		
+		rem if it is being used, force creation of new one and overwrite current ID
+		if s < uUnit.CurrentMax + 1
+			UnitCommandChain( UnitID , 0 ).ClickObjID = CreateClickObj( ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).pos.x# , ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).pos.y# , ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).pos.z# , ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).Color , 0 , 1 , 0 )
+		endif
+
+	endif
+	
+	rem update next connection so it binds to the player instead of the waypoint
+	if UnitCommandChain( UnitID , 0 ).Count > -1
+		if UnitCommandChain( UnitID , 0 ).ClickObjID > -1
+			DestroyClickObjConnection( UnitCommandChain( UnitID , 0 ).ClickObjID )
+			CreateClickObjConnection( UnitCommandChain( UnitID , 0 ).ClickObjID , Unit( UnitID ).Obj , ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).Obj )
+			if Unit( UnitID ).Selected < 2 then HideClickObjConnection( UnitCommandChain( UnitID , 0 ).ClickObjID )
+		endif
+	endif
+	
+	rem hide connections if second last waypoint has been reached
+	if UnitCommandChain( UnitID , 0 ).Count = 1
+		if UnitCommandChain( UnitID , 0 ).ClickObjID > -1
+			HideUnitPath( UnitID )
+		endif
+	endif
+	
+	rem get positions
+	if UnitCommandChain( UnitID , 0 ).ClickObjID > -1
+		x# = ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).pos.x#
+		z# = ClickObj( UnitCommandChain( UnitID , 0 ).ClickObjID ).pos.z#
+	else
+		x# = UnitCommandChain( UnitID , 0 ).pos.x#
+		z# = UnitCommandChain( UnitID , 0 ).pos.z#
+	endif
+
+	rem check if ability isn't locked or hidden
+	if UnitAbility( UnitID , UnitCommandChain( UnitID , 0 ).ability ).LockButton = 0
+		if UnitAbility( UnitID , UnitCommandChain( UnitID , 0 ).ability ).HideButton = 0
+	
+			rem use ability
+			UnitUseAbility( UnitID , UnitCommandChain( UnitID , 0 ).ability , x# , z# , UnitCommandChain( UnitID , 0 ).TargetUnit , -1 )
+			
+		endif
+	endif
+
+	rem decrement counter
+	dec UnitCommandChain( UnitID , 0 ).Count
+
+endfunction
+
+function PokeUnitCommandChain( UnitID )
+	
+	rem unit is not ready
+	if Unit( UnitID ).Ability.Active > -1 then exitfunction -1
+	
+	rem return count
+	n = UnitCommandChain( UnitID , 0 ).Count
+	
+endfunction n
+
+function CreateUnitCommandChain( UnitID )
+	
+	rem reset counter
+	UnitCommandChain( UnitID , 0 ).Count = -1
+	UnitCommandChain( UnitID , 0 ).PatrolPointer = 0
+	UnitCommandChain( UnitID , 0 ).PatrolPointerDirection = 1
+	
+endfunction
+
+function DestroyUnitCommandChain( UnitID )
+
+	rem destroy any click objects
+	for s = 0 to UnitCommandChain( UnitID , 0 ).Count
+		if UnitCommandChain( UnitID , s ).ClickObjID > -1
+			
+			rem make sure click object is not attached to any other units
+			for u = 0 to uUnit.CurrentMax
+				if Unit( u ).Active > 1 and u <> UnitID
+					for t = 0 to UnitCommandChain( u , 0 ).Count
+						if UnitCommandChain( u , t ).ClickObjID > -1
+							if UnitCommandChain( u , t ).ClickObjID = UnitCommandChain( UnitID , s ).ClickObjID then exit
+						endif
+					next t
+					if t < UnitCommandChain( u , 0 ).Count + 1 then exit
+				endif
+			next u
+			
+			rem no other units found? Destroy
+			if u = uUnit.CurrentMax + 1
+				DestroyClickObj( UnitCommandChain( UnitID , s ).ClickObjID )
+				
+			rem other unit found? Hide
+			else
+				HideClickObj( UnitCommandChain( UnitID , s ).ClickObjID )
+				HideClickObjConnection( UnitCommandChain( UnitID , s ).ClickObjID )
+			endif
+			
+			rem detach from path
+			UnitCommandChain( UnitID , s ).ClickObjID = -1
+			
+		endif
+	next s
+	
+	rem reset counter
+	CreateUnitCommandChain( UnitID )
+	
+endfunction
+
+function HideUnitPath( n )
+	
+	rem local variables
+	local s as integer
+
+	for s = 0 to UnitCommandChain( n , 0 ).Count
+		if UnitCommandChain( n , s ).ClickObjID > -1
+			HideClickObj( UnitCommandChain( n , s ).ClickObjID )
+			HideClickObjConnection( UnitCommandChain( n , s ).ClickObjID )
+		endif
+	next s
+	
+endfunction
+
+function HideUnitPaths()
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem hide any click objects
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1
+			for s = 0 to UnitCommandChain( n , 0 ).Count
+				if UnitCommandChain( n , s ).ClickObjID > -1
+					HideClickObj( UnitCommandChain( n , s ).ClickObjID )
+					HideClickObjConnection( UnitCommandChain( n , s ).ClickObjID )
+				endif
+			next s
+		endif
+	next n
+	
+endfunction
+
+function ShowUnitPath( n )
+	
+	rem local variables
+	local s as integer
+		
+	rem show click objects if unit has more than 1 waypoint
+	if UnitCommandChain( n , 0 ).Count > 0
+		for s = 0 to UnitCommandChain( n , 0 ).Count
+			if UnitCommandChain( n , s ).ClickObjID > -1
+				ShowClickObj( UnitCommandChain( n , s ).ClickObjID )
+				ShowClickObjConnection( UnitCommandChain( n , s ).ClickObjID )
+			endif
+		next s
+	endif
+	
+endfunction

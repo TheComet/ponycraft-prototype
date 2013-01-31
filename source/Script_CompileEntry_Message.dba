@@ -1,0 +1,164 @@
+function _ScriptCompileEntryMessage( slot , lin )
+	
+	rem local variables
+	local a as integer
+	local b as integer
+	local c as integer
+	local d as integer
+	local e as integer
+	
+	if ConsoleCmd$(0) = "createmessage"
+		
+		rem error
+		if ConsoleCmd$(5) = ""
+			AddTextToConsole( 3 , "CreateMessage expects <x> <y> <text$> <life> <color$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a string!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		e = ScriptGetVariableID( slot , ConsoleCmd$(5) )
+		if e > -1
+			if ScriptVariableList( slot , e ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(5) + chr$(34) + " is not a string!" ) : exitfunction -1
+			e = ScriptVariableList( slot , e ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataString( ConsoleCmd$(3) )
+		if d = -1 then d = ScriptAddDataInteger( val(ConsoleCmd$(4)) )
+		if e = -1 then e = ScriptAddDataString( ConsoleCmd$(5) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CREATEMESSAGE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 4 , e , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "destroymessage"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "DestroyMessage expects <Index>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		 a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		 if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_DESTROYMESSAGE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "updatemessageposition"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "UpdateMessagePosition expects <Index> <x> <y>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UPDATEMESSAGEPOSITION
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		exitfunction 0
+		
+	endif
+		
+	if ConsoleCmd$(0) = "updatemessagetext"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "UpdateMessagePosition expects <Index> <text$> <color$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING and ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT and ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 2 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is incompatible!" ) : exitfunction -1
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a string! " )
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataString( ConsoleCmd$(3) )
+		
+		rem special case with argument 2
+		if b = -1
+			b = ScriptAddDataString( ConsoleCmd$(2) )
+		else
+			if ScriptVariableList( slot , b ).DatType = SCRIPTDATA_STRING then b = ScriptVariableList( slot , b ).Index
+			if ScriptVariableList( slot , b ).DatType = SCRIPTDATA_FLOAT then b = ScriptAddDataString( str$(ScriptFloatData(ScriptVariableList( slot , b ).Index).dat#) )
+			if ScriptVariableList( slot , b ).DatType = SCRIPTDATA_INTEGER then b = ScriptAddDataString( str$(ScriptIntegerData(ScriptVariableList( slot , b ).Index).dat) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UPDATEMESSAGETEXT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_STRING )
+		exitfunction 0
+		
+	endif
+	
+endfunction -3

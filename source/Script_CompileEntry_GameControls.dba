@@ -1,0 +1,333 @@
+function _ScriptCompileEntryGameControls( slot , lin )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	local r as integer
+
+	rem ---------------------------------------------------------------------------
+	rem game controls
+	rem ---------------------------------------------------------------------------
+	if ConsoleCmd$(0) = "ctrl.button"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Button expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_BUTTON
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.camera"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Camera expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_CAMERA
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.clickobj"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.ClickObj expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_CLICKOBJ
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.console"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Console expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_CONSOLE
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.distortion"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Distortion expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_DISTORTION
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.gui"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.GUI expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_GUI
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.menu"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Message expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_MESSAGE
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.mouse"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Mouse expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_MOUSE
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.script"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Script expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_SCRIPT
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.slider"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Slider expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_SLIDER
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.textentry"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.TextEntry expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_TEXTENTRY
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.trigger"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Trigger expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_TRIGGER
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "ctrl.unit"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.Unit expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_UNIT
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "ctrl.world"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CTRL.World expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CTRL_WORLD
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+endfunction -3

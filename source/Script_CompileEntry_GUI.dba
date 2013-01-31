@@ -1,0 +1,801 @@
+function _ScriptCompileEntryGUI( slot , lin )
+	
+	rem local variables
+	local a as integer
+	local b as integer
+	local c as integer
+	local d as integer
+	local e as integer
+	local f as integer
+	local g as integer
+	local h as integer
+	
+	if ConsoleCmd$(0) = "guiaddstaticimage"
+		
+		rem error
+		if ConsoleCmd$(4) = ""
+			AddTextToConsole( 3 , "GUIAddStaticImage expects <ID> <x> <y> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not a string!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		if d = -1 then d = ScriptAddDataString( ConsoleCmd$(4) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDSTATICIMAGE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_STRING )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guidestroyelement"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUIDestroyElement expects <ID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIDESTROYELEMENT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guiaddbutton"
+	
+		rem error
+		if ConsoleCmd$(9) = ""
+			AddTextToConsole( 3 , "GUIAddButton expects <ID> <x> <y> <KeyBind> <BackFile$> <GlowFile$> <PressFile$> <LockedFile$> <IconFilename$>" )
+			exitfunction -1
+		endif
+
+		rem variable support
+		a  = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b  = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c  = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d  = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		e  = ScriptGetVariableID( slot , ConsoleCmd$(5) )
+		if e > -1
+			if ScriptVariableList( slot , e ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(5) + chr$(34) + " is not a string!" ) : exitfunction -1
+			e = ScriptVariableList( slot , e ).Index
+		endif
+		f  = ScriptGetVariableID( slot , ConsoleCmd$(6) )
+		if f > -1
+			if ScriptVariableList( slot , f ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(6) + chr$(34) + " is not a string!" ) : exitfunction -1
+			f = ScriptVariableList( slot , f ).Index
+		endif
+		g  = ScriptGetVariableID( slot , ConsoleCmd$(7) )
+		if g > -1
+			if ScriptVariableList( slot , g ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(7) + chr$(34) + " is not a string!" ) : exitfunction -1
+			g = ScriptVariableList( slot , g ).Index
+		endif
+		h  = ScriptGetVariableID( slot , ConsoleCmd$(8) )
+		if h > -1
+			if ScriptVariableList( slot , h ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(8) + chr$(34) + " is not a string!" ) : exitfunction -1
+			h = ScriptVariableList( slot , h ).Index
+		endif
+		i  = ScriptGetVariableID( slot , ConsoleCmd$(9) )
+		if i > -1
+			if ScriptVariableList( slot , i ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(9) + chr$(34) + " is not a string!" ) : exitfunction -1
+			i = ScriptVariableList( slot , i ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		if d = -1 then d = ScriptAddDataInteger( val(ConsoleCmd$(4)) )
+		if e = -1 then e = ScriptAddDataString( ConsoleCmd$(5) )
+		if f = -1 then f = ScriptAddDataString( ConsoleCmd$(6) )
+		if g = -1 then g = ScriptAddDataString( ConsoleCmd$(7) )
+		if h = -1 then h = ScriptAddDataString( ConsoleCmd$(8) )
+		if i = -1 then i = ScriptAddDataString( ConsoleCmd$(9) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDBUTTON
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 4 , e , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 5 , f , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 6 , g , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 7 , h , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 8 , i , SCRIPTDATA_STRING )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guilockbutton"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUILockButton expects <ID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUILOCKBUTTON
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guiunlockbutton"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUIUnlockButton expects <ID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIUNLOCKBUTTON
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guishowelement"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUIShowElement expects <ID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISHOWELEMENT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guihideelement"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUIHideElement expects <ID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIHIDEELEMENT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guibuttonenabletoggle"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUIButtonEnableToggle expects <ID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIBUTTONENABLETOGGLE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guibuttondisabletoggle"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "GUIButtonDisableToggle expects <ID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIBUTTONDISABLETOGGLE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guibuttoneventclick"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIButtonEventClick expects <ID> <Event$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+
+		rem get event ID
+		n = ScriptGetEventID( ConsoleCmd$(2) )
+		if n = -1
+			AddTextToConsole( 2 , "Unable to find event " + chr$(34) + ConsoleCmd$(2) + chr$(34) )
+			AddTextToConsole( 2 , "Inserting into call stack for later processing..." )
+			ScriptAddEventToCallStack( slot , lin , ConsoleCmd$(2) )
+			r = 0
+			s = 0
+		else
+			r = ScriptEventList( n ).Script
+			s = ScriptEventList( n ).lin
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIBUTTONEVENTCLICK
+		ScriptAddDataIndexToList( slot , lin , 0 , ScriptAddDataInteger( r ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( s ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guibindbuttontounit"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIBindButtonToUnit expects <ButtonID> <UnitID>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIBINDBUTTONTOUNIT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "guipositionelement"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "GUIPositionElement expects <ID> <x> <y>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIPOSITIONELEMENT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guidragboxenable"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIDRAGBOXENABLE
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guidragboxdisable"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIDRAGBOXDISABLE
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "guiaddstaticframe"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIAddStaticFrame expects <GUI ID> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDSTATICFRAME
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guiaddbuttonnormalframe"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIAddButtonNormalFrame expects <GUI ID> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDBUTTONNORMALFRAME
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guiaddbuttonmouseoverframe"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIAddButtonMouseOverFrame expects <GUI ID> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDBUTTONMOUSEOVERFRAME
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guiaddbuttonpressframe"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIAddButtonPressFrame expects <GUI ID> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDBUTTONPRESSFRAME
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guiaddbuttonlockedframe"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIAddButtonLockedFrame expects <GUI ID> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDBUTTONLOCKEDFRAME
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guiaddbuttoniconframe"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUIAddButtonIconFrame expects <GUI ID> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUIADDBUTTONICONFRAME
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guisetstaticframedelay"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUISetStaticFrameDelay expects <GUI ID> <delay>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISETSTATICFRAMEDELAY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guisetbuttonnormalframedelay"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUISetButtonNormalFrameDelay expects <GUI ID> <delay>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISETBUTTONNORMALFRAMEDELAY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guisetbuttonmouseoverframedelay"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUISetButtonMouseOverFrameDelay expects <GUI ID> <delay>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISETBUTTONMOUSEOVERFRAMEDELAY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guisetbuttonpressframedelay"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUISetButtonPressFrameDelay expects <GUI ID> <delay>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISETBUTTONPRESSFRAMEDELAY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guisetbuttonlockedframedelay"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUISetButtonLockedFrameDelay expects <GUI ID> <delay>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISETBUTTONLOCKEDFRAMEDELAY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "guisetbuttoniconframedelay"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUISetButtonIconFrameDelay expects <GUI ID> <delay>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISETBUTTONICONFRAMEDELAY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "guisetportraitposition"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GUISetPortraitPosition expects <x> <y>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GUISETPORTRAITPOSITION
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+endfunction -3

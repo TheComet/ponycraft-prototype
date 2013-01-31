@@ -1,0 +1,181 @@
+rem ---------------------------------------------------------------------------
+rem Force Field power up
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type ForceFieldVT
+	logging													as integer
+	SetLife													as integer
+	CurrentMax												as integer
+endtype
+
+type ForceFieldAT
+	Active													as integer
+	pos														as vec3
+	Obj														as word
+	Life														as integer
+	Scale#													as float
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitForceField()
+
+	rem debug
+	DebugOutput( 0 , "Initialising Force Fields" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem Global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uForceField									as ForceFieldVT
+	
+	rem ---------------------------------------------------------------------------
+	rem Global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim ForceField()								as ForceFieldAT
+	
+	rem initial values
+	uForceField.CurrentMax = -1
+	
+endfunction
+
+function DestroyAllForceField()
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uForceField.logging = 1 then AddTextToConsole( 0 , "DestroyAllForceField" )
+	
+	rem destroy
+	for n = 0 to ForceFieldMax
+		if ForceField( n ).Active > 1 then DestroyForceField( n )
+	next n
+	
+endfunction
+
+function CreateForceField( x# , y# , z# , Life )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uForceField.logging = 1 then AddTextToConsole( 0 , "CreateForceField " + str$(x#) + "," + str$(y#) + "," + str$(z#) + "," + str$(life) )
+	
+	rem find free slot
+	for n = 0 to uForceField.CurrentMax
+		if ForceField( n ).Active < 2 then exit
+	next n
+	
+	rem no free slot found, create
+	if n = uForceField.CurrentMax + 1
+		inc uForceField.CurrentMax
+		array insert at bottom ForceField()
+	endif
+	
+	rem create force field
+	if ForceField( n ).Active = 0
+		
+		rem load force field and set up
+		ForceField( n ).Obj = find free object()
+		LoadObject( "media\objects\abilities\force_field\force_field.x" , ForceField( n ).obj )
+		texture object ForceField( n ).Obj , 0 , 1001
+		texture object Forcefield( n ).Obj , 1 , IMGForceField
+		texture object ForceField( n ).Obj , 2 , IMGForceFieldNormal
+		set object effect ForceField( n ).Obj , RefractionFX
+		scale object texture Forcefield( n ).Obj , 0.3334 , 0.3334
+		
+		rem collision
+		SC_SetupComplexObject ForceField( n ).Obj , COL_PATHFINDER , 2
+		SC_AllowObjectScaling ForceField( n ).Obj
+		SC_UpdateObject ForceField( n ).Obj
+
+	endif
+	
+	rem set object properties
+	show object ForceField( n ).Obj
+	scale object ForceField( n ).Obj , 0 , 0 , 0
+	position object ForceField( n ).Obj , x# , y# , z#
+	SC_SetObjectCollisionOn ForceField( n ).Obj
+	
+	rem set parameters
+	ForceField( n ).Active               = 2
+	ForceField( n ).pos.x#               = x#
+	ForceField( n ).pos.y#               = y#
+	ForceField( n ).pos.z#               = z#
+	ForceField( n ).Scale#               = 0
+	ForceField( n ).Life                 = TBM.Ticks + life
+	
+	rem force field flash
+	Effects_CreateForceFieldFlash( x# , y# , z# , 100.0 )
+	
+	rem create distortion explosion
+	rem CreateDistortion( x# , y# , z# , 6 , 0.28 , 21 , 2 )
+	rem CreateDistortion( x# , y# , z# , 6 , 0.28 , 6 , 2 )
+	
+endfunction n
+
+function DestroyForceField( n )
+	
+	rem logging
+	if uForceField.logging = 1 then AddTextToConsole( 0 , "DestroyForceField " + str$(n) )
+	
+	rem make sure it's active
+	if ForceField( n ).Active < 2
+		if uForceField.logging = 1 then AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy force field
+	ForceField( n ).Active = 1
+	hide object ForceField( n ).Obj
+	SC_SetObjectCollisionOff ForceField( n ).Obj
+	
+endfunction n
+
+function ControlForceField()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active force fields
+	for n = 0 to uForceField.CurrentMax
+		
+		rem scale up
+		if ForceField( n ).Active = 2
+			inc ForceField( n ).Scale# , 5
+			if ForceField( n ).Scale# > 100
+				ForceField( n ).Scale# = 100
+				ForceField( n ).Active = 3
+			endif
+			scale object ForceField( n ).Obj , ForceField( n ).Scale# , ForceField( n ).Scale# , ForceField( n ).Scale#
+			SC_UpdateObject ForceField( n ).Obj
+		endif
+		
+		rem keep forcefield there
+		if ForceField( n ).Active = 3
+			scroll object texture ForceField( n ).Obj , 0 , 0.003
+			if ForceField( n ).Life - TBM.Ticks < 0 then ForceField( n ).Active = 4
+		endif
+		
+		rem scale down
+		if ForceField( n ).Active = 4
+			dec ForceField( n ).Scale# , 8
+			if ForceField( n ).Scale# < 0
+				ForceField( n ).Scale# = 0
+				DestroyForceField( n )
+			endif
+			scale object ForceField( n ).Obj , ForceField( n ).Scale# , ForceField( n ).Scale# , ForceField( n ).Scale#
+			SC_UpdateObject ForceField( n ).Obj
+		endif
+		
+	next n
+	
+endfunction

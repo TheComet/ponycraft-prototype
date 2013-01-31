@@ -1,0 +1,226 @@
+rem --------------------------------------------------------------
+rem 3D Fire
+rem --------------------------------------------------------------
+
+rem --------------------------------------------------------------
+rem constants
+rem --------------------------------------------------------------
+
+#constant Effects_3DFireParticleMax					24
+
+rem --------------------------------------------------------------
+rem User Defined Types
+rem --------------------------------------------------------------
+
+type Effects_3DFireVT
+	IMG														as dword
+	CurrentMax												as integer
+endtype
+
+type Effects_3DFireAT
+   active													as integer
+   pos														as vec3
+   force														as vec3
+   life														as integer
+   size														as integer
+   FollowObj												as word
+   FollowLimb												as word
+endtype
+
+type Effects_3DFireParticlesAAT
+   pos														as vec3
+   life														as integer
+   speed#													as float
+	Obj														as dword
+endtype
+
+rem --------------------------------------------------------------
+rem Initialization
+rem --------------------------------------------------------------
+
+function Effects_Init3DFire()
+
+   rem --------------------------------------------------------------
+   rem variables
+   rem --------------------------------------------------------------
+   
+   global Effects_3DFire								as Effects_3DFireVT
+   
+   rem --------------------------------------------------------------
+   rem arrays
+   rem --------------------------------------------------------------
+   
+   global dim Effects_3DFire()						as Effects_3DFireAT
+   global dim Effects_3DFireParticle()				as Effects_3DFireParticlesAAT
+   
+   rem --------------------------------------------------------------
+   rem image
+   rem --------------------------------------------------------------
+   
+   Effects_3DFire.IMG = LoadImage( "media\images\effects\fire\fire.png" , 0 )
+	
+	rem initial values
+	Effects_3DFire.CurrentMax = -1
+
+endfunction
+
+rem --------------------------------------------------------------
+rem functions
+rem --------------------------------------------------------------
+
+function Effects_Create3DFire( x# , y# , z# , life , size , FollowObj , FollowLimb )
+
+   rem local variables
+   local n as integer
+   local k as integer
+
+   rem find free slot for 3D fire
+   for n = 0 to Effects_3DFire.CurrentMax
+      if Effects_3DFire( n ).Active < 2 then exit
+   next n
+   
+   rem no free slot available? create
+   if n = Effects_3DFire.CurrentMax+1
+		inc Effects_3DFire.CurrentMax
+		array insert at bottom Effects_3DFire()
+		dim Effects_3DFireParticle( n , Effects_3DFireParticleMax ) as Effects_3DFireParticlesAAT
+	endif
+
+   rem slot is being used for the first time
+   if Effects_3DFire( n ).Active=0
+      
+      rem make particles
+      for k = 1 to Effects_3DFireParticleMax
+         Effects_3DFireParticle( n , k ).Obj = find free object()
+         make object plain Effects_3DFireParticle( n , k ).Obj , 0.05 , 0.05
+         texture object Effects_3DFireParticle( n , k ).Obj , Effects_3DFire.IMG
+         ghost object on Effects_3DFireParticle( n , k ).Obj
+         set object transparency Effects_3DFireParticle( n , k ).Obj , 4
+         disable object zwrite Effects_3DFireParticle( n , k ).Obj
+         set object light Effects_3DFireParticle( n , k ).Obj , 0
+         scale object Effects_3DFireParticle( n , k ).Obj , 0 , 0 , 0
+      next k
+		
+   endif
+   
+   rem set fire parameters
+   Effects_3DFire( n ).active       = 2
+   Effects_3DFire( n ).pos.x#       = x#
+   Effects_3DFire( n ).pos.y#       = y#
+   Effects_3DFire( n ).pos.z#       = z#
+   Effects_3DFire( n ).life         = life
+   Effects_3DFire( n ).size         = size
+   Effects_3DFire( n ).FollowObj    = FollowObj
+   Effects_3DFire( n ).FollowLimb   = FollowLimb
+   
+   rem set particle parameters
+   for k = 1 to Effects_3DFireParticleMax
+      Effects_3DFireParticle( n , k ).pos.x# = x#
+      Effects_3DFireParticle( n , k ).pos.y# = y#
+      Effects_3DFireParticle( n , k ).pos.z# = z#
+      Effects_3DFireParticle( n , k ).life = rnd(40)
+   next k
+
+endfunction n
+
+function Effects_Destroy3DFire( n )
+
+   rem local variables
+   local k as integer
+
+   rem if not active, exit
+   if Effects_3DFire( n ).Active<2 then exitfunction -1
+   
+   rem destroy fire
+   for k = 1 to Effects_3DFireParticleMax
+      scale object Effects_3DFireParticle( n , k ).Obj , 0 , 0 , 0
+   next k
+   
+   rem deactivate fire
+   Effects_3DFire( n ).Active=1
+
+endfunction n
+
+function Effects_DestroyAll3DFires()
+
+   rem local variables
+   local n as integer
+   
+   rem destroy all fires
+   for n = 0 to Effects_3DFire.CurrentMax
+      Effects_Destroy3DFire( n )
+   next n
+   
+endfunction
+
+function Effects_SetForce3DFire( n , x# , y# , z# )
+
+   rem if not active, exit
+   if Effects_3DFire( n ).Active < 2 then exitfunction -1
+   
+   rem set force parameters
+   Effects_3DFire( n ).force.x# = x#
+   Effects_3DFire( n ).force.y# = y#
+   Effects_3DFire( n ).force.z# = z#
+   
+endfunction n
+
+function Effects_Control3DFire()
+
+   rem local varaibles
+   local n as integer
+   local k as integer
+   
+   rem loop through all active fires
+   for n = 0 to Effects_3DFire.CurrentMax
+      if Effects_3DFire( n ).Active=2
+      
+         rem if fire is attached to a limb, update coordinates
+         if Effects_3DFire( n ).FollowObj > 0
+            Effects_3DFire( n ).pos.x# = limb position x( Effects_3DFire( n ).FollowObj , Effects_3DFire( n ).FollowLimb )
+            Effects_3DFire( n ).pos.y# = limb position y( Effects_3DFire( n ).FollowObj , Effects_3DFire( n ).FollowLimb )
+            Effects_3DFire( n ).pos.z# = limb position z( Effects_3DFire( n ).FollowObj , Effects_3DFire( n ).FollowLimb )
+         endif
+         
+         rem decrement life of fire
+         if Effects_3DFire( n ).life>1
+            dec Effects_3DFire( n ).life
+            if Effects_3DFire( n ).life = 1 then Effects_Destroy3DFire( n )
+         endif
+         
+         rem control particles
+         for k = 1 to Effects_3DFireParticleMax
+         
+            rem life
+            dec Effects_3DFireParticle( n , k ).life
+            
+            rem reset particle
+            if Effects_3DFireParticle( n , k ).life < 1 and (Effects_3DFire( n ).life > 40 or Effects_3DFire( n ).life=0)
+               Effects_3DFireParticle( n , k ).life = 30 + rnd( 10 )
+               Effects_3DFireParticle( n , k ).pos.x# = ( ((rnd(2)-1.0)/8) * Effects_3DFire( n ).size) + Effects_3DFire( n ).pos.x#
+               Effects_3DFireParticle( n , k ).pos.y# = ( ((rnd(2)-1.0)/8) * Effects_3DFire( n ).size) + Effects_3DFire( n ).pos.y#
+               Effects_3DFireParticle( n , k ).pos.z# = ( ((rnd(2)-1.0)/8) * Effects_3DFire( n ).size) + Effects_3DFire( n ).pos.z#
+               Effects_3DFireParticle( n , k ).speed# = ( (rnd(2)/13.0)+0.01 ) * Effects_3DFire( n ).size
+            endif
+            
+            rem scale particles
+            s = Effects_3DFireParticle( n , k ).life * 450 * Effects_3DFire( n ).size
+            if s > 0 then scale object Effects_3DFireParticle( n , k ).Obj , s , s , s
+            
+            rem fire goes up
+            inc Effects_3DFireParticle( n , k ).pos.y# , Effects_3DFireParticle( n , k ).speed#
+            
+            rem force fire
+            inc Effects_3DFireParticle( n , k ).pos.x# , Effects_3DFire( n ).force.x#
+            inc Effects_3DFireParticle( n , k ).pos.y# , Effects_3DFire( n ).force.y#
+            inc Effects_3DFireParticle( n , k ).pos.z# , Effects_3DFire( n ).force.z#
+            
+            rem update particles
+            position object Effects_3DFireParticle( n , k ).Obj , Effects_3DFireParticle( n , k ).pos.x# , Effects_3DFireParticle( n , k ).pos.y# , Effects_3DFireParticle( n , k ).pos.z#
+            set object to camera orientation Effects_3DFireParticle( n , k ).Obj
+         next k
+
+      endif
+   next n
+
+endfunction

@@ -1,0 +1,1428 @@
+function _ScriptCompileEntryCore( inString$ , slot , lin )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	local r as integer
+	
+	rem ---------------------------------------------------------------------------
+	rem goto
+	rem ---------------------------------------------------------------------------
+	
+	rem found label
+	if right$( ConsoleCmd$(0) , 1 ) = ":"
+		
+		rem check if goto command is queued
+		n = ScriptGetLabelLine( left$( ConsoleCmd$(0) , len(ConsoleCmd$(0)) - 1 ) )
+		if n > -1
+			
+			rem insert jump
+			Script( slot , n ).cmd = CMD_JUMPLINE
+			ScriptAddDataIndexToList( slot , n , 0 , ScriptAddDataInteger(lin-1) , SCRIPTDATA_INTEGER )
+			exitfunction lin
+			
+		rem label not found, queue
+		else
+			ScriptQueueLabel( left$( ConsoleCmd$(0) , len(ConsoleCmd$(0)) - 1 ) , lin )
+			exitfunction lin
+		endif
+		
+	endif
+	
+	rem jump to labels
+	if ConsoleCmd$(0) = "goto"
+		
+		rem make sure syntax is correct
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "Goto expects <label>" )
+			exitfunction -1
+		endif
+		
+		rem label found? Insert jump
+		n = ScriptGetLabelLine( ConsoleCmd$(1) )
+		if n > -1
+
+			rem insert jump
+			Script( slot , lin ).cmd = CMD_JUMPLINE
+			ScriptAddDataIndexToList( slot , lin , 0 , ScriptAddDataInteger(n-1) , SCRIPTDATA_INTEGER )
+			exitfunction lin+1
+		
+		rem label not found
+		else
+		
+			rem perhaps label is further down in the script, queue goto label for later processing
+			ScriptQueueLabel( ConsoleCmd$(1) , lin )
+			exitfunction lin+1
+			
+		endif
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem variables
+	rem ---------------------------------------------------------------------------
+	
+	rem define integer variable
+	if ConsoleCmd$(0) = "int"
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "Int expects <variable name> [value]" )
+			exitfunction -1
+		endif
+		if ScriptGetVariableID( slot , ConsoleCmd$(1) ) > -1 then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " already defined!" ) : exitfunction -1
+		a = ScriptAddDataInteger( 0 )
+		b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		ScriptAddVariable( slot , ConsoleCmd$(1) , a , SCRIPTDATA_INTEGER )
+		
+		rem add command to initialise variable (both queue and unfolding)
+		Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		inc lin
+		Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER_DENYQUEUE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	rem define float variable
+	if ConsoleCmd$(0) = "float"
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "Float expects <variable name> [value] " )
+			exitfunction -1
+		endif
+		if ScriptGetVariableID( slot , ConsoleCmd$(1) ) > -1 then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " already defined!" ) : exitfunction -1
+		a = ScriptAddDataFloat( 0.0 )
+		b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		ScriptAddVariable( slot , ConsoleCmd$(1) , a , SCRIPTDATA_FLOAT )
+		
+		rem add command to initialise variable (both queue and unfolding)
+		Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		inc lin
+		Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT_DENYQUEUE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+	
+	rem define string variable
+	if ConsoleCmd$(0) = "string"
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "String expects <variable name> [string]" )
+			exitfunction -1
+		endif
+		if ScriptGetVariableID( slot , ConsoleCmd$(1) ) > -1 then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " already defined!" ) : exitfunction -1
+		a = ScriptAddDataString( "" )
+		b = ScriptAddDataString( ConsoleCmd$(2) )
+		ScriptAddVariable( slot , ConsoleCmd$(1) , a , SCRIPTDATA_STRING )
+		
+		rem add command to initialise variable (both queue and unfolding)
+		Script( slot , lin ).cmd = CMD_SETVARIABLESTRING
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		inc lin
+		Script( slot , lin ).cmd = CMD_SETVARIABLESTRING_DENYQUEUE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	rem set variables -------------------------------------------------------------
+	rem check if variable is being set
+	if ConsoleCmd$(1) = "="
+
+		rem make sure variable has been defined
+		success = ScriptGetVariableID( slot , ConsoleCmd$(0) )
+		if success = -1
+			AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(0) + chr$(34) + " has not been defined!" )
+			exitfunction -1
+		endif
+		
+		rem make sure the user has specified a value
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(0) + chr$(34) + " expects a value!" )
+			exitfunction -1
+		endif
+		
+		rem check if value is a variable and of the same type
+		n = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if n > -1
+			
+			rem strings can only be assigned to strings
+			if ScriptVariableList( slot , success ).DatType = SCRIPTDATA_STRING
+				if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_STRING
+					AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " must be a string!" )
+					exitfunction -1
+				endif
+			endif
+			
+		endif
+		
+		rem if second value isn't a variable, make it the same data type as the variable it's being assigned to
+		if n = -1
+			if ScriptVariableList( slot , success ).DatType = SCRIPTDATA_INTEGER
+				n = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , n , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , n , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+			endif
+			if ScriptVariableList( slot , success ).DatType = SCRIPTDATA_FLOAT
+				n = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , n , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , n , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+			if ScriptVariableList( slot , success ).DatType = SCRIPTDATA_STRING
+				n = ScriptAddDataString( ConsoleCmd$(2) )
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_SETVARIABLESTRING
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_STRING )
+				ScriptAddDataIndexToList( slot , lin , 1 , n , SCRIPTDATA_STRING )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_SETVARIABLESTRING_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_STRING )
+				ScriptAddDataIndexToList( slot , lin , 1 , n , SCRIPTDATA_STRING )
+				exitfunction lin+1
+			endif
+		endif
+
+		rem set the variable (either integer, float, or string)
+		if ScriptVariableList( slot , success ).DatType = SCRIPTDATA_INTEGER
+			if ScriptVariableList( slot , n ).DatType = SCRIPTDATA_INTEGER
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+			else
+			
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERFLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERFLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+		endif
+		if ScriptVariableList( slot , success ).DatType = SCRIPTDATA_FLOAT
+			if ScriptVariableList( slot , n ).DatType = SCRIPTDATA_INTEGER
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATINTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATINTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+			else
+			
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_SETVARIABLEFLOATFLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , success ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , ScriptVariableList( slot , n ).Index , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+		endif
+		
+		rem error
+		AddTextToConsole( 4 , "Variable type not recognised!" )
+		AddTextToConsole( 4 , "Severe malfunctions may occur!" )
+		exitfunction -1
+	
+	endif
+
+	rem ---------------------------------------------------------------------------
+	rem if statements
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "if"
+		
+		rem compile to expression
+		s = _Script_CompileEntry_Core_CompileToExpression( slot )
+		
+		rem no success
+		if s = -1 then exitfunction lin
+		
+		rem store command
+		Script( slot , lin ).cmd = CMD_CONDITIONALJUMPNEGATIVE
+		ScriptAddDataIndexToList( slot , lin , 0 , s , SCRIPTDATA_EXPRESSION )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( 0 ) , SCRIPTDATA_INTEGER )
+		
+		rem open nest
+		ScriptNestPush( lin )
+		
+		exitfunction lin+1
+
+	endif
+	
+	if ConsoleCmd$(0) = "endif"
+		
+		rem pop line off stack
+		n = ScriptNestPop()
+		
+		rem error
+		if n = -1
+			AddTextToConsole( 3 , "Nesting error: Unable to close nest" )
+			exitfunction -1
+		endif
+		
+		rem close nest
+		ScriptIntegerData( ScriptDataList( slot , n , 1 ).Index ).dat = lin-1
+				
+		rem nest closed, silently exit
+		exitfunction lin
+		
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem for statements
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "for"
+		
+		rem error
+		if ConsoleCmd$(5) = ""
+			AddTextToConsole( 3 , "Parameter mismatch. For must be: for <variable> = <integer> to <integer>" )
+			exitfunction -1
+		endif
+		
+		rem make sure next value is a variable
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a = -1
+			AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " has not been defined!" )
+			exitfunction -1
+		endif
+		
+		rem make sure variable is an integer
+		if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+		a = ScriptVariableList( slot , a ).Index
+		
+		rem make sure next value is an equals sign
+		if ConsoleCmd$(2) <> "="
+			AddTextToConsole( 3 , "Parameter mismatch. For must be: for <variable> = <integer> to <integer>" )
+			exitfunction -1
+		endif
+		
+		rem make sure there is a "to"
+		if ConsoleCmd$(4) <> "to"
+			AddTextToConsole( 3 , "Parameter mismatch. For must be: for <variable> = <integer> to <integer>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		b = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(5) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(5) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(5)) )
+		
+		rem this line is used to reset the counting variable to the starting value
+		Script( slot , lin ).cmd = CMD_RESETFORLOOPVARIABLE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		inc lin
+		
+		rem open nest
+		ScriptNestPush( lin ) : rem line to jump to
+		ScriptNestPush( c ) : rem end value
+		ScriptNestPush( b ) : rem start value
+		ScriptNestPush( a ) : rem counter variable
+		
+		rem add increment or decrement command so variable is changed when queued
+		if ScriptIntegerData( b ).dat < ScriptIntegerData( c ).dat
+			
+			rem add a set variable command so variable is changed when queued
+			Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+			ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( ScriptIntegerData( b ).dat-1 ) , SCRIPTDATA_INTEGER )
+			inc lin
+			
+			rem add increment command for denied queue
+			Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER_DENYQUEUE
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+			ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( 1 ) , SCRIPTDATA_INTEGER )
+			inc lin
+			
+			rem add increment command so variable is changed when queued
+			Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+			ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( 1 ) , SCRIPTDATA_INTEGER )
+		else
+		
+			rem add a set variable command so variable is changed when queued
+			Script( slot , lin ).cmd = CMD_SETVARIABLEINTEGERINTEGER
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+			ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( ScriptIntegerData( b ).dat+1 ) , SCRIPTDATA_INTEGER )
+			inc lin
+
+			rem add decrement command for denied queue
+			Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+			ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( 1 ) , SCRIPTDATA_INTEGER )
+			inc lin
+			
+			rem add decrement command so variable is changed when queued
+			Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+			ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( 1 ) , SCRIPTDATA_INTEGER )
+		endif
+		
+		rem exit
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "next"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "Next expects <variable>" )
+			exitfunction -1
+		endif
+		
+		rem make sure it's a variable
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a = -1
+			AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " has not been defined!" )
+			exitfunction -1
+		endif
+		a = ScriptVariableList( slot , a ).Index
+		
+		rem pop variable from stack
+		b = ScriptNestPop()
+		
+		rem error
+		if b = -1
+			AddTextToConsole( 3 , "Nesting error: Unable to close nest" )
+			exitfunction -1
+		endif
+		
+		rem make sure it is in fact the same variable
+		if a <> b
+			AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " must be the same as in the previous " + chr$(34) + "for" + chr$(34) + " statement!" )
+			ScriptNestPush(b)
+			exitfunction -1
+		endif
+		
+		rem pop other two paramters from stack
+		b = ScriptNestPop()
+		c = ScriptNestPop()
+		
+		rem pop line number to jump to from stack
+		d = ScriptNestPop()
+		
+		rem error
+		if b = -1 or c = -1 or d = -1
+			AddTextToConsole( 3 , "Nesting error: Unable to close nest" )
+			exitfunction -1
+		endif
+		
+		rem create integer variable for line jump
+		d = ScriptAddDataInteger( d )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_FORNEXT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem while loop
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "while"
+		
+		rem compile to expression
+		s = _Script_CompileEntry_Core_CompileToExpression( slot )
+		
+		rem no success
+		if s = -1 then exitfunction lin
+		
+		rem open nest
+		ScriptNestPush( lin )
+		ScriptNestPush( s )
+		
+		exitfunction lin
+
+	endif
+	
+	if ConsoleCmd$(0) = "endwhile"
+		
+		rem pop expression and line to jump to off stack
+		s = ScriptNestPop()
+		a = ScriptNestPop()
+		
+		rem error
+		if s = -1 or a = -1
+			AddTextToConsole( 3 , "Nesting error: Unable to close nest" )
+			exitfunction -1
+		endif
+		
+		rem close nest
+		Script( slot , lin ).cmd = CMD_CONDITIONALJUMP
+		ScriptAddDataIndexToList( slot , lin , 0 , s , SCRIPTDATA_EXPRESSION )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( a-1 ) , SCRIPTDATA_INTEGER )
+		
+		rem nest closed
+		exitfunction lin+1
+		
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem increment and decrement
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "inc"
+		
+		rem make sure a variable is specified
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a = -1
+			AddTextToConsole( 3 , "Inc expects <variable>" )
+			exitfunction -1
+		endif
+		
+		rem make sure variable is an integer of a float
+		if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER and ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer of a float!" ) : exitfunction -1
+		
+		rem variable support for second value
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER or ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer of a float!" ) : exitfunction -1
+		endif
+		
+		rem second variable is not specified? Replace with 1
+		if b = -1
+			if ScriptVariableList( slot , a ).DatType = SCRIPTDATA_INTEGER
+				b = ScriptAddDataInteger( 1 )
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+			else
+				b = ScriptAddDataFloat( 1.0 )
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_FLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableLIst( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_FLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableLIst( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+		endif
+		
+		rem inc integer,integer
+		if ScriptVariableList( slot , a ).DatType = SCRIPTDATA_INTEGER
+			if ScriptVariableList( slot , b ).DatType = SCRIPTDATA_INTEGER
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_INTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+				
+			rem inc integer,float
+			else
+			
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_FLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_INCREMENT_INTEGER_FLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+			
+		rem inc float,integer
+		else
+			if ScriptVariableList( slot , b ).DatType = SCRIPTDATA_INTEGER
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_INTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_INTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+				
+			rem inc float,float
+			else
+			
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_FLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_INCREMENT_FLOAT_FLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+		endif
+		
+	endif
+	
+	if ConsoleCmd$(0) = "dec"
+		
+		rem make sure a variable is specified
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a = -1
+			AddTextToConsole( 3 , "Dec expects <variable>" )
+			exitfunction -1
+		endif
+		
+		rem make sure variable is an integer of a float
+		if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER and ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer of a float!" ) : exitfunction -1
+		
+		rem variable support for second value
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER or ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer of a float!" ) : exitfunction -1
+		endif
+		
+		rem second variable is not specified? Replace with 1
+		if b = -1
+			if ScriptVariableList( slot , a ).DatType = SCRIPTDATA_INTEGER
+				b = ScriptAddDataInteger( 1 )
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+			else
+				b = ScriptAddDataFloat( 1.0 )
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_FLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableLIst( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_FLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableLIst( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+		endif
+		
+		rem inc integer,integer
+		if ScriptVariableList( slot , a ).DatType = SCRIPTDATA_INTEGER
+			if ScriptVariableList( slot , b ).DatType = SCRIPTDATA_INTEGER
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_INTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+				
+			rem inc integer,float
+			else
+			
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_FLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_DECREMENT_INTEGER_FLOAT_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_INTEGER )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+			
+		rem inc float,integer
+		else
+			if ScriptVariableList( slot , b ).DatType = SCRIPTDATA_INTEGER
+				
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_INTEGER
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_INTEGER_DENYQUEUE
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+				exitfunction lin+1
+				
+			rem inc float,float
+			else
+			
+				rem version for queue
+				Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_FLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				inc lin
+				
+				rem version for unfolding
+				Script( slot , lin ).cmd = CMD_DECREMENT_FLOAT_FLOAT
+				ScriptAddDataIndexToList( slot , lin , 0 , ScriptVariableList( slot , a ).Index , SCRIPTDATA_FLOAT )
+				ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+				exitfunction lin+1
+			endif
+		endif
+		
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem event commands
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "event"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "Event expects <name$>" )
+			exitfunction -1
+		endif
+		
+		rem check for existance
+		if ScriptGetEventID( ConsoleCmd$(1) ) > -1
+			AddTextToConsole( 3 , "Event " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " duplication error!" )
+			exitfunction -1
+		endif
+		
+		rem create event
+		ScriptAddEvent( slot , ConsoleCmd$(1) , lin )
+		
+		rem open nest
+		ScriptNestPush( ScriptGetEventID( ConsoleCmd$(1) ) )
+		
+		rem if script ever reaches this command, jump straight to the line after "endevent"
+		Script( slot , lin ).cmd = CMD_EVENT
+		ScriptAddDataIndexToList( slot , lin , 0 , ScriptAddDataInteger( 0 ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "endevent"
+		
+		rem pop from stack
+		n = ScriptNestPop()
+		
+		rem error
+		if n = -1
+			AddTextToConsole( 3 , "Unable to close nest!" )
+			exitfunction -1
+		endif
+		
+		rem event doesn't exist
+		if n > uScript.CurrentEventListMax
+			AddTextToConsole( 3 , "Event hasn't been defined!" )
+			ScriptNestPush( n )
+			exitfunction -1
+		endif
+		
+		rem set "event" command to jump to this line
+		ScriptIntegerData( ScriptDataList(slot,ScriptEventList( n ).lin,0).Index ).dat = lin
+		
+		rem create command (since iteration will be disabled for events, always, ending the script will return it to where it was before)
+		Script( slot , lin ).cmd = CMD_ENDSCRIPT
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "callevent"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "CallEvent expects <Name$>" )
+			exitfunction -1
+		endif
+		
+		rem get event ID
+		n = ScriptGetEventID( ConsoleCmd$(1) )
+		if n = -1
+			AddTextToConsole( 2 , "Unable to find event " + chr$(34) + ConsoleCmd$(1) + chr$(34) )
+			AddTextToConsole( 2 , "Inserting into call stack for later processing..." )
+			ScriptAddEventToCallStack( slot , lin , ConsoleCmd$(1) )
+			r = 0
+			s = 0
+		else
+			r = ScriptEventList( n ).Script
+			s = ScriptEventList( n ).lin
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CALLEVENT
+		ScriptAddDataIndexToList( slot , lin , 0 , ScriptAddDataInteger( r ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( s ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem set internal values
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "setvalue"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "SetValue expects <VariableName> <Value> [ID]" )
+			exitfunction -1
+		endif
+		
+		rem check names
+		b = 0
+		if ConsoleCmd$(1) = "camera.maxpos.x" then Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMAXPOSX : b = 2
+		if ConsoleCmd$(1) = "camera.minpos.x" then Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMINPOSX : b = 2
+		if ConsoleCmd$(1) = "camera.maxpos.z" then Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMAXPOSZ : b = 2
+		if ConsoleCmd$(1) = "camera.minpos.z" then Script( slot , lin ).cmd = CMD_SETVALUE_CAMERAMINPOSZ : b = 2
+		if ConsoleCmd$(1) = "unit.anim.idle.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMIDLESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.idle.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMIDLEEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.idle.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMIDLESPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.creep.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCREEPSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.creep.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCREEPEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.creep.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCREEPSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.walk.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMWALKSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.walk.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMWALKEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.walk.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMWALKSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.run.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMRUNSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.run.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMRUNEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.run.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMRUNSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.takeoffjump.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFJUMPSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.takeoffjump.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFJUMPEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.takeoffjump.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFJUMPSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.takeoffflyup.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFFLYUPSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.takeoffflyup.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFFLYUPEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.takeoffflyup.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFFLYUPSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.takeoffarrivetop.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.takeoffarrivetop.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.takeoffarrivetop.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.flyidle.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.flyidle.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLEEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.flyidle.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLESPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.flyidletofly.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLETOFLYSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.flyidletofly.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLETOFLYEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.flyidletofly.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYIDLETOFLYSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.fly.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.fly.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.fly.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.flytoflyidle.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYTOFLYIDLESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.flytoflyidle.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYTOFLYIDLEEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.flytoflyidle.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFLYTOFLYIDLESPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.landprepare.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDPREPARESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.landprepare.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDPREPAREEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.landprepare.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDPREPARESPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.landflydown.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDFLYDOWNSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.landflydown.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDFLYDOWNEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.landflydown.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDFLYDOWNSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.landarrivebottom.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.landarrivebottom.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.landarrivebottom.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.grounddie1.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE1START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.grounddie1.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE1END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.grounddie1.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE1SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.grounddie2.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE2START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.grounddie2.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE2END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.grounddie2.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIE2SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.grounddieburn.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIEBURNSTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.grounddieburn.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIEBURNEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.grounddieburn.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMGROUNDDIEBURNSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare1.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare1.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare1.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare2.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare2.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare2.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare3.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare3.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackprepare3.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease1.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease1.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease1.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease2.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease2.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease2.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease3.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease3.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.unicorngroundmagicattackrelease3.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare1.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare1.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare1.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare2.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare2.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare2.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare3.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare3.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackprepare3.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease1.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease1.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease1.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease2.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease2.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease2.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease3.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3START : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease3.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3END : b = 1
+		if ConsoleCmd$(1) = "unit.anim.changelinggroundmeleeattackrelease3.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3SPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.forcefieldprepare.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDPREPARESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.forcefieldprepare.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDPREPAREEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.forcefieldprepare.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDPREPARESPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.forcefieldrelease.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDRELEASESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.forcefieldrelease.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDRELEASEEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.forcefieldrelease.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMFORCEFIELDRELEASESPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.meteorshowerprepare.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERPREPARESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.meteorshowerprepare.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERPREPAREEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.meteorshowerprepare.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERPREPARESPEED : b = 2
+		if ConsoleCmd$(1) = "unit.anim.meteorshowerrelease.start" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASESTART : b = 1
+		if ConsoleCmd$(1) = "unit.anim.meteorshowerrelease.end" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASEEND : b = 1
+		if ConsoleCmd$(1) = "unit.anim.meteorshowerrelease.speed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASESPEED : b = 2
+
+		rem unit stats
+		if ConsoleCmd$(1) = "unit.stats.healthenable" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSHEALTHENABLE : b = 1
+		if ConsoleCmd$(1) = "unit.stats.manaenable" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMANAENABLE : b = 1
+		if ConsoleCmd$(1) = "unit.stats.shieldenable" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSSHIELDENABLE : b = 1
+		if ConsoleCmd$(1) = "unit.stats.maxhealth" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMAXHEALTH : b = 1
+		if ConsoleCmd$(1) = "unit.stats.currenthealth" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSCURRENTHEALTH : b = 1
+		if ConsoleCmd$(1) = "unit.stats.maxmana" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMAXMANA : b = 1
+		if ConsoleCmd$(1) = "unit.stats.currentmana" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSCURRENTMANA : b = 1
+		if ConsoleCmd$(1) = "unit.stats.maxshield" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMAXSHIELD : b = 1
+		if ConsoleCmd$(1) = "unit.stats.currentshield" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSCURRENTSHIELD : b = 1
+		if ConsoleCmd$(1) = "unit.stats.healthregenerationrate" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSHEALTHREGENERATIONRATE : b = 2
+		if ConsoleCmd$(1) = "unit.stats.manaregenerationrate" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSMANAREGENERATIONRATE : b = 2
+		if ConsoleCmd$(1) = "unit.stats.shieldregenerationrate" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSTATSSHIELDREGENERATIONRATE : b = 2
+		
+		rem unit speeds
+		if ConsoleCmd$(1) = "unit.groundspeed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITGROUNDSPEED : b = 2
+		if ConsoleCmd$(1) = "unit.airspeed" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITAIRSPEED : b = 2
+		
+		rem unit ranges
+		if ConsoleCmd$(1) = "unit.groundviewrange" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITGROUNDVIEWRANGE : b = 2
+		if ConsoleCmd$(1) = "unit.airviewrange" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITAIRVIEWRANGE : b = 2
+		
+		rem limbs
+		if ConsoleCmd$(1) = "unit.spellcastlimb" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITSPELLCASTLIMB : b = 1
+		
+		rem ability settings
+		if ConsoleCmd$(1) = "unit.ability.automatic" then Script( slot , lin ).cmd = CMD_SETVALUE_UNITABILITYAUTOMATIC : b = 1
+		
+		rem world values
+		if ConsoleCmd$(1) = "world.fogofwar.fadespeed" then Script( slot , lin ).cmd = CMD_SETVALUE_WORLDFOGOFWARFADESPEED : b = 1
+		
+		rem command queue values
+		if ConsoleCmd$(1) = "commandqueue.bufferdistance" then Script( slot , lin ).cmd = CMD_SETVALUE_COMMANDQUEUEBUFFERDISTANCE : b = 1
+		
+		rem name not found
+		if b = 0
+			AddTextToConsole( 3 , "Internal variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " not found!" )
+			exitfunction -1
+		endif
+		
+		rem variable support integers
+		if b = 1
+			a = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+			if a > -1
+				if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+				a = ScriptVariableList( slot , a ).Index
+			else
+				a = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+			endif
+			
+			rem add data to command
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		endif
+		
+		rem variable support floats
+		if b = 2
+			a = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+			if a > -1
+				if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+				a = ScriptVariableList( slot , a ).Index
+			else
+				a = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+			endif
+			
+			rem add data to command
+			ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		endif
+		
+		rem ID was specified
+		if ConsoleCmd$(3) = "" then ConsoleCmd$(3) = "this"
+		a = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType = SCRIPTDATA_INTEGER
+				a = ScriptVariableList( slot , a ).Index
+			else
+				AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" )
+			endif
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		endif
+		
+		rem add data to command
+		ScriptAddDataIndexToList( slot , lin , 1 , a , SCRIPTDATA_INTEGER )
+		
+		exitfunction lin+1
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem core commands
+	rem ---------------------------------------------------------------------------
+	
+	if ConsoleCmd$(0) = "disableiteration" then Script( slot , 0 ).DisableIteration = 1 : exitfunction lin
+	if ConsoleCmd$(0) = "setconsolesize" then Script( slot , lin ).cmd = CMD_SETCONSOLESIZE : exitfunction lin+1
+	if ConsoleCmd$(0) = "setconsoleposition" then Script( slot , lin ).cmd = CMD_SETCONSOLEPOSITION : exitfunction lin+1
+	if ConsoleCmd$(0) = "opentoread"
+		
+		rem error
+      if ConsoleCmd$(2) = ""
+         AddTextToConsole( 3 , "OpenToRead expects <filename> <file index>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a string!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then n = ScriptAddDataString( ConsoleCmd$(1) )
+		if r = -1 then r = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+      Script( slot , lin ).cmd = CMD_OPENTOREAD
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_STRING )
+      ScriptAddDataIndexToList( slot , lin , 1 , r , SCRIPTDATA_INTEGER )
+      exitfunction lin+1
+   endif
+
+   if ConsoleCmd$(0) = "opentowrite"
+		
+		rem error
+      if ConsoleCmd$(2) = ""
+         AddTextToConsole( 3 , "OpenToWrite expects <filename> <file index>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a string!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then n = ScriptAddDataString( ConsoleCmd$(1) )
+		if r = -1 then r = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+      Script( slot , lin ).cmd = CMD_OPENTOWRITE
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_STRING )
+      ScriptAddDataIndexToList( slot , lin , 1 , r , SCRIPTDATA_INTEGER )
+      exitfunction lin+1
+	endif
+
+   if ConsoleCmd$(0) = "closefile"
+		
+		rem error
+      if ConsoleCmd$(1) = ""
+         AddTextToConsole( 3 , "CloseFile expects <file index>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+      Script( slot , lin ).cmd = CMD_CLOSEFILE
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+      exitfunction lin+1
+   endif
+
+   if ConsoleCmd$(0) = "readfileblock"
+		
+		rem error
+      if ConsoleCmd$(2) = ""
+         AddTextToConsole( 3 , "ReadFileBlock expects <file index> <output file>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if r = -1 then r = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_READFILEBLOCK
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+      ScriptAddDataIndexToList( slot , lin , 1 , r , SCRIPTDATA_STRING )
+      exitfunction lin+1
+	endif
+
+   if ConsoleCmd$(0) = "writefileblock"
+		
+		rem error
+      if ConsoleCmd$(2) = ""
+         AddTextToConsole( 3 , "WriteFileBlock expects <file index> <input file>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if r = -1 then r = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+      Script( slot , lin ).cmd = CMD_WRITEFILEBLOCK
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+      ScriptAddDataIndexToList( slot , lin , 1 , r , SCRIPTDATA_STRING )
+      exitfunction lin+1
+   endif
+
+   if ConsoleCmd$(0) = "writelong"
+		
+		rem error
+      if ConsoleCmd$(2) = ""
+         AddTextToConsole( 3 , "WriteLong expects <file index> <integer>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if r = -1 then ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+      Script( slot , lin ).cmd = CMD_WRITELONG
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , r , SCRIPTDATA_INTEGER )
+      exitfunction lin+1
+   endif
+   
+   if ConsoleCmd$(0) = "writefloat"
+		
+		rem error
+      if ConsoleCmd$(2) = ""
+         AddTextToConsole( 3 , "WriteFloat expects <file index> <float>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if r = -1 then ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		
+		rem create command
+      Script( slot , lin ).cmd = CMD_WRITEFLOAT
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , r , SCRIPTDATA_FLOAT )
+      exitfunction lin+1
+   endif
+   
+   if ConsoleCmd$(0) = "writebyte"
+		
+		rem error
+      if ConsoleCmd$(2) = ""
+         AddTextToConsole( 3 , "WriteByte expects <file index> <byte>" )
+         exitfunction -1
+      endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if r = -1 then r = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+      Script( slot , lin ).cmd = CMD_WRITEBYTE
+      ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		ScriptAdddataIndexToList( slot , lin , 1 , r , SCRIPTDATA_INTEGER )
+      exitfunction lin+1
+   endif
+	
+	if ConsoleCmd$(0) = "writestring"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "WriteString expects <file index> <string>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		endif
+		r = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if r > -1
+			if ScriptVariableList( slot , r ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			r = ScriptVariableList( slot , r ).Index
+		endif
+		if n = -1 then n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if r = -1 then r = ScriptAddDataString( ComposeString(2,ConsoleArgMax,1) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_WRITESTRING
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , r , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "deletefile"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "DeleteFile expects <file name>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if n > -1
+			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a string!" ) : exitfunction -1
+			n = ScriptVariableList( slot , n ).Index
+		else
+			n = ScriptAddDataString( ConsoleCmd$(1) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_DELETEFILE
+		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "forceoutput"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "ForceOutput expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_FORCEOUTPUT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "end"
+		Script( slot , lin ).cmd = CMD_ENDSCRIPT
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "nop"
+		Script( slot , lin ).cmd = CMD_NOP
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "syncrate"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "SyncRate expects <value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_SYNCRATE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "print"
+		
+		rem error
+		if ConsoleCmd$(0) = ""
+			AddTextToConsole( 3 , "Print expects <Variable>" )
+			exitfunction -1
+		endif
+		
+		rem get variable
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			b = ScriptVariableList( slot , a ).DatType
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataString( ConsoleCmd$(1) )
+			b = SCRIPTDATA_STRING
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_PRINT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , b )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "resetgametimer"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_RESETGAMETIMER
+		exitfunction lin+1
+		
+	endif
+
+endfunction -3

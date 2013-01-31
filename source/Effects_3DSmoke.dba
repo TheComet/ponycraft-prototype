@@ -1,0 +1,324 @@
+rem --------------------------------------------------------------
+rem 3D Smoke
+rem --------------------------------------------------------------
+
+rem --------------------------------------------------------------
+rem constants
+rem --------------------------------------------------------------
+
+#constant Effects_3DSmokeParticleMax						16
+
+#constant SMOKE_BLACK											0
+#constant SMOKE_WHITE											1
+
+rem --------------------------------------------------------------
+rem User Defined Types
+rem --------------------------------------------------------------
+
+type Effects_3DSmokeVT
+	CurrentMax												as integer
+	IMG														as integer
+endtype
+
+type Effects_3DSmokeAT
+   active													as integer
+   pos														as vec3
+	oldpos													as vec3
+   force														as vec3
+   life														as integer
+   size#														as float
+   FollowObj												as word
+   FollowLimb												as word
+	ScalingMode												as integer
+	ScaleCompensate#										as float
+	Hidden													as integer
+endtype
+
+type Effects_3DSmokeParticlesAAT
+	Obj
+   pos														as vec3
+   life														as integer
+   speed#													as float
+endtype
+
+rem --------------------------------------------------------------
+rem Initialization
+rem --------------------------------------------------------------
+
+function Effects_Init3DSmoke()
+
+   rem --------------------------------------------------------------
+   rem variables
+   rem --------------------------------------------------------------
+   
+   global uEffects_3DSmoke as Effects_3DSmokeVT
+   
+   rem --------------------------------------------------------------
+   rem arrays
+   rem --------------------------------------------------------------
+   
+   global dim Effects_3DSmoke() as Effects_3DSmokeAT
+   global dim Effects_3DSmokeParticle() as Effects_3DSmokeParticlesAAT
+   
+   rem --------------------------------------------------------------
+   rem images
+   rem --------------------------------------------------------------
+   
+   uEffects_3DSmoke.IMG = LoadImage( "media\images\effects\smoke\smoke_dark.png" , 0 )
+	
+	rem initial values
+	uEffects_3DSmoke.CurrentMax = -1
+
+endfunction
+
+rem --------------------------------------------------------------
+rem functions
+rem --------------------------------------------------------------
+
+function Effects_Create3DSmoke( x# , y# , z# , life , size# , FollowObj , FollowLimb )
+
+   rem local variables
+   local n as integer
+   local k as integer
+
+   rem find free slot for 3D Smoke
+   for n = 0 to uEffects_3DSmoke.CurrentMax
+      if Effects_3DSmoke( n ).Active < 2 then exit
+   next n
+   
+   rem no free slot available, create
+   if n = uEffects_3DSmoke.CurrentMax+1
+		inc uEffects_3DSmoke.CurrentMax
+		array insert at bottom Effects_3DSmoke()
+		dim Effects_3DSmokeParticle( uEffects_3DSmoke.CurrentMax , Effects_3DSmokeParticleMax ) as Effects_3DSmokeParticlesAAT
+	endif
+
+   rem slot is being used for the first time
+   if Effects_3DSmoke( n ).Active = 0
+      
+      rem make particles
+      for k = 1 to Effects_3DSmokeParticleMax
+         Effects_3DSmokeParticle( n , k ).Obj = find free object()
+         make object plain Effects_3DSmokeParticle( n , k ).Obj , 100 , 100
+         texture object Effects_3DSmokeParticle( n , k ).Obj , uEffects_3DSmoke.IMG
+         set object transparency Effects_3DSmokeParticle( n , k ).Obj , 2
+         disable object zwrite Effects_3DSmokeParticle( n , k ).Obj
+         scale object Effects_3DSmokeParticle( n , k ).Obj , size# , size# , size#
+			set object diffuse Effects_3DSmokeParticle( n , k ).Obj , 0xFFFFFFFF
+			zrotate object Effects_3DSmokeParticle( n , k ).Obj , rnd(360)
+			fix object pivot Effects_3DSmokeParticle( n , k ).Obj
+      next k
+   
+   endif
+   
+   rem set Smoke parameters
+   Effects_3DSmoke( n ).active       = 2
+   Effects_3DSmoke( n ).pos.x#       = x#
+   Effects_3DSmoke( n ).pos.y#       = y#
+   Effects_3DSmoke( n ).pos.z#       = z#
+   Effects_3DSmoke( n ).life         = life
+   Effects_3DSmoke( n ).size#        = size#
+   Effects_3DSmoke( n ).FollowObj    = FollowObj
+   Effects_3DSmoke( n ).FollowLimb   = FollowLimb
+	Effects_3DSmoke( n ).ScalingMode  = 1
+	Effects_3DSmoke( n ).ScaleCompensate# = size#
+	Effects_3DSmoke( n ).Hidden       = 0
+   
+   rem set particle parameters
+   for k = 1 to Effects_3DSmokeParticleMax
+      Effects_3DSmokeParticle( n , k ).pos.x# = x#
+      Effects_3DSmokeParticle( n , k ).pos.y# = y#
+      Effects_3DSmokeParticle( n , k ).pos.z# = z#
+      Effects_3DSmokeParticle( n , k ).life = rnd(80)
+   next k
+
+endfunction n
+
+function Effects_Destroy3DSmoke( n )
+
+   rem local variables
+   local k as integer
+
+   rem if not active, exit
+   if Effects_3DSmoke( n ).Active < 2 then exitfunction -1
+   
+   rem destroy Smoke
+   for k = 1 to Effects_3DSmokeParticleMax
+      set object diffuse Effects_3DSmokeParticle( n , k ).Obj , 0x00FFFFFF
+   next k
+   
+   rem deactivate Smoke
+   Effects_3DSmoke( n ).active=1
+
+endfunction n
+
+function Effects_DestroyAll3DSmoke()
+
+   rem local variables
+   local n as integer
+   
+   rem destroy all smoke
+   for n = 0 to uEffects_3DSmoke.CurrentMax
+      Effects_Destroy3DSmoke( n )
+   next n
+   
+endfunction n
+
+function Effects_SetForce3DSmoke( n , x# , y# , z# )
+
+   rem if not active, exit
+   if Effects_3DSmoke( n ).Active < 2 then exitfunction -1
+   
+   rem set force parameters
+   Effects_3DSmoke( n ).force.x# = x#
+   Effects_3DSmoke( n ).force.y# = y#
+   Effects_3DSmoke( n ).force.z# = z#
+   
+endfunction n
+
+function Effects_SetType3DSmoke( n , typ )
+	
+	rem not active, exit
+	if Effects_3DSmoke( n ).Active < 2 then exitfunction -1
+	
+	if typ = SMOKE_BLACK
+		for k = 1 to Effects_3DSmokeParticleMax
+			texture object Effects_3DSmokeParticle( n , k ).Obj , uEffects_3DSmoke.IMG
+		next k
+	endif
+	
+endfunction n
+
+function Effects_SetScalingMode3DSmoke( n , typ )
+	
+	rem not active, exit
+	if Effects_3DSmoke( n ).Active < 2 then exitfunction
+	
+	rem set mode
+	Effects_3DSmoke( n ).ScalingMode = typ
+	
+endfunction
+
+function Effects_Show3DSmoke( n )
+	
+	rem not active, exit
+	if Effects_3DSmoke( n ).Active < 2 then exitfunction
+	
+	rem show smoke
+	for k = 1 to Effects_3DSmokeParticleMax
+		show object Effects_3DSmokeParticle( n , k ).Obj
+	next k
+	Effects_3DSmoke( n ).Hidden = 0
+	
+endfunction
+
+function Effects_Hide3DSmoke( n )
+	
+	rem not active, exit
+	if Effects_3DSmoke( n ).Active < 2 then exitfunction
+	
+	rem hide smoke
+	for k = 1 to Effects_3DSmokeParticleMax
+		hide object Effects_3DSmokeParticle( n , k ).Obj
+	next k
+	Effects_3DSmoke( n ).Hidden = 1
+	
+endfunction
+
+function Effects_Control3DSmoke()
+
+   rem local varaibles
+   local n as integer
+   local k as integer
+   
+   rem loop through all active Smokes
+   for n = 0 to uEffects_3DSmoke.CurrentMax
+      if Effects_3DSmoke( n ).active = 2
+
+			rem if Smoke is attached to a limb, update coordinates
+			if Effects_3DSmoke( n ).FollowObj > 0
+				Effects_3DSmoke( n ).oldpos = Effects_3DSmoke( n ).pos
+				Effects_3DSmoke( n ).pos.x# = limb position x(Effects_3DSmoke(n).FollowObj,Effects_3DSmoke(n).FollowLimb)
+				Effects_3DSmoke( n ).pos.y# = limb position y(Effects_3DSmoke(n).FollowObj,Effects_3DSmoke(n).FollowLimb)
+				Effects_3DSmoke( n ).pos.z# = limb position z(Effects_3DSmoke(n).FollowObj,Effects_3DSmoke(n).FollowLimb)
+			endif
+
+			rem decrement life of Smoke
+			if Effects_3DSmoke(n).life>1
+				dec Effects_3DSmoke(n).life
+				if Effects_3DSmoke(n).life=1 then Effects_Destroy3DSmoke(n)
+			endif
+			
+			rem hide if not in screen, else show
+			position object 1000 , Effects_3DSmoke( n ).pos.x# , Effects_3DSmoke( n ).pos.y# , Effects_3DSmoke( n ).pos.z#
+			if ObjectInScreen( 1000 )
+
+				rem control particles
+				for k=1 to Effects_3DSmokeParticleMax
+				
+					rem life
+					dec Effects_3DSmokeParticle(n,k).life
+					
+					rem reset particle
+					if Effects_3DSmokeParticle(n,k).life<1 and (Effects_3DSmoke(n).life>40 or Effects_3DSmoke(n).life=0)
+						Effects_3DSmokeParticle(n,k).life=30+rnd(10)
+						Effects_3DSmokeParticle(n,k).pos.x#=(((rnd(2)-1.0)/8)*Effects_3DSmoke(n).size#)+Effects_3DSmoke(n).pos.x#
+						Effects_3DSmokeParticle(n,k).pos.y#=(((rnd(2)-1.0)/8)*Effects_3DSmoke(n).size#)+Effects_3DSmoke(n).pos.y#
+						Effects_3DSmokeParticle(n,k).pos.z#=(((rnd(2)-1.0)/8)*Effects_3DSmoke(n).size#)+Effects_3DSmoke(n).pos.z#
+						Effects_3DSmokeParticle(n,k).speed#=((rnd(2)/64.0)+0.01)*Effects_3DSmoke(n).size#
+					endif
+					
+					rem fade particles
+					s = ((range(Effects_3DSmokeParticle(n,k).life*3 , 0 , 255 ) << 24 ) || 0x00FFFFFF )
+					set object diffuse Effects_3DSmokeParticle(n,k).Obj , s
+					
+					rem show object
+					if Effects_3DSmoke( n ).Hidden = 0 then show object Effects_3DSmokeParticle(n,k).Obj
+					
+					rem scale particles
+					rem amplifying mode (default)
+					if Effects_3DSmoke( n ).ScalingMode = 1
+						Effects_3DSmoke( n ).ScaleCompensate# = curvevalue(Effects_3DSmoke( n ).size# * 5.0 * (((Effects_3DSmoke( n ).oldpos.x# - Effects_3DSmoke( n ).pos.x#)^2 + (Effects_3DSmoke( n ).oldpos.y#-Effects_3DSmoke( n ).pos.y#)^2 + (Effects_3DSmoke( n ).oldpos.z#-Effects_3DSmoke( n ).pos.z#)^2)^0.5) , Effects_3DSmoke( n ).ScaleCompensate# , 90)
+						s# = 60 - range(Effects_3DSmokeParticle(n,k).life,1,1000)
+						s# = s# * Effects_3DSmoke( n ).size#
+						s# = s# * 0.03
+						inc s# , Effects_3DSmoke( n ).size#
+						inc s# , Effects_3DSmoke( n ).ScaleCompensate#
+						scale object Effects_3DSmokeParticle(n,k).Obj , s# , s# , s#
+					endif
+					
+					rem Smoke goes up
+					inc Effects_3DSmokeParticle(n,k).pos.y#,Effects_3DSmokeParticle(n,k).speed#
+					
+					rem apply force
+					inc Effects_3DSmokeParticle(n,k).pos.x#,Effects_3DSmoke(n).force.x#
+					inc Effects_3DSmokeParticle(n,k).pos.y#,Effects_3DSmoke(n).force.y#
+					inc Effects_3DSmokeParticle(n,k).pos.z#,Effects_3DSmoke(n).force.z#
+					
+					rem update particles
+					position object Effects_3DSmokeParticle(n,k).Obj,Effects_3DSmokeParticle(n,k).pos.x#,Effects_3DSmokeParticle(n,k).pos.y#,Effects_3DSmokeParticle(n,k).pos.z#
+					set object to camera orientation Effects_3DSmokeParticle(n,k).Obj
+				next k
+
+			rem not in screen
+			else
+			
+				rem still update positions
+				if Effects_3DSmoke( n ).FollowObj > 0
+					Effects_3DSmoke( n ).oldpos = Effects_3DSmoke( n ).pos
+					Effects_3DSmoke( n ).pos.x# = limb position x(Effects_3DSmoke(n).FollowObj,Effects_3DSmoke(n).FollowLimb)
+					Effects_3DSmoke( n ).pos.y# = limb position y(Effects_3DSmoke(n).FollowObj,Effects_3DSmoke(n).FollowLimb)
+					Effects_3DSmoke( n ).pos.z# = limb position z(Effects_3DSmoke(n).FollowObj,Effects_3DSmoke(n).FollowLimb)
+				endif
+				
+				rem hide particles
+				for k=1 to Effects_3DSmokeParticleMax
+					hide object Effects_3DSmokeParticle(n,k).Obj
+				next k
+				
+			endif
+
+      endif
+   next n
+
+endfunction

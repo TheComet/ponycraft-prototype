@@ -1,0 +1,342 @@
+rem ---------------------------------------------------------------------------
+rem Minimap - handles drawing and updating the minimap
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User defined types
+rem ---------------------------------------------------------------------------
+
+type MinimapVT
+	CurrentMax												as integer
+	UpdateTime												as integer
+	UpdateTimer												as integer
+	UnitPlayerImg											as dword
+	UnitNooneImg											as dword
+	UnitEnemyImg											as dword
+endtype
+
+type MinimapAT
+	Active													as integer
+	StartPos													as vec2
+	EndPos													as vec2
+	Size														as vec2
+	WorldStartPos											as vec3
+	WorldEndPos												as vec3
+	BaseImg													as dword
+	RenderImg												as dword
+	FogOfWarIMG												as integer
+	FogOfWarMemblock										as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitMinimap()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising Minimap" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem Global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uMinimap										as MinimapVT
+	
+	rem ---------------------------------------------------------------------------
+	rem Global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim Minimap()									as MinimapAT
+	
+	rem local variables
+	local img as dword
+	
+	rem initial values
+	uMinimap.CurrentMax = -1
+	uMinimap.UpdateTime = 200
+	uMinimap.UpdateTimer = hitimer( 1000 )
+	
+	rem bitmap for drawing
+	img = find free bitmap()
+	create bitmap img , 16 , 16
+	
+	rem player
+	uMinimap.UnitPlayerImg = find free image()
+	a2fillbox 0 , 0 , 15 , 15 , 0xFF00FFFF
+	get image uMinimap.UnitPlayerImg , 0 , 0 , 3 , 3
+	
+	rem no one
+	uMinimap.UnitNooneImg = find free image()
+	a2fillbox 0 , 0 , 15 , 15 , 0xFFFFFF00
+	get image uMinimap.UnitNooneImg , 0 , 0 , 3 , 3
+
+	rem enemy
+	uMinimap.UnitEnemyImg = find free image()
+	a2fillbox 0 , 0 , 15 , 15 , 0xFFFF0000
+	get image uMinimap.UnitEnemyImg , 0 , 0 , 3 , 3
+	
+	rem remove bitmap again
+	delete bitmap img
+	
+endfunction
+
+function CreateMinimap( StartX , StartY , EndX , EndY , WorldStartX# , WorldStartY# , WorldEndX# , WorldEndY# )
+	
+	rem make sure size is valid
+	if StartX > EndX then exitfunction -1
+	if StartY > EndY then exitfunction -1
+	if WorldStartX# > WorldEndX# then exitfunction -1
+	if WorldStartY# > WorldEndY# then exitfunction -1
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uMinimap.CurrentMax
+		if Minimap( n ).Active < 2 then exit
+	next n
+	
+	rem none found? Create
+	if n = uMinimap.CurrentMax + 1
+		inc uMinimap.CurrentMax
+		array insert at bottom Minimap()
+	endif
+	
+	rem convert coordinates to scale to resolution of screen
+	StartX = GetRealScreenX( StartX )
+	StartY = GetRealScreenY( StartY )
+	EndX = GetRealScreenX( EndX )
+	EndY = GetRealScreenY( EndY )
+	
+	rem set parameters
+	Minimap( n ).Active = 2
+	Minimap( n ).StartPos.x = StartX
+	Minimap( n ).StartPos.y = StartY
+	Minimap( n ).EndPos.x = EndX
+	Minimap( n ).EndPos.y = EndY
+	Minimap( n ).Size.x = EndX - StartX
+	Minimap( n ).Size.y = EndY - StartY
+	Minimap( n ).WorldStartPos.x# = WorldStartX#
+	Minimap( n ).WorldStartPos.z# = WorldStartY#
+	Minimap( n ).WorldEndPos.x# = WorldEndX#
+	Minimap( n ).WorldEndPos.z# = WorldEndY#
+	
+	rem create images
+	Minimap( n ).BaseImg = find free image()
+	ik create render target Minimap( n ).BaseImg , Minimap( n ).Size.x , Minimap( n ).Size.y
+	Minimap( n ).RenderImg = find free image()
+	ik create render target Minimap( n ).RenderImg , Minimap( n ).Size.x , Minimap( n ).Size.y
+	
+	rem fog of war image
+	Minimap( n ).FogOfWarIMG = find free image()
+	Minimap( n ).FogOfWarMemblock = find free memblock()
+	
+	rem fill in black
+	make memblock Minimap( n ).FogOfWarMemblock , Minimap( n ).Size.x*Minimap( n ).Size.y*4+12
+	write memblock dword Minimap( n ).FogOfWarMemblock , 0 , Minimap( n ).Size.x
+	write memblock dword Minimap( n ).FogOfWarMemblock , 4 , Minimap( n ).Size.y
+	write memblock dword Minimap( n ).FogOfWarMemblock , 8 , 32
+	for y = 0 to Minimap( n ).Size.y-1
+		for x = 0 to Minimap( n ).Size.x-1
+			offset = (y*Minimap( n ).Size.x+x)*4 + 12
+			write memblock dword Minimap( n ).FogOfWarMemblock , offset , 0x80000000
+		next x
+	next y
+	make image from memblock Minimap( n ).FogOfWarIMG , Minimap( n ).FogOfWarMemblock
+	
+	rem render current terrain to base image
+	_Update_Terrain_Image( n )
+	
+endfunction n
+
+function DestroyMinimap( n )
+	
+	rem make sure in range
+	if n < 0 or n > uMinimap.CurrentMax then exitfunction -1
+	
+	rem make sure active
+	if Minimap( n ).Active < 2 then exitfunction -1
+	
+	rem destroy
+	Minimap( n ).Active = 0
+	delete image Minimap( n ).BaseImg
+	delete image Minimap( n ).RenderImg
+
+endfunction n
+
+function ControlMinimap()
+	
+	rem loacl variables
+	local n as integer
+	local x as integer
+	local y as integer
+	local x2 as integer
+	local y2 as integer
+	local x3 as integer
+	local y3 as integer
+
+	rem loop through all active minimaps
+	for n = 0 to uMinimap.CurrentMax
+		if Minimap( n ).Active = 2
+			
+			rem draw render to screen
+			ik paste image Minimap( n ).RenderImg , Minimap( n ).StartPos.x , Minimap( n ).StartPos.y , Minimap( n ).EndPos.x , Minimap( n ).EndPos.y
+			
+			rem draw fog of war to mini map
+			paste image Minimap( n ).FogOfWarIMG , Minimap( n ).StartPos.x , Minimap( n ).StartPos.y , 1
+			
+			rem calculate camera projection on mini map
+			x = Minimap( n ).Size.x * (uCamera.topLeft.x - Minimap( n ).WorldStartPos.x#) / (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#) + Minimap( n ).StartPos.x
+			y = Minimap( n ).Size.y - (Minimap( n ).Size.y * (uCamera.topLeft.y - Minimap( n ).WorldStartPos.z#) / (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#) ) + Minimap( n ).StartPos.y
+			x2 = Minimap( n ).Size.x * (uCamera.topRight.x - Minimap( n ).WorldStartPos.x#) / (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#) + Minimap( n ).StartPos.x
+			y2 = Minimap( n ).Size.y - (Minimap( n ).Size.y * (uCamera.topRight.y - Minimap( n ).WorldStartPos.z#) / (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#) ) + Minimap( n ).StartPos.y
+			x3 = Minimap( n ).Size.x * (uCamera.bottomRight.x - Minimap( n ).WorldStartPos.x#) / (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#) + Minimap( n ).StartPos.x
+			y3 = Minimap( n ).Size.y - (Minimap( n ).Size.y * (uCamera.bottomRight.y - Minimap( n ).WorldStartPos.z#) / (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#) ) + Minimap( n ).StartPos.y
+			
+			rem draw first half
+			a2line x , y , x2 , y2 , 0xFFFFFFFF
+			a2line x2 , y2 , x3 , y3 , 0xFFFFFFFF
+			
+			rem calculate last corner
+			x2 = Minimap( n ).Size.x * (uCamera.bottomLeft.x - Minimap( n ).WorldStartPos.x#) / (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#) + Minimap( n ).StartPos.x
+			y2 = Minimap( n ).Size.y - (Minimap( n ).Size.y * (uCamera.bottomLeft.y - Minimap( n ).WorldStartPos.z#) / (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#) ) + Minimap( n ).StartPos.y
+			
+			rem draw second half
+			a2line x , y , x2 , y2 , 0xFFFFFFFF
+			a2line x2 , y2 , x3 , y3 , 0xFFFFFFFF
+			
+		endif
+	next n
+	
+	rem time to update minimaps
+	if hitimer( 1000 ) - uMinimap.UpdateTimer > uMinimap.UpdateTime
+		_Update_Minimaps()
+		uMinimap.UpdateTimer = hitimer( 1000 )
+	endif
+	
+endfunction
+
+function _Update_Minimaps()
+	
+	rem local variables
+	local n as integer
+	local color as dword
+	local x as integer
+	local y as integer
+
+	rem draw units to minimap
+	for n = 0 to uMinimap.CurrentMax
+		if Minimap( n ).Active = 2
+			
+			rem paste base image on render image
+			ik paste image on image Minimap( n ).BaseImg , Minimap( n ).RenderImg , 0 , 0
+			
+			rem draw units
+			for s = 0 to uUnit.CurrentMax
+				if Unit( s ).Active > 1
+					
+					rem check if unit is visible
+					if Unit( s ).Visible = 1
+					
+						rem convert unit positions to minimap coordinates
+						x = (Minimap( n ).Size.x) * (Unit( s ).pos.x# - Minimap( n ).WorldStartPos.x#) / (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#)
+						y = Minimap( n ).Size.y - ((Minimap( n ).Size.y) * (Unit( s ).pos.z# - Minimap( n ).WorldStartPos.z#) / (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#) )
+						
+						rem draw to minimap
+						if x > -1 and y > -1 and x < Minimap( n ).Size.x+1 and y < Minimap( n ).Size.y+1
+							ik paste image on image uMinimap.UnitPlayerImg , Minimap( n ).RenderImg , x , y
+						endif
+						
+					endif
+					
+				endif
+			next s
+			
+			rem update fog of war image
+			for y = 0 to Minimap( n ).Size.y-1
+				for x = 0 to Minimap( n ).Size.x-1
+					offset = (y*Minimap( n ).Size.x+x)*4 + 12
+					
+					rem if fog of war has been created, get colour
+					if uWorld.FogOfWar.Obj > 0
+						
+						rem convert to fog of war coordinates
+						sx = ((x*uWorld.FogOfWar.UsableSize.x)/Minimap( n ).Size.x) + uWorld.FogOfWar.UsableStart.x
+						sy = (uWorld.FogOfWar.UsableSize.y - ((y*uWorld.FogOfwar.UsableSize.y)/Minimap( n ).Size.y)) + uWorld.FogOfWar.UsableStart.y
+						
+						rem get colour
+						colour = FogOfWarStaticBrush( sx , sy ).Color
+						
+					rem otherwise, transparency
+					else
+						colour = 0x00000000
+					endif
+					
+					rem write pixel
+					write memblock dword Minimap( n ).FogOfWarMemblock , offset , colour
+				next x
+			next y
+			make image from memblock Minimap( n ).FogOfWarIMG , Minimap( n ).FogOfWarMemblock
+
+		endif
+	next n
+
+endfunction
+
+function _Update_Terrain_Image( n )
+	
+	rem local variables
+	local cam as dword
+	local SizeX as integer
+	local SizeY as integer
+	local getImg as dword
+	local CamFOV# as float
+	local CenterX# as float
+	local CenterZ# as float
+	
+	rem get data
+	SizeX = image width( Minimap( n ).BaseImg )
+	SizeY = image height( Minimap( n ).BaseImg )
+	
+	rem find a free camera
+	cam = find free camera()
+	getImg = find free image()
+	make camera cam
+	set camera to image cam , getImg , SizeX , SizeY
+	color backdrop cam , 0
+	
+	rem calculate center coordinates
+	CenterX# = (Minimap( n ).WorldEndPos.x# + Minimap( n ).WorldStartPos.x#)/2
+	CenterZ# = (Minimap( n ).WorldEndPos.z# + Minimap( n ).WorldStartPos.z#)/2
+	
+	rem calculate camera FOV
+	if (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#) > (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#)
+		CamFOV# = asin((Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#)/260)
+	else
+		CamFOV# = asin((Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#)/260)
+	endif
+	
+	rem position above terrain
+	position camera cam , CenterX# , 200 , CenterZ#
+	point camera cam , CenterX# , 0 , CenterZ#
+	set camera fov cam , CamFOV#
+	set camera aspect cam , (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#)/(Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#)
+	
+	rem get the image
+	sync
+	sync
+	ik paste image on image getImg , Minimap( n ).BaseImg , 0 , 0
+	
+	rem delete the camera
+	delete camera cam
+	delete image getImg
+	
+	rem reset current camera
+	set current camera 0
+	
+endfunction

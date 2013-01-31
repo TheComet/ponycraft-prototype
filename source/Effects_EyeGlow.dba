@@ -1,0 +1,165 @@
+rem ---------------------------------------------------------------------------
+rem Eye Glow effect
+rem Simple plain rotated towards the camera
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type Effects_EyeGlowVT
+	CurrentMax												as integer
+	IMG														as integer
+endtype
+
+type Effects_EyeGlowAT
+	Active													as integer
+	pos														as vec3
+	Size#														as float
+	life														as integer
+	FollowObj												as integer
+	FollowLimb												as integer
+	Obj														as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function Effects_InitEyeGlow()
+	
+	rem ---------------------------------------------------------------------------
+	rem global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uEffects_EyeGlow										as Effects_EyeGlowVT
+	
+	rem ---------------------------------------------------------------------------
+	rem global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim Effects_EyeGlow()									as Effects_EyeGlowAT
+	
+	rem initial values
+	uEffects_EyeGlow.CurrentMax = -1
+	
+	rem load glow image
+	uEffects_EyeGlow.IMG = LoadImage( "media\images\effects\eyeglow\eyeglow.png" , 0 )
+	
+endfunction
+
+function Effects_CreateEyeGlow( x# , y# , z# , Life , Size# , FollowObj , FollowLimb )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uEffects_EyeGlow.CurrentMax
+		if Effects_EyeGlow( n ).Active < 2 then exit
+	next n
+	
+	rem if no free slot is available, expand array
+	if n = uEffects_EyeGlow.CurrentMax + 1
+		inc uEffects_EyeGlow.CurrentMax
+		array insert at bottom Effects_EyeGlow()
+	endif
+	
+	rem check if never used
+	if Effects_EyeGlow( n ).Active = 0
+		
+		rem make plain
+		Effects_EyeGlow( n ).Obj = find free object()
+		make object plain Effects_EyeGlow( n ).Obj , 100 , 100
+		texture object Effects_EyeGlow( n ).Obj , uEffects_EyeGlow.IMG
+		set object transparency Effects_EyeGlow( n ).Obj , 2
+		rem disable object zdepth Effects_EyeGlow( n ).Obj
+		disable object zwrite Effects_EyeGlow( n ).Obj
+		set object light Effects_EyeGlow( n ).Obj , 0
+		
+	endif
+	
+	rem set object properties
+	show object Effects_EyeGlow( n ).Obj
+	position object Effects_EyeGlow( n ).Obj , x# , y# , z#
+	scale object Effects_EyeGlow( n ).Obj , Size# , Size# , Size#
+	
+	rem set parameters
+	Effects_EyeGlow( n ).Active = 2
+	Effects_EyeGlow( n ).pos.x# = x#
+	Effects_EyeGlow( n ).pos.y# = y#
+	Effects_EyeGlow( n ).pos.z# = z#
+	Effects_EyeGlow( n ).Life = Life
+	Effects_EyeGlow( n ).Size# = Size#
+	Effects_EyeGlow( n ).FollowObj = FollowObj
+	Effects_EyeGlow( n ).FollowLimb = FollowLimb
+	
+endfunction n
+
+function Effects_DestroyEyeGlow( n )
+	
+	rem make sure within range
+	if n < 0 or n > uEffects_EyeGlow.CurrentMax
+		AddTextToConsole( 3 , "Index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if Effects_EyeGlow( n ).Active < 2
+		AddTextToConsole( 3 , "Glow not active!" )
+		exitfunction -1
+	endif
+	
+	rem destroy
+	hide object Effects_EyeGlow( n ).Obj
+	Effects_EyeGlow( n ).Active = 1
+	
+endfunction n
+
+function Effects_HideEyeGlow( n )
+	
+	rem if not active, exit
+	if Effects_EyeGlow( n ).Active < 2 then exitfunction
+	
+	rem hide
+	hide object Effects_EyeGlow( n ).Obj
+	
+endfunction
+
+function Effects_ShowEyeGlow( n )
+	
+	rem if not active, exit
+	if Effects_EyeGlow( n ).Active < 2 then exitfunction
+	
+	rem show
+	show object Effects_EyeGlow( n ).Obj
+	
+endfunction
+
+function Effects_ControlEyeGlow()
+	
+	rem localv ariables
+	local n as integer
+	
+	rem loop through all active eye glow effects
+	for n = 0 to uEffects_EyeGlow.CurrentMax
+		if Effects_EyeGlow( n ).Active = 2
+			
+			rem check if following an object
+			if Effects_EyeGlow( n ).FollowObj > 0
+				Effects_EyeGlow( n ).pos.x# = limb position x( Effects_EyeGlow( n ).FollowObj , Effects_EyeGlow( n ).FollowLimb )
+				Effects_EyeGlow( n ).pos.y# = limb position y( Effects_EyeGlow( n ).FollowObj , Effects_EyeGlow( n ).FollowLimb )
+				Effects_EyeGlow( n ).pos.z# = limb position z( Effects_EyeGlow( n ).FollowObj , Effects_EyeGlow( n ).FollowLimb )
+			endif
+			
+			rem update object
+			position object Effects_EyeGlow( n ).Obj , Effects_EyeGlow( n ).pos.x# , Effects_EyeGlow( n ).pos.y# , Effects_EyeGlow( n ).pos.z#
+			set object to camera orientation Effects_EyeGlow( n ).Obj , 
+			
+		endif
+	next n
+	
+endfunction

@@ -1,0 +1,527 @@
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem help
+#constant CMD_HELP																		1
+#constant CMD_HELPCORE																	2
+#constant CMD_HELPGAMECONTROLS														3
+#constant CMD_HELPLOGGING																4
+#constant CMD_HELPCAMERA																5
+#constant CMD_HELPCLICKOBJ																6
+#constant CMD_HELPDISTORTION															7
+#constant CMD_HELPGUI																	8
+#constant CMD_HELPMENU																	9
+#constant CMD_HELPMESSAGE																10
+#constant CMD_HELPSCRIPT																11
+#constant CMD_HELPTEXTENTRY															12
+#constant CMD_HELPTRIGGER																13
+#constant CMD_HELPUNIT																	14
+#constant CMD_HELPWORLD																	15
+
+rem core
+#constant CMD_SETCONSOLESIZE															1000
+#constant CMD_SETCONSOLEPOSITION														1001
+#constant CMD_OPENTOREAD																1002
+#constant CMD_OPENTOWRITE																1003
+#constant CMD_CLOSEFILE																	1004
+#constant CMD_READFILEBLOCK															1005
+#constant CMD_WRITEFILEBLOCK															1006
+#constant CMD_WRITELONG																	1007
+#constant CMD_WRITEFLOAT																1008
+#constant CMD_WRITEBYTE																	1009
+#constant CMD_WRITESTRING																1010
+#constant CMD_DELETEFILE																1011
+#constant CMD_JUMPLINE																	1012
+#constant CMD_SETVARIABLEINTEGERINTEGER											1013
+#constant CMD_SETVARIABLEINTEGERFLOAT												1014
+#constant CMD_SETVARIABLEFLOATINTEGER												1015
+#constant CMD_SETVARIABLEFLOATFLOAT													1016
+#constant CMD_SETVARIABLESTRING														1017
+#constant CMD_SETVARIABLEINTEGERINTEGER_DENYQUEUE 								1018
+#constant CMD_SETVARIABLEINTEGERFLOAT_DENYQUEUE									1019
+#constant CMD_SETVARIABLEFLOATINTEGER_DENYQUEUE									1020
+#constant CMD_SETVARIABLEFLOATFLOAT_DENYQUEUE									1021
+#constant CMD_SETVARIABLESTRING_DENYQUEUE											1022
+#constant CMD_ENDSCRIPT																	1023
+#constant CMD_CONDITIONALJUMP															1024
+#constant CMD_CONDITIONALJUMPNEGATIVE												1025
+#constant CMD_RESETFORLOOPVARIABLE													1026
+#constant CMD_FORNEXT																	1027
+#constant CMD_INCREMENT_INTEGER_INTEGER											1028
+#constant CMD_INCREMENT_INTEGER_FLOAT												1029
+#constant CMD_INCREMENT_FLOAT_INTEGER												1030
+#constant CMD_INCREMENT_FLOAT_FLOAT													1031
+#constant CMD_DECREMENT_INTEGER_INTEGER											1032
+#constant CMD_DECREMENT_INTEGER_FLOAT												1033
+#constant CMD_DECREMENT_FLOAT_INTEGER												1034
+#constant CMD_DECREMENT_FLOAT_FLOAT													1035
+#constant CMD_INCREMENT_INTEGER_INTEGER_DENYQUEUE								1036
+#constant CMD_INCREMENT_INTEGER_FLOAT_DENYQUEUE									1037
+#constant CMD_INCREMENT_FLOAT_INTEGER_DENYQUEUE									1038
+#constant CMD_INCREMENT_FLOAT_FLOAT_DENYQUEUE									1039
+#constant CMD_DECREMENT_INTEGER_INTEGER_DENYQUEUE								1040
+#constant CMD_DECREMENT_INTEGER_FLOAT_DENYQUEUE									1041
+#constant CMD_DECREMENT_FLOAT_INTEGER_DENYQUEUE									1042
+#constant CMD_DECREMENT_FLOAT_FLOAT_DENYQUEUE									1043
+#constant CMD_EVENT																		1044
+#constant CMD_ENDEVENT																	1045
+#constant CMD_CALLEVENT																	1046
+#constant CMD_FORCEOUTPUT																1047
+#constant CMD_NOP																			1048
+#constant CMD_SYNCRATE																	1049
+#constant CMD_PRINT																		1050
+#constant CMD_RESETGAMETIMER															1051
+
+rem game controls
+#constant CMD_CTRL_BUTTON                       								2000
+#constant CMD_CTRL_CAMERA                       								2001
+#constant CMD_CTRL_CLICKOBJ                     								2002
+#constant CMD_CTRL_CONSOLE                      								2003
+#constant CMD_CTRL_DISTORTION                   								2004
+#constant CMD_CTRL_GUI                          								2005
+#constant CMD_CTRL_MENU                         								2006
+#constant CMD_CTRL_MESSAGE                      								2007
+#constant CMD_CTRL_MOUSE                        								2008
+#constant CMD_CTRL_SCRIPT                       								2009
+#constant CMD_CTRL_SLIDER                       								2010
+#constant CMD_CTRL_TEXTENTRY                    								2011
+#constant CMD_CTRL_TRIGGER                      								2012
+#constant CMD_CTRL_UNIT                         								2013
+#constant CMD_CTRL_WORLD                        								2014
+
+rem logging
+#constant CMD_TURNALLLOGGINGON                  								3000
+#constant CMD_TURNALLLOGGINGOFF                 								3001
+#constant CMD_CAMERALOGGING                     								3002
+#constant CMD_CLICKOBJLOGGING                   								3003
+#constant CMD_DISTORTIONLOGGING                 								3004
+#constant CMD_GUILOGGING                        								3005
+#constant CMD_MENULOGGING                       								3006
+#constant CMD_MESSAGELOGGING                    								3007
+#constant CMD_SCRIPTLOGGING                     								3008
+#constant CMD_TRIGGERLOGGING                    								3009
+#constant CMD_UNITLOGGING                       								3010
+#constant CMD_WORLDLOGGING                      								3011
+#constant CMD_FORCEFIELDLOGGING														3012
+
+rem camera commands
+#constant CMD_SETCAMERAMODE                     								3900
+#constant CMD_PANCAMERA																	3901
+
+rem click object commands
+#constant CMD_CREATECLICKOBJ                    								4000
+#constant CMD_DESTROYCLICKOBJ                   								4001
+#constant CMD_CREATECLICKOBJCONNECTION          								4002
+#constant CMD_DESTROYCLICKOBJCONNECTION         								4003
+#constant CMD_SHOWCLICKOBJ                      								4004
+#constant CMD_SHOWCLICKOBJCONNECTION            								4005
+#constant CMD_HIDECLICKOBJ                      								4006
+#constant CMD_HIDECLICKOBJCONNECTION            								4007
+
+rem distortion commands
+#constant CMD_CREATEDISTORTION                  								5000
+#constant CMD_DESTROYDISTORTION                 								5001
+
+rem gui commands
+#constant CMD_GUIADDSTATICIMAGE                 								6000
+#constant CMD_GUIDESTROYELEMENT                 								6001
+#constant CMD_GUIADDBUTTON                      								6002
+#constant CMD_GUILOCKBUTTON                     								6003
+#constant CMD_GUIUNLOCKBUTTON                   								6004
+#constant CMD_GUIHIDEELEMENT                    								6005
+#constant CMD_GUISHOWELEMENT                    								6006
+#constant CMD_GUIBINDBUTTONTOUNIT               								6007
+#constant CMD_GUIUNBINDUNIT                     								6008
+#constant CMD_GUIPOSITIONELEMENT														6009
+#constant CMD_GUIBUTTONENABLETOGGLE													6010
+#constant CMD_GUIBUTTONDISABLETOGGLE												6011
+#constant CMD_GUIBUTTONEVENTCLICK													6012
+#constant CMD_GUIBUTTONEVENTRELEASE													6013
+#constant CMD_GUIDRAGBOXENABLE														6014
+#constant CMD_GUIDRAGBOXDISABLE														6015
+#constant CMD_GUIADDSTATICFRAME														6016
+#constant CMD_GUIADDBUTTONNORMALFRAME												6017
+#constant CMD_GUIADDBUTTONMOUSEOVERFRAME											6018
+#constant CMD_GUIADDBUTTONPRESSFRAME												6019
+#constant CMD_GUIADDBUTTONLOCKEDFRAME												6020
+#constant CMD_GUIADDBUTTONICONFRAME													6021
+#constant CMD_GUISETSTATICFRAMEDELAY												6022
+#constant CMD_GUISETBUTTONNORMALFRAMEDELAY										6023
+#constant CMD_GUISETBUTTONMOUSEOVERFRAMEDELAY									6024
+#constant CMD_GUISETBUTTONPRESSFRAMEDELAY											6025
+#constant CMD_GUISETBUTTONLOCKEDFRAMEDELAY										6026
+#constant CMD_GUISETBUTTONICONFRAMEDELAY											6027
+#constant CMD_GUISETPORTRAITPOSITION												6028
+
+rem menu commands
+#constant CMD_CREATESPLASH                      								7000
+#constant CMD_DESTROYSPLASH                     								7001
+#constant CMD_CREATEMENU                        								7002
+#constant CMD_DESTROYMENU                       								7003
+
+rem message commands
+#constant CMD_CREATEMESSAGE                     								8000
+#constant CMD_DESTROYMESSAGE                    								8001
+#constant CMD_UPDATEMESSAGEPOSITION													8002
+#constant CMD_UPDATEMESSAGETEXT														8003
+
+rem mini map
+#constant CMD_CREATEMINIMAP															8010
+#constant CMD_DESTROYMINIMAP															8011
+
+rem script commands
+#constant CMD_LOADSCRIPT                        								9000
+#constant CMD_RUNSCRIPT                         								9001
+#constant CMD_STOPSCRIPT                        								9002
+#constant CMD_DESTROYSCRIPT															9003
+#constant CMD_SCRIPTDUMPALLDATATODEBUGLOG											9004
+
+rem unit commands
+#constant CMD_CREATEUNIT                        								11001
+#constant CMD_UNITADDABILITY                    								11002
+#constant CMD_UNITLOCKABILITY                   								11003
+#constant CMD_DESTROYUNIT                       								11004
+#constant CMD_UNITPOSITION                      								11005
+#constant CMD_UNITSCALE                         								11006
+#constant CMD_UNITUNLOCKABILITY                 								11007
+#constant CMD_UNITSHOWABILITY															11008
+#constant CMD_UNITHIDEABILITY															11009
+#constant CMD_UNITSETABILITYRANGE               								11010
+#constant CMD_UNITSETABILITYGLOBAL              								11011
+#constant CMD_UNITSETABILITYLOCAL               								11012
+#constant CMD_UNITSETABILITYHEALTHDAMAGE        								11013
+#constant CMD_UNITSETABILITYMANADAMAGE          								11014
+#constant CMD_UNITSETABILITYHEALTHDRAIN											11015
+#constant CMD_UNITSETABILITYMANADRAIN												11016
+#constant CMD_UNITUSEABILITY                    								11017
+#constant CMD_UNITDRAWPATH                      								11018
+#constant CMD_UNITHIDEPATH                      								11019
+#constant CMD_UNITDRAWFORMATION                 								11020
+#constant CMD_UNITHIDEFORMATION                 								11021
+#constant CMD_UNITSETABILITYAUTOMATIC												11022
+#constant CMD_UNITSETABILITYMANUAL													11023
+#constant CMD_GETUNITOBJECT															11024
+#constant CMD_UNITADDEFFECTTOLIST													11025
+#constant CMD_UNITADDSOUND																11026
+#constant CMD_UNITCHANGECONTROL														11027
+#constant CMD_UNITADDPORTRAITFRAME													11028
+#constant CMD_UNITSETPORTRAITFRAMEDELAY											11029
+
+rem world commands
+#constant CMD_DESTROYWORLD                      								12000
+#constant CMD_WORLDADDTERRAINOBJECT             								12001
+#constant CMD_WORLDCREATEPATHFINDER             								12002
+#constant CMD_WORLDSHOWPATHMAP                  								12003
+#constant CMD_WORLDHIDEPATHMAP                  								12004
+#constant CMD_WORLDCREATEFOGOFWAR               								12005
+#constant CMD_WORLDDESTROYFOGOFWAR              								12006
+#constant CMD_WORLDSHOWFOGOFWAR                 								12007
+#constant CMD_WORLDHIDEFOGOFWAR                 								12008
+#constant CMD_WORLDADDSCENERYOBJECT													12009
+#constant CMD_WORLDPOSITIONSCENERYOBJECT											12010
+#constant CMD_WORLDROTATESCENERYOBJECT												12011
+#constant CMD_WORLDSCALESCENERYOBJECT												12012
+#constant CMD_WORLDEXPORT																12013
+
+rem set internal values
+#constant CMD_SETVALUE_CAMERAMINPOSX												13000
+#constant CMD_SETVALUE_CAMERAMAXPOSX												13001
+#constant CMD_SETVALUE_CAMERAMINPOSZ												13002
+#constant CMD_SETVALUE_CAMERAMAXPOSZ												13003
+
+rem animation (000-499)
+#constant CMD_SETVALUE_UNITANIMIDLESTART											13004
+#constant CMD_SETVALUE_UNITANIMIDLEEND												13005
+#constant CMD_SETVALUE_UNITANIMIDLESPEED											13006
+#constant CMD_SETVALUE_UNITANIMCREEPSTART											13007
+#constant CMD_SETVALUE_UNITANIMCREEPEND											13008
+#constant CMD_SETVALUE_UNITANIMCREEPSPEED											13009
+#constant CMD_SETVALUE_UNITANIMWALKSTART											13010
+#constant CMD_SETVALUE_UNITANIMWALKEND												13011
+#constant CMD_SETVALUE_UNITANIMWALKSPEED											13012
+#constant CMD_SETVALUE_UNITANIMRUNSTART											13013
+#constant CMD_SETVALUE_UNITANIMRUNEND												13014
+#constant CMD_SETVALUE_UNITANIMRUNSPEED											13015
+#constant CMD_SETVALUE_UNITANIMTAKEOFFJUMPSTART									13016
+#constant CMD_SETVALUE_UNITANIMTAKEOFFJUMPEND									13017
+#constant CMD_SETVALUE_UNITANIMTAKEOFFJUMPSPEED									13018
+#constant CMD_SETVALUE_UNITANIMTAKEOFFFLYUPSTART								13019
+#constant CMD_SETVALUE_UNITANIMTAKEOFFFLYUPEND									13020
+#constant CMD_SETVALUE_UNITANIMTAKEOFFFLYUPSPEED								13021
+#constant CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPSTART							13022
+#constant CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPEND								13023
+#constant CMD_SETVALUE_UNITANIMTAKEOFFARRIVETOPSPEED							13024
+#constant CMD_SETVALUE_UNITANIMFLYIDLESTART										13025
+#constant CMD_SETVALUE_UNITANIMFLYIDLEEND											13026
+#constant CMD_SETVALUE_UNITANIMFLYIDLESPEED										13027
+#constant CMD_SETVALUE_UNITANIMFLYIDLETOFLYSTART								13028
+#constant CMD_SETVALUE_UNITANIMFLYIDLETOFLYEND									13029
+#constant CMD_SETVALUE_UNITANIMFLYIDLETOFLYSPEED								13030
+#constant CMD_SETVALUE_UNITANIMFLYSTART											13031
+#constant CMD_SETVALUE_UNITANIMFLYEND												13032
+#constant CMD_SETVALUE_UNITANIMFLYSPEED											13033
+#constant CMD_SETVALUE_UNITANIMFLYTOFLYIDLESTART								13034
+#constant CMD_SETVALUE_UNITANIMFLYTOFLYIDLEEND									13035
+#constant CMD_SETVALUE_UNITANIMFLYTOFLYIDLESPEED								13036
+#constant CMD_SETVALUE_UNITANIMLANDPREPARESTART									13037
+#constant CMD_SETVALUE_UNITANIMLANDPREPAREEND									13038
+#constant CMD_SETVALUE_UNITANIMLANDPREPARESPEED									13039
+#constant CMD_SETVALUE_UNITANIMLANDFLYDOWNSTART									13040
+#constant CMD_SETVALUE_UNITANIMLANDFLYDOWNEND									13041
+#constant CMD_SETVALUE_UNITANIMLANDFLYDOWNSPEED									13042
+#constant CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMSTART							13043
+#constant CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMEND								13044
+#constant CMD_SETVALUE_UNITANIMLANDARRIVEBOTTOMSPEED							13045
+#constant CMD_SETVALUE_UNITANIMGROUNDDIE1START									13046
+#constant CMD_SETVALUE_UNITANIMGROUNDDIE1END										13047
+#constant CMD_SETVALUE_UNITANIMGROUNDDIE1SPEED									13048
+#constant CMD_SETVALUE_UNITANIMGROUNDDIE2START									13049
+#constant CMD_SETVALUE_UNITANIMGROUNDDIE2END										13050
+#constant CMD_SETVALUE_UNITANIMGROUNDDIE2SPEED									13051
+#constant CMD_SETVALUE_UNITANIMGROUNDDIEBURNSTART								13052
+#constant CMD_SETVALUE_UNITANIMGROUNDDIEBURNEND									13053
+#constant CMD_SETVALUE_UNITANIMGROUNDDIEBURNSPEED								13054
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1START 	13055
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1END 		13056
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE1SPEED 	13057
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2START 	13058
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2END 		13059
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE2SPEED 	13060
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3START 	13061
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3END 		13062
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKPREPARE3SPEED 	13063
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1START 	13064
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1END 		13065
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE1SPEED 	13066
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2START 	13067
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2END 		13068
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE2SPEED 	13069
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3START 	13070
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3END 		13071
+#constant CMD_SETVALUE_UNITANIMUNICORNGROUNDMAGICATTACKRELEASE3SPEED 	13072
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1START	13073
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1END	13074
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE1SPEED	13075
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2START	13076
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2END	13077
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE2SPEED	13078
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3START	13079
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3END	13080
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKPREPARE3SPEED	13081
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1START	13082
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1END	13083
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE1SPEED	13084
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2START	13085
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2END	13086
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE2SPEED	13087
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3START	13088
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3END	13089
+#constant CMD_SETVALUE_UNITANIMCHANGELINGGROUNDMELEEATTACKRELEASE3SPEED	13090
+#constant CMD_SETVALUE_UNITANIMFORCEFIELDPREPARESTART							13091
+#constant CMD_SETVALUE_UNITANIMFORCEFIELDPREPAREEND							13092
+#constant CMD_SETVALUE_UNITANIMFORCEFIELDPREPARESPEED							13093
+#constant CMD_SETVALUE_UNITANIMFORCEFIELDRELEASESTART							13094
+#constant CMD_SETVALUE_UNITANIMFORCEFIELDRELEASEEND							13095
+#constant CMD_SETVALUE_UNITANIMFORCEFIELDRELEASESPEED							13096
+#constant CMD_SETVALUE_UNITANIMMETEORSHOWERPREPARESTART						13097
+#constant CMD_SETVALUE_UNITANIMMETEORSHOWERPREPAREEND							13098
+#constant CMD_SETVALUE_UNITANIMMETEORSHOWERPREPARESPEED						13099
+#constant CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASESTART						13100
+#constant CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASEEND							13101
+#constant CMD_SETVALUE_UNITANIMMETEORSHOWERRELEASESPEED						13102
+
+rem unit stats (500-519)
+#constant CMD_SETVALUE_UNITSTATSHEALTHENABLE										13500
+#constant CMD_SETVALUE_UNITSTATSMANAENABLE										13501
+#constant CMD_SETVALUE_UNITSTATSSHIELDENABLE										13502
+#constant CMD_SETVALUE_UNITSTATSMAXHEALTH											13503
+#constant CMD_SETVALUE_UNITSTATSCURRENTHEALTH									13504
+#constant CMD_SETVALUE_UNITSTATSMAXMANA											13505
+#constant CMD_SETVALUE_UNITSTATSCURRENTMANA										13506
+#constant CMD_SETVALUE_UNITSTATSMAXSHIELD											13507
+#constant CMD_SETVALUE_UNITSTATSCURRENTSHIELD									13508
+#constant CMD_SETVALUE_UNITSTATSHEALTHREGENERATIONRATE						13509
+#constant CMD_SETVALUE_UNITSTATSMANAREGENERATIONRATE							13510
+#constant CMD_SETVALUE_UNITSTATSSHIELDREGENERATIONRATE						13511
+
+rem unit speeds (520-529)
+#constant CMD_SETVALUE_UNITGROUNDSPEED												13520
+#constant CMD_SETVALUE_UNITAIRSPEED													13521
+
+rem unit ranges (530-539)
+#constant CMD_SETVALUE_UNITGROUNDVIEWRANGE										13530
+#constant CMD_SETVALUE_UNITAIRVIEWRANGE											13531
+
+rem unit limbs (540-559)
+#constant CMD_SETVALUE_UNITSPELLCASTLIMB											13540
+
+rem unit ability settings (550-559)
+#constant CMD_SETVALUE_UNITABILITYAUTOMATIC										13550
+
+rem world values (600-699)
+
+rem Command Queue values (700-799)
+#constant CMD_SETVALUE_COMMANDQUEUEBUFFERDISTANCE								13700
+
+rem Force Field
+#constant CMD_CREATEFORCEFIELD														14000
+#constant CMD_DESTROYFORCEFIELD														14001
+#constant CMD_DESTROYALLFORCEFIELD													14002
+
+rem smoke
+#constant CMD_CREATESMOKE																15000
+#constant CMD_DESTROYSMOKE																15002
+#constant CMD_DESTROYALLSMOKE															15003
+#constant CMD_SETSMOKEFORCE															15004
+#constant CMD_SETSMOKETYPE																15005
+
+rem eye glow
+#constant CMD_CREATEEYEGLOW															16000
+#constant CMD_DESTROYEYEGLOW															16001
+
+rem triggers
+#constant CMD_CREATETRIGGER															17001
+#constant CMD_ADDTRIGGERCONDITION													17002
+#constant CMD_DESTROYTRIGGER															17003
+#constant CMD_SHOWTRIGGER																17004
+#constant CMD_SHOWTRIGGERS																17005
+#constant CMD_HIDETRIGGERS																17006
+#constant CMD_TRIGGERRESETTIMERS														17007
+
+function CompileEntry( inString$ , slot , lin )
+	
+	rem local variables
+	local a as integer
+	local n as integer
+	local s as integer
+	local r as integer
+	local SplitCount as integer
+	local string$ as string
+	
+	rem remove any tabs or spaces in front of it
+	while fast left$( inString$ , 1 ) = tab$() or fast left$( string$ , 1 ) = " "
+		inString$ = fast right$( inString$ , len(inString$)-1 )
+	endwhile
+	
+	rem logging
+	if uScript.logging = 1 then AddTextToConsole( 1 , "Compile -- " + chr$(34) + inString$ + chr$(34) )
+	
+	rem prepare string before split
+	string$ = fast lower$( inString$ )
+	string$ = ScriptAddSpacesToString( string$ )
+	
+	rem split string into array
+	split string string$ , " "
+	SplitCount = range( split count() , 0 , ConsoleArgExtractMax )
+	s = 0
+	r = 0 : rem 1 if quotation is open
+	for n = 1 to SplitCount
+		
+		rem add to list
+		if r = 0
+			ConsoleCmd$(s) = get split word$(n)
+		else
+			ConsoleCmd$(s) = ConsoleCmd$(s) + " " + get split word$(n)
+		endif
+		
+		rem open quotation
+		if fast left$( ConsoleCmd$(s) , 1 ) = chr$(34) then r = 1
+		
+		rem close quotation
+		if fast right$( ConsoleCmd$(s) , 1 ) = chr$(34) then r = 0
+		
+		rem remove quotations
+		if fast left$( ConsoleCmd$(s) , 1 ) = chr$(34) then ConsoleCmd$(s) = fast right$( ConsoleCmd$(s) , len(ConsoleCmd$(s))-1 )
+		if fast right$( ConsoleCmd$(s) , 1 ) = chr$(34) then ConsoleCmd$(s) = fast left$( ConsoleCmd$(s) , len(ConsoleCmd$(s))-1 )
+		
+		rem handle quotations and comments
+		if fast left$( ConsoleCmd$(s) , 2 ) = "//" then exit
+		if ConsoleCmd$(s) <> "" and r = 0 then inc s
+	next n
+	
+	rem quotation not closed
+	if r = 1
+		AddTextToConsole( 3 , "Irregular quote sign count!" )
+		exitfunction -1
+	endif
+
+	rem clear array
+	for n = s to ConsoleArgExtractMax
+		ConsoleCmd$(n) = ""
+	next n
+	
+	rem pre-process static values
+	for n = 1 to SplitCount
+
+		rem unit control
+		if ConsoleCmd$( n ) = "unitcontrol_player" then ConsoleCmd$( n ) = str$( UNITCONTROL_PLAYER )
+		if ConsoleCmd$( n ) = "unitcontrol_noone" then ConsoleCmd$( n ) = str$( UNITCONTROL_NOONE )
+		if ConsoleCmd$( n ) = "unitcontrol_enemy" then ConsoleCmd$( n ) = str$( UNITCONTROL_ENEMY )
+		
+		rem unit abilities
+		if ConsoleCmd$( n ) = "unitability_move" then ConsoleCmd$( n ) = str$( UNITABILITY_MOVE )
+		if ConsoleCmd$( n ) = "unitability_stop" then ConsoleCmd$( n ) = str$( UNITABILITY_STOP )
+		if ConsoleCmd$( n ) = "unitability_hold" then ConsoleCmd$( n ) = str$( UNITABILITY_HOLD )
+		if ConsoleCmd$( n ) = "unitability_patrol" then ConsoleCmd$( n ) = str$( UNITABILITY_PATROL )
+		if ConsoleCmd$( n ) = "unitability_attack" then ConsoleCmd$( n ) = str$( UNITABILITY_ATTACK )
+		if ConsoleCmd$( n ) = "unitability_fly" then ConsoleCmd$( n ) = str$( UNITABILITY_FLY )
+		if ConsoleCmd$( n ) = "unitability_land" then ConsoleCmd$( n ) = str$( UNITABILITY_LAND )
+		if ConsoleCmd$( n ) = "unitability_magic_missile" then ConsoleCmd$( n ) = str$( UNITABILITY_MAGIC_MISSILE )
+		if ConsoleCmd$( n ) = "unitability_teleport" then ConsoleCmd$( n ) = str$( UNITABILITY_TELEPORT )
+		if ConsoleCmd$( n ) = "unitability_changeling_melee_attack" then ConsoleCmd$( n ) = str$( UNITABILITY_CHANGELING_MELEE_ATTACK )
+		if ConsoleCmd$( n ) = "unitability_force_field" then ConsoleCmd$( n ) = str$( UNITABILITY_FORCE_FIELD )
+		if ConsoleCmd$( n ) = "unitability_meteor_shower" then ConsoleCmd$( n ) = str$( UNITABILITY_METEOR_SHOWER )
+		if ConsoleCmd$( n ) = "smoke_black" then ConsoleCmd$( n ) = str$( SMOKE_BLACK )
+		if ConsoleCmd$( n ) = "smoke_white" then ConsoleCmd$( n ) = str$( SMOKE_WHITE )
+		if ConsoleCmd$( n ) = "unitsound_select" then ConsoleCmd$( n ) = str$( UNITSOUND_SELECT )
+		if ConsoleCmd$( n ) = "unitsound_annoyed" then ConsoleCmd$( n ) = str$( UNITSOUND_ANNOYED )
+		if ConsoleCmd$( n ) = "unitsound_target" then ConsoleCmd$( n ) = str$( UNITSOUND_TARGET )
+		if ConsoleCmd$( n ) = "unitsound_move" then ConsoleCmd$( n ) = str$( UNITSOUND_MOVE )
+		if ConsoleCmd$( n ) = "unitsound_teleport" then ConsoleCmd$( n ) = str$( UNITSOUND_TELEPORT )
+		if ConsoleCmd$( n ) = "unitsound_kill" then ConsoleCmd$( n ) = str$( UNITSOUND_KILL )
+		if ConsoleCmd$( n ) = "unitsound_die" then ConsoleCmd$( n ) = str$( UNITSOUND_DIE )
+		if ConsoleCmd$( n ) = "unitsound_meteorshower" then ConsoleCmd$( n ) = str$( UNITSOUND_METEORSHOWER )
+		if ConsoleCmd$( n ) = "unitsound_forcefield" then ConsoleCmd$( n ) = str$( UNITSOUND_FORCEFIELD )
+		if ConsoleCmd$( n ) = "unitsound_meteor_shower" then ConsoleCmd$( n ) = str$( UNITSOUND_METEOR_SHOWER )
+		
+		rem triggers
+		if ConsoleCmd$( n ) = "trigger_junction_or" then ConsoleCmd$( n ) = str$( TRIGGER_JUNCTION_OR )
+		if ConsoleCmd$( n ) = "trigger_junction_and" then ConsoleCmd$( n ) = str$( TRIGGER_JUNCTION_AND )
+		if ConsoleCmd$( n ) = "trigger_junction_nor" then ConsoleCmd$( n ) = str$( TRIGGER_JUNCTION_NOR )
+		if ConsoleCmd$( n ) = "trigger_junction_nand" then ConsoleCmd$( n ) = str$( TRIGGER_JUNCTION_NAND )
+		if ConsoleCmd$( n ) = "trigger_junction_inv_or" then ConsoleCmd$( n ) = str$( TRIGGER_JUNCTION_INV_OR )
+		if ConsoleCmd$( n ) = "trigger_junction_inv_and" then ConsoleCmd$( n ) = str$( TRIGGER_JUNCTION_INV_AND )
+		if ConsoleCmd$( n ) = "trigger_type_unit" then ConsoleCmd$( n ) = str$( TRIGGER_TYPE_UNIT )
+		if ConsoleCmd$( n ) = "trigger_type_unit_count" then ConsoleCmd$( n ) = str$( TRIGGER_TYPE_UNIT_COUNT )
+		if ConsoleCmd$( n ) = "trigger_type_unit_control" then ConsoleCmd$( n ) = str$( TRIGGER_TYPE_UNIT_CONTROL )
+		if ConsoleCmd$( n ) = "trigger_type_unit_death" then ConsoleCmd$( n ) = str$( TRIGGER_TYPE_UNIT_DEATH )
+		if ConsoleCmd$( n ) = "trigger_type_timer" then ConsoleCmd$( n ) = str$( TRIGGER_TYPE_TIMER )
+		
+	next n
+	
+	rem compile sections
+	n = _ScriptCompileEntryHelp( slot , lin )								: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryCore( inString$ , slot , lin ) 			: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryForceField( slot , lin )						: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryGameControls( slot , lin ) 					: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryLogging( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryCamera( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryClickObj( slot , lin )						: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryDistortion( slot , lin )						: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryGUI( slot , lin )								: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryMessage( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryMinimap( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryScript( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryUnit( slot , lin )								: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryWorld( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntrySmoke( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryEyeGlow( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryTrigger( slot , lin )                   : if n > -3 then exitfunction n
+	
+	rem unable to compile entry
+	AddTextToConsole( 3 , "Unknown Command : " + chr$(34) + string$ + chr$(34) )
+	AddTextToConsole( 3 , "    Script: " + str$(slot) )
+	AddTextToConsole( 3 , "    Line: " + str$(lin) )
+
+endfunction -1

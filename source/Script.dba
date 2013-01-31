@@ -1,0 +1,1228 @@
+rem ---------------------------------------------------------------------------
+rem Scripts
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant ScriptMax									100
+
+#constant SCRIPTDATA_FLOAT								0
+#constant SCRIPTDATA_INTEGER							1
+#constant SCRIPTDATA_STRING							2
+#constant SCRIPTDATA_DYNAMICFLOAT					3
+#constant SCRIPTDATA_DYNAMICINTEGER					4
+#constant SCRIPTDATA_EXPRESSION						5
+
+#constant SCRIPTDATA_EXPRESSION_EQUALS				6
+#constant SCRIPTDATA_EXPRESSION_LARGERTHAN		7
+#constant SCRIPTDATA_EXPRESSION_SMALLERTHAN		8
+#constant SCRIPTDATA_EXPRESSION_NOT					9
+#constant SCRIPTDATA_EXPRESSION_SMALLEREQUALS	10
+#constant SCRIPTDATA_EXPRESSION_LARGEREQUALS 	11
+#constant SCRIPTDATA_EXPRESSION_ADD					12
+#constant SCRIPTDATA_EXPRESSION_SUBTRACT			13
+#constant SCRIPTDATA_EXPRESSION_MULTIPLY			14
+#constant SCRIPTDATA_EXPRESSION_DIVIDE				15
+#constant SCRIPTDATA_EXPRESSION_EXPONENT			16
+#constant SCRIPTDATA_EXPRESSION_MODULO				17
+#constant SCRIPTDATA_EXPRESSION_BITWISEAND		18
+#constant SCRIPTDATA_EXPRESSION_BITWISEOR			19
+#constant SCRIPTDATA_EXPRESSION_AND					20
+#constant SCRIPTDATA_EXPRESSION_OR					21
+#constant SCRIPTDATA_EXPRESSION_XOR					22
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types	
+rem ---------------------------------------------------------------------------
+
+type ScriptDynamicValueVT
+	LastIndex											as integer
+	GetCameraPositionX								as integer
+	GetCameraPositionY								as integer
+	GetCameraPositionZ								as integer
+endtype
+
+type ScriptVT
+	CurrentSelected                        	as integer
+	LastIndex                              	as integer
+	logging												as integer
+	CurrentConsoleCmdMax								as integer
+	CurrentIntegerDataMax							as integer
+	CurrentFloatDataMax								as integer
+	CurrentStringDataMax								as integer
+	CurrentDataListMax                        as integer
+	CurrentLabelQueueMax								as integer
+	CurrentNestMax										as integer
+	CurrentExpressionMax								as integer
+	CurrentExpressionListMax						as integer
+	CurrentExpressionProcessMax					as integer
+	CurrentEventListMax								as integer
+	CurrentEventCallStackMax						as integer
+	DynamicValue										as ScriptDynamicValueVT
+endtype
+
+type ScriptAAT
+	Active                                 	as integer
+	CurrentLine                            	as integer
+	cmd													as integer
+	DisableIteration									as integer
+endtype
+
+type ScriptIntegerDataAT
+	Active												as integer
+	dat													as integer
+	Locked												as integer
+endtype
+
+type ScriptFloatDataAT
+	Active												as integer
+	dat#													as float
+	Locked												as integer
+endtype
+
+type ScriptStringDataAT
+	Active												as integer
+	dat$													as string
+	Locked												as integer
+endtype
+
+type ScriptDataListAAAT
+   Active                                    as integer
+   Index                                     as dword
+   DatType                                   as integer
+endtype
+
+type ScriptVariableListAAT
+	Index													as dword
+	DatType												as integer
+	Count													as integer
+	Name$													as string
+endtype
+
+type ScriptEventListAT
+	lin													as integer
+	Script												as integer
+	Name$													as string
+endtype
+
+type ScriptEventCallStackAT
+	Active												as integer
+	Script												as integer
+	lin													as integer
+	Name$													as string
+endtype
+
+type ScriptLabelQueueAT
+	Active												as integer
+	lin													as integer
+	Label$												as string
+endtype
+
+type ScriptNestAT
+	ptr													as integer
+endtype
+
+type ScriptExpressionAAT
+	Active												as integer
+	DatType												as integer
+	Index													as integer
+	Count													as integer
+	Linked												as integer
+endtype
+
+type ScriptExpressionProcessAT
+	dat													as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitScript()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising Scripts" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+	rem ---------------------------------------------------------------------------
+	
+	global uScript                          	as ScriptVT
+
+	rem ---------------------------------------------------------------------------
+	rem User Defined Types
+	rem ---------------------------------------------------------------------------
+	
+	global dim ConsoleCmd$(ConsoleArgExtractMax) as string
+	global dim Script( ScriptMax , 1024 )  		as ScriptAAT
+	global dim ScriptDataList(ScriptMax,1024,ConsoleArgMax) as ScriptDataListAAAT
+	global dim ScriptVariableList(ScriptMax,255) as ScriptVariableListAAT
+	global dim ScriptEventList() 					as ScriptEventListAT
+	global dim ScriptEventCallStack()			as ScriptEventCallStackAT
+	global dim ScriptIntegerData()				as ScriptIntegerDataAT
+	global dim ScriptFloatData()					as ScriptFloatDataAT
+	global dim ScriptStringData()					as ScriptStringDataAT
+	global dim ScriptLabelQueue()					as ScriptLabelQueueAT
+	global dim ScriptNest()							as ScriptNestAT
+	global dim ScriptExpression()					as ScriptExpressionAAT
+	global dim ScriptExpressionProcess()		as ScriptExpressionProcessAT
+	
+	rem initial values
+	uScript.CurrentConsoleCmdMax = -1
+	uScript.CurrentIntegerDataMax = -1
+	uScript.CurrentFloatDataMax = -1
+	uScript.CurrentStringDataMax = -1
+	uScript.CurrentDataListMax = -1
+	uScript.CurrentLabelQueueMax = -1
+	uScript.CurrentNestMax = -1
+	uScript.CurrentExpressionMax = -1
+	uScript.CurrentExpressionListMax = -1
+	uScript.CurrentExpressionProcessMax = -1
+	uScript.CurrentEventListMax = -1
+	uScript.CurrentEventCallStackMax = -1
+	
+	rem set up dynamic values (they remain permenantly in scriptdata, so lock it)
+	uScript.DynamicValue.LastIndex = ScriptAddDataInteger( 0 )					: ScriptIntegerData( uScript.DynamicValue.LastIndex ).Locked = 1
+	uScript.DynamicValue.GetCameraPositionX = ScriptAddDataFloat( 0.0 )		: ScriptFloatData( uScript.DynamicValue.GetCameraPositionX ).Locked = 1
+	uScript.DynamicValue.GetCameraPositionY = ScriptAddDataFloat( 0.0 )		: ScriptFloatData( uScript.DynamicValue.GetCameraPositionY ).Locked = 1
+	uScript.DynamicValue.GetCameraPositionZ = ScriptAddDataFloat( 0.0 )		: ScriptFloatData( uScript.DynamicValue.GetCameraPositionZ ).Locked = 1
+	
+
+endfunction
+
+function _Script_Prepare_Dynamic_Values( Index )
+	
+	rem add values to the script
+	ScriptAddVariable( Index , "this" , uScript.DynamicValue.LastIndex , SCRIPTDATA_INTEGER )
+	ScriptAddVariable( Index , "getcamerapositionx()" , uScript.DynamicValue.GetCameraPositionX , SCRIPTDATA_FLOAT )
+	ScriptAddVariable( Index , "getcamerapositiony()" , uScript.DynamicValue.GetCameraPositionY , SCRIPTDATA_FLOAT )
+	ScriptAddVariable( Index , "getcamerapositionz()" , uScript.DynamicValue.GetCameraPositionZ , SCRIPTDATA_FLOAT )
+
+endfunction
+
+function LoadScript( filename$ , Index )
+	
+	rem offset index
+	inc Index
+	
+	rem local variables
+	local save1 as integer
+	local save2 as integer
+	local l as integer
+	local CommentOpen as integer
+	local success as integer
+	local cmd$ as string
+	local FileIndex as integer
+	local CompileFailed as integer
+	local timer# as float
+	
+	rem start compilation timer
+	timer# = hitimer(1000)
+	
+	rem clean up some stuff
+	DestroyScript( Index-1 )
+	ScriptClearLabelQueue()
+	ScriptClearNests()
+	
+	rem prepare dynamic values by adding them to variable list
+	_Script_Prepare_Dynamic_Values( Index )
+	
+	rem save some values
+	save1 = uConsole.ForceOutput
+	save2 = uScript.logging
+	
+	rem check if file exists
+	if file exist( filename$ )
+		
+		rem debug
+		uScript.logging = 1
+		uConsole.ForceOutput = 0
+		DebugOutput( 0 , "Compile Log: " + chr$(34) + filename$ + chr$(34) + "," + str$(Index) , DEBUG_NEWQUESTION )
+		uConsole.ForceOutput = 1
+		
+		rem reset values
+		Script( Index , 0 ).Active = 1
+		Script( Index , 0 ).CurrentLine = 0
+		CompileFailed = 0
+		l = 1
+		CommentOpen = 0
+		
+		rem open file
+		FileIndex = find free file()
+		OpenToRead( FileIndex , filename$ )
+		
+			rem loop until end of file is reached
+			repeat
+				
+				rem read in command
+				read string FileIndex , cmd$
+				
+				rem open comments
+				if instr( cmd$ , "/*" ) then CommentOpen = 1
+				
+				rem close comments
+				if CommentOpen = 2 then CommentOpen = 0
+				if CommentOpen = 1
+					if instr( cmd$ , "*/" ) then CommentOpen = 2
+				endif
+				
+				rem check if command should be ignored
+				if cmd$ = "" or left$( cmd$ , 2 ) = "//" or CommentOpen > 0
+				else
+
+					rem attempt to compile
+					success = CompileEntry( cmd$ , Index , Script( Index , 0 ).CurrentLine )
+					if success > -1
+						Script( Index , 0 ).CurrentLine = success
+					endif
+					
+					rem error
+					if success = -1
+						uConsole.ForceOutput = 0
+						DebugOutput( 3 , "    Line in File: " + str$(l) , DEBUG_NORMAL )
+						uConsole.ForceOutput = 1
+						CompileFailed = 1
+					endif
+
+				endif
+				
+				rem count actual lines in file
+				inc l
+				
+			until file end( FileIndex )
+		close file FileIndex
+		
+		rem if any labels remain in queue, alarm user
+		if ScriptOutputRemainingLabels() = -1 then CompileFailed = 1
+		
+		rem if any nests remain, alarm user
+		if ScriptOutputNests() = -1 then CompileFailed = 1
+		
+		rem process event call stack
+		ScriptProcessEventCallStack()
+		
+		rem close question
+		DebugOutput( 0 , "" , DEBUG_CLOSEQUESTION )
+		
+		rem if compilation had errors, alarm user
+		if CompileFailed = 1
+			uConsole.ForceOutput = 0
+			ScriptDumpAllDataToDebugLog( Index-1 )
+			DebugOutput( 3 , "Compilation was not successful!" , DEBUG_NORMAL )
+			DebugOutput( 3 , "Click on compile log to see more information" , DEBUG_NORMAL )
+			uConsole.ForceOutput = 1
+		endif
+		
+	else
+		DebugOutput( 3 , "Script " + chr$(34) + filename$ + chr$(34) + " does not exist." , DEBUG_NORMAL )
+		exitfunction -1
+	endif
+	
+	rem output time to compile
+	uConsole.ForceOutput = 0
+	timer# = hitimer(1000) - timer#
+	DebugOutput( 0 , "Time to compile: " + str$(timer#) + "ms" , DEBUG_NORMAL )
+	
+	rem restore force output
+	uConsole.ForceOutput = save1
+	uScript.logging = save2
+
+endfunction 0
+
+function ScriptDumpAllDataToDebugLog( Index )
+	
+	rem data offset
+	inc Index
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	local r as integer
+	local t as integer
+	local msg$ as string
+	local save1 as integer
+	local save2 as integer
+	
+	rem set output settings
+	save1 = uConsole.ForceOutput
+	save2 = uScript.logging
+	uConsole.ForceOutput = 0
+	uScript.logging = 1
+	
+	rem open debug question tag
+	DebugOutput( 0 , "Byte-Code and Memory Dump" , DEBUG_NEWQUESTION )
+	
+	rem some generic information
+	DebugOutput( 0 , "Script Index: " + str$(Index) , DEBUG_NORMAL )
+	DebugOutput( 0 , "Data format: <ID>,<value>" , DEBUG_NORMAL )
+	DebugOutput( 0 , "-------------------------------------------------------------------------------" , DEBUG_NORMAL )
+	
+	rem loop through all lines
+	for n = 0 to 1023
+		
+		rem no more commands left
+		if Script( Index , n ).cmd = 0 then exit
+		
+		rem reset message
+		msg$ = ""
+		
+		rem compose data
+		for s = 0 to ConsoleArgMax
+			if ScriptDataList( Index , n , s ).Active = 2
+				
+				rem integers, floats and strings
+				if ScriptDataList( Index , n , s ).DatType = SCRIPTDATA_INTEGER then msg$ = msg$ + tab$() + "int: " + str$(ScriptDataList(Index,n,s).Index) + "," + str$(ScriptIntegerData(ScriptDataList(Index,n,s).Index).dat)
+				if ScriptDataList( Index , n , s ).DatType = SCRIPTDATA_FLOAT then msg$ = msg$ + tab$() + "float: " + str$(ScriptDataList(Index,n,s).Index) + "," + str$(ScriptFloatData(ScriptDataList(Index,n,s).Index).dat#)
+				if ScriptDataList( Index , n , s ).DatType = SCRIPTDATA_STRING then msg$ = msg$ + tab$() + "string: " + str$(ScriptDataList(Index,n,s).Index) + "," + ScriptStringData(ScriptDataList(Index,n,s).Index).dat$
+
+				rem expression
+				if ScriptDataList( Index , n , s ).DatType = SCRIPTDATA_EXPRESSION
+					
+					t = ScriptDataList( Index , n , s ).Index
+					msg$ = msg$ + "           expr: " + str$(t) + "::"
+					for r = 0 to ScriptExpression( t , 0 ).Count
+						if ScriptExpression( t , r ).Linked = 0
+							if ScriptExpression( t , r ).DatType = SCRIPTDATA_INTEGER then msg$ = msg$ + tab$() + "int: " + str$(ScriptExpression( t , r ).Index) + "," + str$(ScriptIntegerData(ScriptExpression( t , r ).Index).dat)
+							if ScriptExpression( t , r ).DatType = SCRIPTDATA_FLOAT then msg$ = msg$ + tab$() + "float: " + str$(ScriptExpression( t , r ).Index) + "," + str$(ScriptFloatData(ScriptExpression( t , r ).Index).dat#)
+							if ScriptExpression( t , r ).DatType = SCRIPTDATA_STRING then msg$ = msg$ + tab$() + "string: " + str$(ScriptExpression( t , r ).Index) + "," + ScriptStringData(ScriptExpression( t , r ).Index).dat$
+						endif
+					next r
+				endif
+			endif
+		next s
+		
+		rem output message
+		DebugOutput( 0 , str$(n) + ": " + str$(Script( Index , n ).cmd) + msg$ , DEBUG_NORMAL )
+		
+	next n
+	
+	rem close question
+	DebugOutput( 0 , "" , DEBUG_CLOSEQUESTION )
+	
+	rem restore output settings
+	uConsole.ForceOutput = save1
+	uScript.logging = save2
+	
+endfunction
+
+function RunScript( Index )
+	
+	rem offset index
+	inc Index
+	
+	rem local variables
+	local n as integer
+
+	rem set script to execute
+	Script( Index , 0 ).Active = 2
+	Script( Index , 0 ).CurrentLine = 0
+
+	rem process all commands at once
+	uConsole.ForceOutput = 1
+	if Script( Index , 0 ).DisableIteration = 1
+		AddTextToConsole( 1 , "Running Script " + str$(Index) + " in disabled iteration" )
+		repeat
+			ProcessEntry( Index , Script( Index , 0 ).CurrentLine , _ENABLE , _DISABLE )
+			inc Script( Index , 0 ).CurrentLine
+		until Script( Index , 0 ).Active < 2 or Script( Index , 0 ).CurrentLine > 1023
+	endif
+
+endfunction
+
+function StopScript( Index )
+	
+	rem offset index
+	inc Index
+	
+	rem set script to stop
+	Script( Index , 0 ).Active = 1
+	
+endfunction
+
+function DestroyScript( Index )
+	
+	rem data offset
+	inc Index
+
+	rem make sure active
+	if Script( Index , 0 ).Active = 0
+		Script( Index , 0 ).Active = 1
+		Script( Index , 0 ).DisableIteration = 0
+		ScriptVariableList( Index , 0 ).Count = -1
+		exitfunction
+	endif
+
+   rem local variables
+   local n as integer
+	local s as integer
+
+	rem remove any stored data
+	for n = 0 to 1024
+		for s = 0 to ConsoleArgMax
+			ScriptRemoveData( Index , n , s )
+		next s
+	next n
+
+	rem remove other data
+	ScriptRemoveVariables( Index )
+	ScriptRemoveEventsFromScript( Index )
+	
+	rem remove commands
+	for n = 0 to 1024
+		Script( Index , n ).cmd = 0
+	next n
+	
+endfunction
+
+function ScriptAddDataInteger( dat )
+
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uScript.CurrentIntegerDataMax
+		if ScriptIntegerData( n ).Active = 0 then exit
+	next n
+	
+	rem none found, create
+	if n = uScript.CurrentIntegerDataMax + 1
+		array insert at bottom ScriptIntegerData()
+		inc uScript.CurrentIntegerDataMax
+	endif
+	
+	rem add data
+	ScriptIntegerData( n ).Active = 2
+	ScriptIntegerData( n ).dat = dat
+	
+endfunction n
+
+function ScriptAddDataFloat( dat# )
+
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uScript.CurrentFloatDataMax
+		if ScriptFloatData( n ).Active = 0 then exit
+	next n
+	
+	rem none found, create
+	if n = uScript.CurrentFloatDataMax + 1
+		array insert at bottom ScriptFloatData()
+		inc uScript.CurrentFloatDataMax
+	endif
+	
+	rem add data
+	ScriptFloatData( n ).Active = 2
+	ScriptFloatData( n ).dat# = dat#
+	
+endfunction n
+
+function ScriptAddDataString( dat$ )
+
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uScript.CurrentStringDataMax
+		if ScriptStringData( n ).Active = 0 then exit
+	next n
+	
+	rem none found, create
+	if n = uScript.CurrentStringDataMax + 1
+		array insert at bottom ScriptStringData()
+		inc uScript.CurrentStringDataMax
+	endif
+	
+	rem add data
+	ScriptStringData( n ).Active = 2
+	ScriptStringData( n ).dat$ = dat$
+	
+endfunction n
+
+function ScriptAddDataIndexToList( Script , lin , index , dat , DataType )
+	
+	rem disaster
+	if dat < 0
+		AddTextToConsole( 4 , "Invalid data index!" )
+		AddTextToConsole( 4 , "    dat: " + str$(dat) )
+		AddTextToConsole( 4 , "    script index: " + str$(Script) )
+		AddTextToConsole( 4 , "    script line: " + str$(lin) )
+		AddTextToConsole( 4 , "    Data type: " + str$(DataType) )
+	endif
+
+   rem save
+   ScriptDataList( Script , lin , index ).Active = 2
+   ScriptDataList( Script , lin , index ).Index = dat
+   ScriptDataList( Script , lin , index ).DatType = DataType
+   
+endfunction
+
+function ScriptUpdateDynamicValues()
+	ScriptIntegerData( uScript.DynamicValue.LastIndex ).dat = uScript.LastIndex
+	ScriptFloatData( uScript.DynamicValue.GetCameraPositionX ).dat# = uCamera.Pos.x#
+	ScriptFloatData( uScript.DynamicValue.GetCameraPositionY ).dat# = uCamera.Pos.y#
+	ScriptFloatData( uScript.DynamicValue.GetCameraPositionZ ).dat# = uCamera.Pos.z#
+endfunction
+
+function ScriptRemoveDataInteger( n )
+	if ScriptIntegerData( n ).Locked = 0 then ScriptIntegerData( n ).Active = 0
+endfunction
+
+function ScriptRemoveDataFloat( n )
+	if ScriptFloatData( n ).Locked = 0 then ScriptFloatData( n ).Active = 0
+endfunction
+
+function ScriptRemoveDataString( n )
+	if ScriptStringData( n ).Locked = 0 then ScriptStringData( n ).Active = 0
+endfunction
+
+function ScriptRemoveData( Script , lin , index )
+	if ScriptDataList( Script , lin , index ).Active = 0 then exitfunction
+   if ScriptDataList( Script , lin , index ).DatType = SCRIPTDATA_INTEGER then ScriptRemoveDataInteger( ScriptDataList( Script , lin , index ).Index )
+   if ScriptDataList( Script , lin , index ).DatType = SCRIPTDATA_FLOAT then ScriptRemoveDataFloat( ScriptDataList( Script , lin , index ).Index )
+   if ScriptDataList( Script , lin , index ).DatType = SCRIPTDATA_STRING then ScriptRemoveDataString( ScriptDataList( Script , lin , index ).Index )
+   if ScriptDataList( Script , lin , index ).DatType = SCRIPTDATA_EXPRESSION then ScriptRemoveDataExpression( ScriptDataList( Script , lin , index ).Index )
+	ScriptDataList( Script , lin , index ).Active = 0
+endfunction
+
+function ScriptAddVariable( Script , Name$ , Index , DatType )
+	
+	rem increment counter
+	inc ScriptVariableList( Script , 0 ).Count
+
+	rem no free slot left
+	if ScriptVariableList( Script , 0 ).Count = 256 then exitfunction -1
+	n = ScriptVariableList( Script , 0 ).Count
+	
+	rem add variables
+	ScriptVariableList( Script , ScriptVariableList( Script , 0 ).Count ).Name$ = Name$
+	ScriptVariableList( Script , ScriptVariableList( Script , 0 ).Count ).Index = Index
+	ScriptVariableList( Script , ScriptVariableList( Script , 0 ).Count ).DatType = DatType
+	
+endfunction n
+
+function ScriptGetVariableID( Script , Name$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of variable
+	for n = 0 to ScriptVariableList( Script , 0 ).Count
+		if ScriptVariableList( Script , n ).Name$ = Name$ then exit
+	next n
+	
+	rem not found
+	if n = ScriptVariableList( Script , 0 ).Count + 1 or ScriptVariableList( Script , n ).Name$ = ""
+		exitfunction -1
+	endif
+	
+endfunction n
+
+function ScriptRemoveVariables( Script )
+
+	rem local variables
+	local n as integer
+	
+	rem remove all variables
+	ScriptVariableList( Script , 0 ).Count = -1
+
+endfunction
+
+function ScriptAddEvent( Script , Name$ , lin )
+	
+	rem local variables
+	local n as integer
+	
+	rem check if there is a free slot
+	for n = 0 to uScript.CurrentEventListMax
+		if ScriptEventList( n ).Name$ = "" then exit
+	next n
+	
+	rem new slot
+	if n = uScript.CurrentEventListMax + 1
+		inc uScript.CurrentEventListMax
+		array insert at bottom ScriptEventList()
+	endif
+	
+	rem add variables
+	ScriptEventList( n ).Name$ = Name$
+	ScriptEventList( n ).lin = lin
+	ScriptEventList( n ).Script = Script
+	
+endfunction uScript.CurrentEventListMax
+
+function ScriptGetEventID( Name$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of variable
+	for n = 0 to uScript.CurrentEventListMax
+		if ScriptEventList( n ).Name$ = Name$ then exit
+	next n
+	
+	rem not found
+	if n = uScript.CurrentEventListMax + 1 then exitfunction -1
+	if ScriptEventList( n ).Name$ = "" then exitfunction -1
+	
+endfunction n
+
+function ScriptRemoveEventsFromScript( Script )
+	
+	rem local variables
+	local n as integer
+	
+	rem remove any events tied to that scripts
+	for n = 0 to uScript.CurrentEventListMax
+		if ScriptEventList( n ).Script = Script then ScriptEventList( n ).Name$ = ""
+	next n
+	
+endfunction
+
+function ScriptRemoveEventList()
+
+	rem local variables
+	local n as integer
+	
+	rem remove all variables
+	uScript.CurrentEventListMax = -1
+	undim ScriptEventList()
+	dim ScriptEventList()
+
+endfunction
+
+rem the event call stack stores calls to events that haven't been compiled yet.
+rem this stack is later checked again to see if any matches can be found.
+rem Event names in this stack don't exist in the program.
+function ScriptAddEventToCallStack( Script , lin , Name$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uScript.CurrentEventCallStackMax
+		if ScriptEventCallStack( n ).Active = 0 then exit
+	next n
+	
+	rem no free slot
+	if n = uScript.CurrentEventCallStackMax + 1
+		array insert at bottom ScriptEventCallStack()
+		inc uScript.CurrentEventCallStackMax
+	endif
+	
+	rem store data
+	ScriptEventCallStack( n ).Active = 2
+	ScriptEventCallStack( n ).Script = Script
+	ScriptEventCallStack( n ).lin = lin
+	ScriptEventCallStack( n ).Name$ = Name$
+	
+endfunction
+
+rem this function will attempt to locate event names that have just been defined
+rem If they are found, they are removed from the event call stack and the calls to them
+rem are inserted into the respective script
+function ScriptProcessEventCallStack()
+	
+	rem local variables
+	local n as integer
+	local a as integer
+	
+	rem log
+	AddTextToConsole( 0 , "Processing Event Call Stack" )
+	
+	rem loop through call stack
+	for n = 0 to uScript.CurrentEventCallStackMax
+		if ScriptEventCallStack( n ).Active = 2
+			
+			rem check if event ID exists
+			a = ScriptGetEventID( ScriptEventCallStack( n ).Name$ )
+			if a > -1
+				
+				rem insert event
+				script = ScriptEventCallStack( n ).Script
+				lin = ScriptEventCallStack( n ).lin
+				
+				ScriptIntegerData( ScriptDataList(script,lin,0).Index ).dat = ScriptEventList( a ).Script
+				ScriptIntegerData( ScriptDataList(script,lin,1).Index ).dat = ScriptEventList( a ).lin
+				
+				ScriptEventCallStack( n ).Active = 0
+				
+				rem log
+				AddTextToConsole( 2 , "Found event " + chr$(34) + ScriptEventCallStack( n ).Name$ + chr$(34) )
+				AddTextToConsole( 2 , "Jump set to: " + str$(ScriptEventList( a ).Script) + "," + str$(ScriptEventList( a ).lin) )
+				
+			endif
+		endif
+	next n
+	
+endfunction
+
+function ScriptAddDataExpression()
+
+	rem local variables
+	local n as integer
+	
+	rem check if string has operations
+
+	rem find free slot
+	for n = 0 to uScript.CurrentExpressionMax
+		if ScriptExpression( n , 0 ).Active = 0 then exit
+	next n
+	
+	rem no free slot, create
+	if n = uScript.CurrentExpressionMax + 1
+		inc uScript.CurrentExpressionMax
+		dim ScriptExpression( n , uScript.CurrentExpressionListMax ) as ScriptExpressionAAT
+	endif
+	
+	rem set parameters
+	ScriptExpression( n , 0 ).Active = 2
+	ScriptExpression( n , 0 ).Count = -1
+	
+endfunction n
+
+function ScriptRemoveDataExpression( n )
+
+	rem local variables
+	local s as integer
+	
+	rem remove any data attached to it
+	for s = 0 to ScriptExpression( n , 0 ).Count
+		if ScriptExpression( n , s ).Linked = 0
+			if ScriptExpression( n , s ).DatType = SCRIPTDATA_INTEGER then ScriptRemoveDataInteger( ScriptExpression( n , s ).Index )
+			if ScriptExpression( n , s ).DatType = SCRIPTDATA_FLOAT then ScriptRemoveDataFloat( ScriptExpression( n , s ).Index )
+			if ScriptExpression( n , s ).DatType = SCRIPTDATA_STRING then ScriptRemoveDataString( ScriptExpression( n , s ).Index )
+		endif
+	next s
+	
+	rem remove it
+	ScriptExpression( n , 0 ).Active = 0
+	
+endfunction
+
+function ScriptProcessExpression( n )
+	
+	rem local variables
+	local s as integer
+	local ptr as integer
+	local flags as integer
+	local result as integer
+	local r as integer
+	
+	rem expression only has one element
+	if ScriptExpression( n , 0 ).Count = 0
+		result = ScriptIntegerData( ScriptExpression( n , 0 ).Index ).dat
+		exitfunction result
+	endif
+	
+	rem resize array if needed
+	while ScriptExpression( n , 0 ).Count > uScript.CurrentExpressionProcessMax
+		inc uScript.CurrentExpressionProcessMax
+		array insert at bottom ScriptExpressionProcess()
+	endwhile
+	
+	rem loop through command queue
+	ptr = 0
+	for s = 1 to ScriptExpression( n , 0 ).Count
+		
+		rem time to process boolean operations
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_AND or ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_OR or ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_XOR
+			exit
+		endif
+
+		rem equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_EQUALS
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat = ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# = ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat = ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# = ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+		
+		rem larger than
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_LARGERTHAN
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat > ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# > ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat > ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# > ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+		
+		rem smaller than
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_SMALLERTHAN
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat < ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# < ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat < ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# < ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+		
+		rem smaller-equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_SMALLEREQUALS
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <= ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <= ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <= ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <= ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem larger-equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_LARGEREQUALS
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat >= ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# >= ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat >= ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# >= ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem not equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+		
+		rem addition
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_ADD
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat + ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem not equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem not equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem not equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem not equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem not equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+		rem not equals
+		if ScriptExpression( n , s ).DatType = SCRIPTDATA_EXPRESSION_NOT
+			flags = (ScriptExpression( n , s-1 ).DatType = SCRIPTDATA_FLOAT)
+			flags = flags || ((ScriptExpression( n , s+1 ).DatType = SCRIPTDATA_FLOAT) << 1)
+			select flags
+				case 0 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 1 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptIntegerData(ScriptExpression( n , s+1 ).Index).dat) : endcase
+				case 2 : ScriptExpressionProcess( ptr ).dat = (ScriptIntegerData(ScriptExpression( n , s-1 ).Index).dat <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+				case 3 : ScriptExpressionProcess( ptr ).dat = (ScriptFloatData(ScriptExpression( n , s-1 ).Index).dat# <> ScriptFloatData(ScriptExpression( n , s+1 ).Index).dat#) : endcase
+			endselect
+			inc ptr
+		endif
+
+	next s
+	
+	rem process boolean operations -------------------------------
+	
+	rem set up result
+	result = (ScriptExpressionProcess(0).dat)
+	
+	rem process the rest
+	ptr = 1
+	for r = s to ScriptExpression( n , 0 ).Count
+		select ScriptExpression( n , r ).DatType
+		
+			rem AND
+			case SCRIPTDATA_EXPRESSION_AND
+				result = (result and ScriptExpressionProcess( ptr ).dat)
+			endcase
+			
+			rem OR
+			case SCRIPTDATA_EXPRESSION_OR
+				result = (result or ScriptExpressionProcess( ptr ).dat)
+			endcase
+			
+			rem XOR
+			case SCRIPTDATA_EXPRESSION_XOR
+				result = (result xor ScriptExpressionProcess( ptr ).dat)
+			endcase
+		
+		endselect
+		
+		rem next
+		inc ptr
+		
+	next r
+				
+endfunction result
+
+function ScriptQueueLabel( Label$ , lin )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uScript.CurrentLabelQueueMax
+		if ScriptLabelQueue( n ).Active = 0 then exit
+	next n
+	
+	rem none found, create
+	if n = uScript.CurrentLabelQueueMax + 1
+		inc uScript.CurrentLabelQueueMax
+		array insert at bottom ScriptLabelQueue()
+	endif
+	
+	rem save label
+	ScriptLabelQueue( n ).Active = 2
+	ScriptLabelQueue( n ).Label$ = Label$
+	ScriptLabelQueue( n ).lin = lin
+	
+endfunction
+
+function ScriptClearLabelQueue()
+	
+	rem local variables
+	local n as integer
+	
+	rem clear data
+	for n = 0 to uScript.CurrentLabelQueueMax
+		ScriptLabelQueue( n ).Active = 0
+	next n
+	
+endfunction
+
+function ScriptGetLabelLine( Label$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find label
+	for n = 0 to uScript.CurrentLabelQueueMax
+		if ScriptLabelQueue( n ).Active = 2 and ScriptLabelQueue( n ).Label$ = Label$ then exit
+	next n
+	
+	rem no success
+	if n = uScript.CurrentLabelQueueMax + 1 then exitfunction -1
+	
+	rem success
+	ScriptLabelQueue( n ).Active = 0
+	
+	rem return value
+	n = ScriptLabelQueue( n ).lin
+
+endfunction n
+
+function ScriptOutputRemainingLabels()
+	
+	rem local variables
+	local n as integer
+	local failure as integer
+	
+	rem find any active labels
+	failure = 0
+	for n = 0 to uScript.CurrentLabelQueueMax
+		if ScriptLabelQueue( n ).Active = 2
+			AddTextToConsole( 3 , "Label " + chr$(34) + ScriptLabelQueue( n ).Label$ + chr$(34) + " not found!" )
+			failure = -1
+		endif
+	next n
+	
+endfunction failure
+
+function ScriptNestPush( ptr )
+
+	rem push
+	array insert at top ScriptNest()
+	ScriptNest(0).ptr = ptr
+	inc uScript.CurrentNestMax
+	
+endfunction
+
+function ScriptNestPop()
+
+	rem pop
+	if uScript.CurrentNestMax = -1 then exitfunction -1
+	local n as integer
+	n = ScriptNest(0).ptr
+	array delete element ScriptNest(0)
+	dec uScript.CurrentNestMax
+	
+endfunction n
+
+function ScriptOutputNests()
+	
+	rem none found
+	if uScript.CurrentNestMax = -1 then exitfunction 0
+	
+	rem local variables
+	local n as integer
+	
+	rem output
+	AddTextToConsole( 3 , "Nesting error!" )
+	for n = 0 to uScript.CurrentNestMax
+		AddTextToConsole( 3 , "    Line: " + str$( ScriptNest( n ).ptr ) )
+	next n
+	
+endfunction -1
+
+function ScriptClearNests()
+	
+	rem local variables
+	local n as integer
+	
+	rem clear
+	for n = 0 to uScript.CurrentNestMax
+		ScriptNestPop()
+	next n
+	uScript.CurrentNestMax = -1
+	
+endfunction
+
+function ScriptAddSpacesToString( inString$ )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	local char$ as string
+	
+	rem process string
+	for n = 1 to len( inString$ )
+		char$ = fast right$( fast left$( inString$ , n ) , 1 )
+		
+		rem operations
+		if char$ = "=" or char$ = "<" or char$ = ">"
+			s = 0
+			if fast right$( fast left$( inString$ , n-1 ) , 1 ) = " " then s = (s||1)
+			if fast right$( fast left$( inString$ , n+1 ) , 1 ) = " " then s = (s||2)
+			if s = 0 then inString$ = fast left$( inString$ , n-1 ) + " " + char$ + " " + fast right$( inString$ , len(inString$) - n )
+			if s = 1 then inString$ = fast left$( inString$ , n-1 ) + char$ + " " + fast right$( inString$ , len(inString$) - n )
+			if s = 2 then inString$ = fast left$( inString$ , n-1 ) + " " + char$ + fast right$( inString$ , len(inString$) - n )
+			inc n
+		endif
+
+	next n
+	
+endfunction inString$
+
+function ControlScript()
+	
+	rem local variables
+	local n as integer
+	local l as integer
+	
+	rem loop through all active scripts
+	for n = 1 to ScriptMax
+		
+		rem current selected
+		uScript.CurrentSelected = n
+		
+		rem process one command every loop (default)
+		if Script( n , 0 ).Active = 2
+			ProcessEntry( n , Script( n , 0 ).CurrentLine , _ENABLE , _DISABLE )
+			inc Script( n , 0 ).CurrentLine
+			if Script( n , 0 ).CurrentLine > 1024 then Script( n , 0 ).Active = 1
+		endif
+		
+	next n
+	
+endfunction
+
+function SetAllLoggingFlags( n )
+	
+	rem set all logging flags
+	uAnimation.logging                   = n
+	uCamera.logging                      = n
+	uClickObj.logging                    = n
+	uDistortion.logging                  = n
+	uGUI.logging                         = n
+	uMagicMissile.logging                = n
+	Menu.logging                         = n
+	uMessage.logging                     = n
+	uScript.logging                      = n
+	uTrigger.logging                     = n
+	uUnit.logging                        = n
+	uWorld.logging                       = n
+
+endfunction

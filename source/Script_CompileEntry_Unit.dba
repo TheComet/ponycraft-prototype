@@ -1,0 +1,865 @@
+function _ScriptCompileEntryUnit( slot , lin )
+	
+	rem local variables
+	local a as integer
+	local b as integer
+	local c as integer
+	local d as integer
+	local e as integer
+	
+	if ConsoleCmd$(0) = "createunit"
+		
+		rem error
+		if ConsoleCmd$(5) = ""
+			AddTextToConsole( 3 , "CreateUnit expects <x#> <y#> <z#> <control> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(5) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable" + chr$(34) + ConsoleCmd$(5) + chr$(34) + " is not a string!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable" + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable" + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable" + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		e = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if e > -1
+			if ScriptVariableList( slot , e ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable" + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not a string!" ) : exitfunction -1
+			e = ScriptVariableList( slot , e ).Index
+		endif
+		if a = -1 then a = ScriptAddDataString( ConsoleCmd$(5) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if d = -1 then d = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		if e = -1 then e = ScriptAddDataInteger( val(ConsoleCmd$(4)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CREATEUNIT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 4 , e , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitposition"
+		
+		rem error
+		if ConsoleCmd$(4) = ""
+			AddTextToConsole( 3 , "UnitPosition expects <Index> <x#> <y#> <z#>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not a float!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		if d = -1 then d = ScriptAddDataFloat( val(ConsoleCmd$(4)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITPOSITION
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitscale"
+		
+		rem error
+		if ConsoleCmd$(4) = ""
+			AddTextToConsole( 3 , "UnitScale expects <Index> <x#> <y#> <z#>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not a float!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		if d = -1 then d = ScriptAddDataFloat( val(ConsoleCmd$(4)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSCALE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "destroyunit"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "DestroyUnit expects <Index>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_DESTROYUNIT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitchangecontrol"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitChangeControl expects <UnitID> <control>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITCHANGECONTROL
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "unitaddability"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "UnitAddAbility expects <UnitID> <ability> <ButtonID>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitAddAbility does not support variables for parameter <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITADDABILITY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "unitsetabilityrange"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityRange expects <UnitID> <ability> <range#>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityRange does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYRANGE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitlockability"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitLockAbility expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitLockAbility does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITLOCKABILITY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitunlockability"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitUnlockAbility expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitUnlockAbility does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITUNLOCKABILITY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitshowability"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitShowAbility expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitShowAbility does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSHOWABILITY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unithideability"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitHideAbility expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitHideAbility does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITHIDEABILITY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitsetabilityhealthdamage"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityHealthDamage expects <UnitID> <ability> <damage#>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityManaDamage does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYHEALTHDAMAGE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "unitsetabilitymanadamage"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityManaDamage expects <UnitID> <ability> <damage#>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityManaDamage does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYMANADAMAGE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitsetabilitymanadrain"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityManaDrain expects <UnitID> <ability> <drain#>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityManaDrain does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYMANADRAIN
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitsetabilityautomatic"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityAutomatic expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityAutomagic does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYAUTOMATIC
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "unitsetabilitymanual"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityManual expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityManual does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYMANUAL
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitsetabilityglobal"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityGlobal expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityGlobal does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYGLOBAL
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitsetabilitylocal"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitSetAbilityLocal expects <UnitID> <ability>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitSetAbilityLocal does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETABILITYLOCAL
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unituseability"
+		
+		rem error
+		if ConsoleCmd$(6) = ""
+			AddTextToConsole( 3 , "UnitUseAbility expects <UnitID> <ability> <x#> <z#> <TargetUnit> <Keys>" )
+			exitfunction -1
+		endif
+		
+		rem second value cannot be a variable
+		if ScriptGetVariableID( slot , ConsoleCmd$(2) ) > -1
+			AddTextToConsole( 3 , "UnitUseAbility does not support variables for paramater <ability>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not a float!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		e = ScriptGetVariableID( slot , ConsoleCmd$(5) )
+		if e > -1
+			if ScriptVariableList( slot , e ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(5) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			e = ScriptVariableList( slot , e ).Index
+		endif
+		f = ScriptGetVariableID( slot , ConsoleCmd$(6) )
+		if f > -1
+			if ScriptVariableList( slot , f ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(6) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			f = ScriptVariableList( slot , f ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		if d = -1 then d = ScriptAddDataFloat( val(ConsoleCmd$(4)) )
+		if e = -1 then e = ScriptAddDataInteger( val(ConsoleCmd$(5)) )
+		if f = -1 then f = ScriptAddDataInteger( val(ConsoleCmd$(6)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITUSEABILITY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , ScriptAddDataInteger( val(ConsoleCmd$(2)) ) , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 4 , e , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 5 , f , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitdrawpath"
+		Script( slot , lin ).cmd = CMD_UNITDRAWPATH
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unithidepath"
+		Script( slot , lin ).cmd = CMD_UNITHIDEPATH
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitdrawformation"
+		Script( slot , lin ).cmd = CMD_UNITDRAWFORMATION
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unithideformation"
+		Script( slot , lin ).cmd = CMD_UNITHIDEFORMATION
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "getunitobject"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "GetUnitObject expects <UnitIndex> <Variable>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		
+		rem second argument must be a variable
+		if b = -1
+			AddTextToConsole( 3 , "Argument " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a variable!" )
+			exitfunction -1
+		endif
+		
+		rem create unit ID variable
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_GETUNITOBJECT
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "unitaddeffecttolist"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "UnitAddEffectToList expects <UnitIndex> <EffectType> <EffectIndex>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITADDEFFECTTOLIST
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+
+	endif
+	
+	if ConsoleCmd$(0) = "unitaddsound"
+		
+		rem error
+		if ConsoleCmd$(3) = ""
+			AddTextToConsole( 3 , "UnitAddSound expects <UnitID> <filename$> <type>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif		
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITADDSOUND
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitaddportraitframe"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitAddPortraitFrame expects <UnitID> <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariablelist( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITADDPORTRAITFRAME
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "unitsetportraitframedelay"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitSetPortraitFrameDelay expects <UnitID> <delay>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariablelist( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITSETPORTRAITFRAMEDELAY
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+endfunction -3

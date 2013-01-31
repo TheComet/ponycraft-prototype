@@ -1,0 +1,171 @@
+rem ---------------------------------------------------------------------------
+rem Command Queue - Stores commands and time stamps them for later execution
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User defined types
+rem ---------------------------------------------------------------------------
+
+type CommandQueueVT
+	logging 												as integer
+	ReadPtr												as integer
+	WritePtr												as integer
+	CurrentMax											as integer
+	BufferDistance										as integer
+endtype
+
+type CommandQueueAT
+	cmd													as integer
+	Tick													as integer
+	Count													as integer
+	Copy													as integer
+endtype
+
+type CommandQueueDataAAT
+	Index													as dword
+	DatType												as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitCommandQueue()
+	
+	rem ---------------------------------------------------------------------------
+	rem global variables
+	rem ---------------------------------------------------------------------------
+
+	global uCommandQueue 							as CommandQueueVT
+	
+	rem ---------------------------------------------------------------------------
+	rem global arrays
+	rem ---------------------------------------------------------------------------
+
+	global dim CommandQueue(2)						as CommandQueueAT
+	global dim CommandQueueData(2,ConsoleArgMax) as CommandQueueDataAAT
+	
+	rem set initial values
+	uCommandQueue.CurrentMax = 2
+	uCommandQueue.WritePtr = 0
+	uCommandQueue.ReadPtr = 0
+	uCommandQueue.BufferDistance = 1
+	
+endfunction
+
+function QueueCommand( slot , lin , copy )
+	
+	rem increment pointer
+	inc uCommandQueue.WritePtr
+	
+	rem overflow
+	if uCommandQueue.WritePtr > uCommandQueue.CurrentMax then uCommandQueue.WritePtr = 0
+	
+	rem check if write pointer is going to overwrite read pointer
+	if uCommandQueue.WritePtr = uCommandQueue.ReadPtr
+		
+		rem resize array and insert at that location
+		array insert at element CommandQueue() , uCommandQueue.WritePtr
+		inc uCommandQueue.CurrentMax
+		inc uCommandQueue.ReadPtr
+		dim CommandQueueData( uCommandQueue.CurrentMax , ConsoleArgMax ) as CommandQueueDataAAT
+		
+		rem shift queue data
+		for n = uCommandQueue.CurrentMax to uCommandQueue.WritePtr+1 step -1
+			for s = 0 to ConsoleArgMax
+				CommandQueueData( n , s ).Index = CommandQueueData( n-1 , s ).Index
+				CommandQueueData( n , s ).DatType = CommandQueueData( n-1 , s ).DatType
+			next s
+		next n
+		
+	endif
+
+	rem write data
+	if copy = _ENABLE
+		for n = 0 to ConsoleArgMax
+			if ScriptDataList( slot , lin , n ).Active < 2 then exit
+			if ScriptDataList( slot , lin , n ).DatType = SCRIPTDATA_INTEGER
+				CommandQueueData( uCommandQueue.WritePtr , n ).Index = ScriptAddDataInteger( ScriptIntegerData( ScriptDataList( slot , lin , n ).Index ).dat )
+			endif
+			if ScriptDataList( slot , lin , n ).DatType = SCRIPTDATA_FLOAT
+				CommandQueueData( uCommandQueue.WritePtr , n ).Index = ScriptAddDataFloat( ScriptFloatData( ScriptDataList( slot , lin , n ).Index ).dat# )
+			endif
+			if ScriptDataList( slot , lin , n ).DatType = SCRIPTDATA_STRING
+				CommandQueueData( uCommandQueue.WritePtr , n ).Index = ScriptAddDataString( ScriptStringData( ScriptDataList( slot , lin , n ).Index ).dat$ )
+			endif
+			CommandQueueData( uCommandQueue.WritePtr , n ).DatType = ScriptDataList( slot , lin , n ).DatType
+		next n
+	else
+		for n = 0 to ConsoleArgMax
+			if ScriptDataList( slot , lin , n ).Active < 2 then exit
+			CommandQueueData( uCommandQueue.WritePtr , n ).Index = ScriptDataList( slot , lin , n ).Index
+			CommandQueueData( uCommandQueue.WritePtr , n ).DatType = ScriptDataList( slot , lin , n ).DatType
+		next n
+	endif
+	
+	rem write command
+	CommandQueue( uCommandQueue.WritePtr ).cmd = Script( slot , lin ).cmd
+	CommandQueue( uCommandQueue.WritePtr ).Tick = TBM.Ticks + uCommandQueue.BufferDistance
+	CommandQueue( uCommandQueue.WritePtr ).Count = n-1
+	CommandQueue( uCommandQueue.WritePtr ).Copy = Copy
+	
+endfunction
+
+rem will return the tick data for next data to read
+function PokeCommandQueue()
+	
+	rem handle overflows
+	n = uCommandQueue.ReadPtr+1
+	if n > uCommandQueue.CurrentMax then n = 0
+	
+	rem return tick data
+	n = CommandQueue( n ).Tick
+	
+endfunction n
+
+function ReadCommandFromQueue()
+
+	rem increment read pointer
+	inc uCommandQueue.ReadPtr
+	
+	rem read pointer overflows
+	if uCommandQueue.ReadPtr > uCommandQueue.CurrentMax then uCommandQueue.ReadPtr = 0
+	
+	rem read it
+	Script( 0 , 0 ).cmd = CommandQueue( uCommandQueue.ReadPtr ).cmd
+	for n = 0 to CommandQueue( uCommandQueue.ReadPtr ).Count
+		ScriptDataList( 0 , 0 , n ).Index = CommandQueueData( uCommandQueue.ReadPtr , n ).Index
+		ScriptDataList( 0 , 0 , n ).DatType = CommandQueueData( uCommandQueue.ReadPtr , n ).DatType
+	next n
+	
+	rem process
+	ProcessEntry( 0 , 0 , _DISABLE , _DISABLE )
+	
+	rem unlink data
+	if CommandQueue( uCommandQueue.ReadPtr ).Copy = _DISABLE
+		for n = 0 to CommandQueue( uCommandQueue.ReadPtr ).Count
+			ScriptDataList( 0 , 0 , n ).Index = -1
+			ScriptDataList( 0 , 0 , n ).DatType = 0
+		next n
+	endif
+	
+	rem destroy data
+	if CommandQueue( uCommandQueue.ReadPtr ).Copy = _ENABLE
+		for n = 0 to CommandQueue( uCommandQueue.ReadPtr ).Count
+			if ScriptDataList( 0 , 0 , n ).DatType = SCRIPTDATA_INTEGER then ScriptRemoveDataInteger( ScriptDataList( 0 , 0 , n ).Index )
+			if ScriptDataList( 0 , 0 , n ).DatType = SCRIPTDATA_FLOAT then ScriptRemoveDataFloat( ScriptDataList( 0 , 0 , n ).Index )
+			if ScriptDataList( 0 , 0 , n ).DatType = SCRIPTDATA_STRING then ScriptRemoveDataString( ScriptDataList( 0 , 0 , n ).Index )
+		next n
+	endif
+
+	rem remove script from memory
+	DestroyScript( -1 )
+
+	rem remove ticks
+	CommandQueue( uCommandQueue.ReadPtr ).Tick = 0
+	
+endfunction

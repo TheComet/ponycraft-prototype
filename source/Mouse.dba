@@ -1,0 +1,108 @@
+rem ---------------------------------------------------------------------------
+rem Mouse control - Because the stupid DBP mousemove() commands are bugged
+rem by TheComet
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type MouseVT
+   oldclick as integer
+   currentclick as integer
+   click as integer
+   x as integer
+   y as integer
+   z as integer
+   oldx as integer
+   oldy as integer
+   oldz as integer
+   Movex as integer
+   Movey as integer
+   Movez as integer
+	Click3D as vec3
+	StorePos as vec2
+	Click3DFound as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem initialize
+rem ---------------------------------------------------------------------------
+
+function InitMouse()
+
+   rem debug
+   DebugOutput( 0 , "Initialising mouse" , DEBUG_NORMAL )
+
+   rem ---------------------------------------------------------------------------
+   rem Global variables
+   rem ---------------------------------------------------------------------------
+
+   global uMouse                  as MouseVT
+
+endfunction
+
+function ControlMouse()
+
+   rem process mouse clicks
+   uMouse.oldclick=uMouse.currentclick
+   uMouse.currentclick=mouseclick()
+   if uMouse.oldclick=0 and uMouse.currentclick=0 then uMouse.click=0
+   if uMouse.oldclick=0 and uMouse.currentclick=1 then uMouse.click=1
+   if uMouse.oldclick=1 and uMouse.currentclick=1 then uMouse.click=2
+   if uMouse.oldclick=1 and uMouse.currentclick=0 then uMouse.click=3
+   if uMouse.oldclick=0 and uMouse.currentclick=2 then uMouse.click=4
+   if uMouse.oldclick=2 and uMouse.currentclick=2 then uMouse.click=5
+   if uMouse.oldclick=2 and uMouse.currentclick=0 then uMouse.click=6
+   if uMouse.oldclick=0 and uMouse.currentclick=4 then uMouse.click=7
+   if uMouse.oldclick=4 and uMouse.currentclick=4 then uMouse.click=8
+   if uMouse.oldclick=4 and uMouse.currentclick=0 then uMouse.click=9
+
+   rem process mouse x
+   uMouse.oldx = uMouse.x
+   uMouse.x = mousex()
+   uMouse.Movex = uMouse.x - uMouse.oldx
+
+   rem process mouse y
+   uMouse.oldy = uMouse.y
+   uMouse.y = mousey()
+   uMouse.Movey = uMouse.y - uMouse.oldy
+
+   rem process mouse z
+   uMouse.oldz = uMouse.z
+   uMouse.z = mousez()
+   uMouse.Movez = uMouse.z - uMouse.oldz
+	
+	rem 3D clicks
+	if uMouse.Click > 0
+		if pick object( uMouse.x , uMouse.y , 1 , uWorld.PickSearchObj )
+			uMouse.Click3DFound = 1
+			uMouse.Click3D.x# = get pick vector x() + camera position x()
+			uMouse.Click3D.y# = get pick vector y() + camera position y()
+			uMouse.Click3D.z# = get pick vector z() + camera position z()
+		else
+			uMouse.Click3DFound = 0
+		endif
+	endif
+	
+	rem if middle mouse is clicked, store positions and hide
+	if uMouse.Click = 7
+		uMouse.StorePos.x = uMouse.x
+		uMouse.StorePos.y = uMouse.y
+		hide mouse
+	endif
+	
+	rem if middle mouse is clicking, fix mouse positions
+	if uMouse.Click = 8
+		uMouse.x = 300
+		uMouse.y = 300
+		position mouse 300 , 300
+	endif
+	
+	rem if middle mouse is released, restore mouse and show
+	if uMouse.Click = 9
+		position mouse uMouse.StorePos.x , uMouse.StorePos.y
+		show mouse
+	endif
+
+endfunction

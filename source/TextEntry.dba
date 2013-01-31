@@ -1,0 +1,147 @@
+rem ---------------------------------------------------------------------------
+rem Text Entry - Handles the input buffer
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant TEXTENTRY_NUMBERS                  1
+#constant TEXTENTRY_CHARACTERS               2
+#constant TEXTENTRY_ALL                      3
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type TextEntryVT
+   Char$                                     as string
+   Buffer$                                   as string
+   ThisEntry$                                as string
+   Cursor                                    as integer
+   Cursor$                                   as string
+   Mode                                      as integer
+   CharLimit                                 as integer
+	paste													as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitTextEntry()
+
+	rem debug
+	DebugOutput( 0 , "Initialising TextEntry" , DEBUG_NORMAL )
+
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+   rem ---------------------------------------------------------------------------
+
+	global TextEntry                            as TextEntryVT
+	
+	rem initial values
+	TextEntry.Cursor = hitimer( 1000 )
+	TextEntry.Mode = TEXTENTRY_ALL
+	TextEntry.CharLimit = 255
+
+endfunction
+
+function ClearTextEntry()
+
+   rem clear buffer and entry
+   clear entry buffer
+   TextEntry.Buffer$ = ""
+   TextEntry.ThisEntry$ = ""
+   
+endfunction
+
+function SetTextEntryMode( mode )
+
+   rem store mode
+   TextEntry.Mode = mode
+   
+endfunction
+
+function SetTextEntryCharacterLimit( CharLimit )
+
+   rem store character limit
+   TextEntry.CharLimit = CharLimit
+   
+endfunction
+
+function GetTextEntryWithCursor()
+
+   rem return text entry with cursor
+   return$ = TextEntry.ThisEntry$ + TextEntry.Cursor$
+   
+endfunction return$
+
+function GetTextEntry()
+
+   rem return text entry without cursor
+   return$ = TextEntry.ThisEntry$
+   
+endfunction return$
+
+function ControlTextEntry()
+
+   rem local variables
+   local n as integer
+   local v as integer
+
+   rem control blinking cursor, 400ms
+   if hitimer( 1000 ) - TextEntry.Cursor > 400
+      TextEntry.Cursor$ = "|"
+      if hitimer( 1000 ) - TextEntry.Cursor > 800
+         TextEntry.Cursor$ = ""
+         TextEntry.Cursor = hitimer( 1000 )
+      endif
+   endif
+   
+   rem read in entry buffer
+   TextEntry.Buffer$ = entry$()
+   clear entry buffer
+	
+	rem paste function
+	if TextEntry.paste = 0
+		if controlkey() and keystate(47) then TextEntry.Buffer$ = get clipboard$() : TextEntry.paste = 1
+	endif
+	if scancode()=0 then TextEntry.paste = 0
+   
+   rem process buffer
+   for n = 1 to len( TextEntry.Buffer$ )
+   
+      rem if entry was made, reset cursor
+      TextEntry.Cursor$ = "|"
+      TextEntry.Cursor = hitimer( 1000 )
+   
+      rem process each character in buffer separately
+      TextEntry.Char$ = mid$( TextEntry.Buffer$ , n )
+      v = asc( TextEntry.Char$ )
+      
+      rem backspace
+      if v = 8 then TextEntry.ThisEntry$ = left$( TextEntry.ThisEntry$ , len( TextEntry.ThisEntry$ ) - 1 )
+      
+      rem make sure length limit hasn't been reached
+      if TextEntry.CharLimit > len( TextEntry.ThisEntry$ )
+      
+         rem get only numbers
+         if TextEntry.Mode = TEXTENTRY_NUMBERS or TextEntry.Mode = TEXTENTRY_ALL
+            if v > 47 and v < 58
+               TextEntry.ThisEntry$ = TextEntry.ThisEntry$ + TextEntry.Char$
+            endif
+         endif
+         
+         rem get only characters
+         if TextEntry.Mode = TEXTENTRY_CHARACTERS or TextEntry.Mode = TEXTENTRY_ALL
+            if v > 31 and (v < 48 or v > 57)
+               TextEntry.ThisEntry$ = TextEntry.ThisEntry$ + TextEntry.Char$
+            endif
+         endif
+         
+      endif
+      
+   next n
+
+endfunction

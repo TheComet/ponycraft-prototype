@@ -1,0 +1,79 @@
+function _ScriptCompileEntryForceField( slot , lin )
+	
+	if ConsoleCmd$(0) = "createforcefield"
+		
+		rem error
+		if ConsoleCmd$(4) = ""
+			AddTextToConsole( 3 , "CreateForceField expects <x#> <y#> <z#> <life>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a float!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float!" ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not a float!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
+		d = ScriptGetVariableID( slot , ConsoleCmd$(4) )
+		if d > -1
+			if ScriptVariableList( slot , d ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(4) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			d = ScriptVariableList( slot , d ).Index
+		endif
+		if a = -1 then a = ScriptAddDataFloat( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		if c = -1 then c = ScriptAddDataFloat( val(ConsoleCmd$(3)) )
+		if d = -1 then d = ScriptAddDataInteger( val(ConsoleCmd$(4)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_CREATEFORCEFIELD
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_FLOAT )
+		ScriptAddDataIndexToList( slot , lin , 3 , d , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+		
+	endif
+	
+	if ConsoleCmd$(0) = "destroyforcefield"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "DestroyForceField expects <index>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_DESTROYFORCEFIELD
+		ScriptAddDataIndexTolist( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	
+	endif
+	
+	if ConsoleCmd$(0) = "destroyallforcefield"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_DESTROYALLFORCEFIELD
+		exitfunction lin+1
+		
+	endif
+	
+endfunction -3

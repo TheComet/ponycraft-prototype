@@ -1,0 +1,148 @@
+rem ---------------------------------------------------------------------------
+rem Teleport - Effect when unit teleports
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant Effects_TeleportFrameSpeed				0.8
+#constant Effects_TeleportScaleSpeed				0.2
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type Effects_TeleportVT
+	CurrentMax												as integer
+endtype
+
+type Effects_TeleportAT
+	Active													as integer
+	Obj														as integer
+	scale#													as float
+	size#														as float
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function Effects_InitTeleport()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising Teleport effect" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem Global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uEffects_Teleport					as Effects_TeleportVT
+	
+	rem ---------------------------------------------------------------------------
+	rem Global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim Effects_Teleport()			as Effects_TeleportAT
+	
+	rem initial values
+	uEffects_Teleport.CurrentMax = -1
+	
+endfunction
+
+function Effects_CreateTeleport( x# , y# , z# , size# )
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uEffects_Teleport.CurrentMax
+		if Effects_Teleport( n ).Active < 2 then exit
+	next n
+	
+	rem none found, create
+	if n = uEffects_Teleport.CurrentMax + 1
+		inc uEffects_Teleport.CurrentMax
+		array insert at bottom Effects_Teleport()
+	endif
+	
+	rem load media
+	if Effects_Teleport( n ).Active = 0
+		
+		rem load flash object
+		Effects_Teleport( n ).Obj = find free object()
+		LoadObject( "media\objects\effects\teleport\teleport.x" , Effects_Teleport( n ).Obj )
+		set object transparency Effects_Teleport( n ).Obj , 2
+		disable object zwrite Effects_Teleport( n ).Obj
+		set object light Effects_Teleport( n ).Obj , 0
+		LoopObject( Effects_Teleport( n ).Obj , 0 , 8 , Effects_TeleportFrameSpeed )
+		
+	endif
+	
+	rem properties
+	show object Effects_Teleport( n ).Obj
+	position object Effects_Teleport( n ).Obj , x# , y# , z#
+	scale object Effects_Teleport( n ).Obj , size# , 0 , size#
+	TiltObjectToTerrain( Effects_Teleport( n ).Obj , 0 )
+	
+	rem set parameters
+	Effects_Teleport( n ).Active = 2
+	Effects_Teleport( n ).size# = size#
+	Effects_Teleport( n ).scale# = 0
+	
+	rem create sparks
+	for i = 1 to 10
+		Effects_CreateTeleportSparks( x# , y# , z# , 0.4 , rnd(40)+20 )
+	next i
+	
+endfunction n
+
+function Effects_DestroyTeleport( n )
+	
+	rem destroy
+	hide object Effects_Teleport( n ).Obj
+	Effects_Teleport( n ).Active = 1
+	
+endfunction
+
+function Effects_ControlTeleport()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active effects
+	for n = 0 to uEffects_Teleport.CurrentMax
+		
+		rem scale up
+		if Effects_Teleport( n ).Active = 2
+			inc Effects_Teleport( n ).scale# , Effects_TeleportScaleSpeed
+			if Effects_Teleport( n ).scale# > 1.0
+				Effects_Teleport( n ).scale# = 1.0
+				Effects_Teleport( n ).Active = 3
+			endif
+			scale object Effects_Teleport( n ).Obj , Effects_Teleport( n ).size# , Effects_Teleport( n ).size#*Effects_Teleport( n ).scale# , Effects_Teleport( n ).size#
+		endif
+		
+		rem hold
+		if Effects_Teleport( n ).Active = 3
+			inc Effects_Teleport( n ).scale#
+			scale object Effects_Teleport( n ).Obj , Effects_Teleport( n ).size# , Effects_Teleport( n ).size#*(rnd(100)/100.0) , Effects_Teleport( n ).size#
+			if Effects_Teleport( n ).scale# > 3.0
+				Effects_Teleport( n ).scale# = 1.0
+				Effects_Teleport( n ).Active = 4
+			endif
+		endif
+		
+		rem scale down
+		if Effects_Teleport( n ).Active = 4
+			dec Effects_Teleport( n ).scale# , Effects_TeleportScaleSpeed
+			if Effects_Teleport( n ).scale# < 0.0
+				Effects_Teleport( n ).scale# = 0.0
+				Effects_DestroyTeleport( n )
+			endif
+			scale object Effects_Teleport( n ).Obj , Effects_Teleport( n ).size# , Effects_Teleport( n ).size#*Effects_Teleport( n ).scale# , Effects_Teleport( n ).size#
+		endif
+		
+	next n
+	
+endfunction

@@ -1,0 +1,618 @@
+rem ---------------------------------------------------------------------------
+rem World - Handles everything to do with world loading / control
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem constants
+rem ---------------------------------------------------------------------------
+
+#constant WorldMaxObj               2000
+
+rem object types
+#constant WORLD_TERRAIN             1
+#constant WORLD_SCENERY             2
+
+rem collision types
+#constant COL_TERRAIN               1
+#constant COL_PATHFINDER            2
+#constant COL_UNIT                  3
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type PathfinderVT
+	ResolutionX                      as integer
+	ResolutionY                      as integer
+	StartX#                          as float
+	StartY#                          as float
+	EndX#                            as float
+	EndY#                            as float
+	SizeX#									as float
+	SizeY#									as float
+	Threshold                        as integer
+	ID                               as integer
+	ShowPathmap                      as integer
+	Obj                              as word
+endtype
+
+type FogOfWarVT
+	StartX#                          as float
+	StartY#                          as float
+	EndX#                            as float
+	EndY#                            as float
+	ResolutionX                      as float
+	ResolutionY                      as float
+	UsableStart								as vec2
+	UsableSize								as vec2
+	Obj                              as word
+	UpdateTimer                      as integer
+	UpdateTimerResult						as integer
+	VertexUpdateAmount					as integer
+	UnitUpdateAmount						as integer
+	CurrentUpdateUnit						as integer
+	CurrentUpdateVertex_x				as dword
+	CurrentUpdateVertex_y				as dword
+	CurrentVertexBrushMax				as integer
+	CurrentVertexCountMax				as integer
+	CurrentFormationVertexCountMax	as integer
+	StartColor								as dword
+	MinColor									as dword
+	DenyHighGroundVisionThreshold#	as float
+endtype
+
+type WorldVT
+	logging                          as integer
+	SlotPointer                      as integer
+	PickSearchObj                    as integer
+	PathFinder                       as PathfinderVT
+	FogOfWar                         as FogOfWarVT
+endtype
+
+type WorldAT
+	Obj                              as word
+	DiffuseIMG								as integer
+	NormalIMG								as integer
+	Typ                              as integer
+	scale#									as float
+	Filename$								as string
+	TextureName$							as string
+endtype
+
+type FogOfWarVertexAAAT
+	VertexIndex                      as integer
+endtype
+
+type FogOfWarVertexBrushAAT
+	Color                            as dword
+	Radius									as integer
+	Diameter									as integer
+endtype
+
+type FogOfWarFormationBrushAAT
+	Color                            as dword
+	Count										as integer
+	Size										as vec2
+	Center									as vec2
+endtype
+
+type FogOfWarStaticBrushAAT
+	MinColor									as dword
+	LockColor								as dword
+	Color										as dword
+	Height#									as float
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitWorld()
+	
+	rem local variables
+	local x as integer
+	local y as integer
+	local n as integer
+	local dist as dword
+	
+	rem debug
+	DebugOutput( 0 , "Initialising World" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem global variables
+	rem ---------------------------------------------------------------------------
+	
+	global uWorld                     as WorldVT
+	
+	rem ---------------------------------------------------------------------------
+	rem global arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim World( WorldMaxObj )  as WorldAT
+	global dim FogOFWarVertexBrush( 0 , 0 ) as FogOfWarVertexBrushAAT
+	
+	rem ---------------------------------------------------------------------------
+	rem initial values
+	rem ---------------------------------------------------------------------------
+	
+	uWorld.SlotPointer = -1
+	uWorld.Pathfinder.ID = -1
+	uWorld.FogOfWar.UnitUpdateAmount = 1
+	uWorld.FogOfWar.CurrentVertexBrushMax = -1
+	uWorld.FogOfWar.CurrentVertexCountMax = -1
+	uWorld.FogOfwar.CurrentFormationVertexCountMax = -1
+	uWorld.FogOfWar.StartColor = 0xFF000000
+	uWorld.FogOfWar.MinColor = 0x8C000000
+	uWorld.FogOfWar.DenyHighGroundVisionThreshold# = 1.9
+	
+endfunction
+
+function DestroyWorld()
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "DestroyWorld" )
+	
+	rem delete all objects used
+	for n = 0 to uWorld.SlotPointer
+		if World( n ).Obj > 0
+			if object exist( World( n ).Obj )
+				delete object World( n ).Obj
+				if World( n ).Typ = WORLD_SCENERY then SC_RemoveObject World( n ).Obj
+				World( n ).Obj = 0
+			endif
+		endif
+		if World( n ).DiffuseIMG > 0
+			if image exist( World( n ).DiffuseIMG ) then delete image World( n ).DiffuseIMG
+			World( n ).DiffuseIMG = 0
+		endif
+		if World( n ).NormalIMG > 0
+			if image exist( World( n ).NormalIMG ) then delete image World( n ).NormalIMG
+			World( n ).NormalIMG = 0
+		endif
+	next n
+
+	rem reset slot pointer
+	uWorld.SlotPointer = -1
+	
+	rem delete the pathfinder
+	if uWorld.PathFinder.ID > -1
+		iaa_delete pathfinder uWorld.PathFinder.ID
+		uWorld.PathFinder.ID = -1
+		SC_RemoveObject uWorld.PathFinder.Obj
+		delete object uWorld.PathFinder.Obj
+	endif
+	
+	rem destroy fog of war
+	WorldDestroyFogOfWar()
+
+endfunction
+
+function WorldAddSceneryObject( FileName$ , TextureName$ )
+	
+	rem local variables
+	local n as integer
+		
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "WorldAddSceneryObject " + Filename$ )
+	
+	rem increment slot pointer
+	inc uWorld.SlotPointer
+	
+	rem no free slot
+	if uWorld.SlotPointer = WorldMaxObj + 1
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "No free slot!" )
+		dec uWorld.SlotPointer
+		exitfunction -1
+	endif
+	
+	rem file doesn't exist
+	if file exist( FileName$ ) = 0
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "File " + chr$(34) + FileName$ + chr$(34) + " does not exist!" )
+		dec uWorld.SlotPointer
+		exitfunction -1
+	endif
+	
+	rem load scenery object
+	World( uWorld.SlotPointer ).Obj = find free object()
+	LoadObject( FileName$ , World( uWorld.SlotPointer ).Obj )
+	
+	rem apply normal mapping
+	success = 0
+	if file exist( TextureName$ + "_diffuse.tga" ) then World( uWorld.SlotPointer ).DiffuseIMG = LoadImage( TextureName$ + "_diffuse.tga" , 0 ) : inc success
+	if file exist( TextureName$ + "_diffuse.png" ) then World( uWorld.SlotPointer ).DiffuseIMG = LoadImage( TextureName$ + "_diffuse.png" , 0 ) : inc success
+	if file exist( TextureName$ + "_normal.tga" ) then World( uWorld.SlotPointer ).NormalIMG = LoadImage( TextureName$ + "_normal.tga" , 0 ) : inc success
+	if file exist( TextureName$ + "_normal.png" ) then World( uWorld.SlotPointer ).NormalIMG = LoadImage( TextureName$ + "_normal.png" , 0 ) : inc success
+
+	rem texture and use an effect
+	if success = 2
+		texture object World( uWorld.SlotPointer ).Obj , 0 , World( uWorld.SlotPointer ).DiffuseIMG
+		texture object World( uWorld.SlotPointer ).Obj , 1 , World( uWorld.SlotPointer ).NormalIMG
+		set object effect World( uWorld.SlotPointer ).Obj , NormalMappingFX
+		
+	rem texture without an effect
+	else
+		texture object World( uWorld.SlotPointer ).Obj , World( uWorld.SlotPointer ).DiffuseIMG
+		set object transparency World( uWorld.SlotPointer ).Obj , 2
+		disable object zwrite World( uWorld.SlotPointer ).Obj
+	endif
+
+	rem type
+	World( uWorld.SlotPointer ).Typ = WORLD_SCENERY
+	World( uWorld.SlotPointer ).scale# = 100
+	World( uWorld.SlotPointer ).Filename$ = Filename$
+	World( uWorld.SlotPointer ).Texturename$ = Texturename$
+	
+endfunction 0
+
+function WorldPositionSceneryObject( x# , y# , z# )
+
+	rem make sure object will exist
+	if uWorld.SlotPointer = -1 then exitfunction -1
+	
+	rem position object
+	position object World( uWorld.SlotPointer ).Obj , x# , y# , z#
+	
+endfunction 0
+
+function WorldRotateSceneryObject( x# , y# , z# )
+		
+	rem make sure object will exist
+	if uWorld.SlotPointer = -1 then exitfunction -1
+	
+	rem position object
+	rotate object World( uWorld.SlotPointer ).Obj , x# , y# , z#
+	
+endfunction 0
+
+function WorldScaleSceneryObject( x# , y# , z# )
+	
+	rem make sure object will exist
+	if uWorld.SlotPointer = -1 then exitfunction -1
+	
+	rem position object
+	scale object World( uWorld.SlotPointer ).Obj , x# , y# , z#
+	World( uWorld.SlotPointer ).scale# = (x#+y#+z#)/3
+	
+endfunction 0
+
+function WorldAddTerrainObject( FileName$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "WorldAddTerrainObject " + Filename$ )
+	
+	rem increment slot pointer
+	inc uWorld.SlotPointer
+	
+	rem no free slot
+	if uWorld.SlotPointer = WorldMaxObj + 1
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "No free slot!" )
+		dec uWorld.SlotPointer
+		exitfunction -1
+	endif
+	
+	rem file doesn't exist
+	if file exist( FileName$ ) = 0
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "File " + chr$(34) + FileName$ + chr$(34) + " does not exist!" )
+		dec uWorld.SlotPointer
+		exitfunction -1
+	endif
+	
+	rem load terrain
+	World( uWorld.SlotPointer ).Obj = find free object()
+	LoadObject( FileName$ , World( uWorld.SlotPointer ).Obj )
+	set object cull World( uWorld.SlotPointer ).Obj , 1
+	SC_SetupComplexObject World( uWorld.SlotPointer ).Obj , COL_TERRAIN , 2
+	
+	rem set type
+	World( uWorld.SlotPointer ).Typ = WORLD_TERRAIN
+	
+	rem update pick object object range
+	uWorld.PickSearchObj = World( uWorld.SlotPointer ).Obj
+	
+	rem apply normal mapping
+	if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" ) then World( uWorld.SlotPointer ).DiffuseIMG = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" , 0 )
+	if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" ) then World( uWorld.SlotPointer ).DiffuseIMG = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" , 0 )
+	if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_normal.tga" ) then World( uWorld.SlotPointer ).NormalIMG = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_normal.tga" , 0 )
+	if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_normal.png" ) then World( uWorld.SlotPointer ).NormalIMG = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_normal.png" , 0 )
+	texture object World( uWorld.SlotPointer ).Obj , 0 , World( uWorld.SlotPointer ).DiffuseIMG
+	texture object World( uWorld.SlotPointer ).Obj , 1 , World( uWorld.SlotPointer ).NormalIMG
+	set object effect World( uWorld.SlotPointer ).Obj , NormalMappingFX
+	
+	World( uWorld.SlotPointer ).Filename$ = Filename$
+	
+endfunction 0
+
+function WorldCreatePathfinder( FileName$ , StartX# , StartY# , EndX# , EndY# , ResolutionX , ResolutionY , HeightThreshold )
+	
+	rem local variables
+	local x as integer
+	local y as integer
+	local x# as float
+	local z# as float
+	
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "WorldCreatePathfinder" )
+	
+	rem file doesn't exist
+	if file exist( FileName$ ) = 0
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "File does not exist!" )
+		exitfunction -1
+	endif
+	
+	rem make sure path hasn't already been loaded
+	if uWorld.Pathfinder.ID > -1
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "Pathfinder has already been set up!" )
+		exitfunction -1
+	endif
+	
+	rem load object
+	uWorld.PathFinder.Obj = find free object()
+	load object FileName$ , uWorld.PathFinder.Obj
+	SC_SetupComplexObject uWorld.PathFinder.Obj , COL_PATHFINDER , 2
+	texture object uWorld.PathFinder.Obj , IMGBlack
+	ghost object on uWorld.PathFinder.Obj
+	disable object zwrite uWorld.PathFinder.Obj
+	
+	rem create the pathfinder
+	uWorld.PathFinder.ResolutionX = ResolutionX
+	uWorld.PathFinder.ResolutionY = ResolutionY
+	uWorld.PathFinder.StartX# = StartX#
+	uWorld.PathFinder.EndX# = EndX#
+	uWorld.PathFinder.StartY# = StartY#
+	uWorld.PathFinder.EndY# = EndY#
+	uWorld.Pathfinder.SizeX# = EndX# - StartX#
+	uWorld.Pathfinder.SizeY# = EndY# - StartY#
+	uWorld.PathFinder.Threshold = HeightThreshold
+	uWorld.PathFinder.ID = iaa_create pathfinder( ResolutionX + 1 , ResolutionY + 1 , 1 , 1 )
+
+	rem create pathmap
+	for x = 0 to ResolutionX
+		for y = 0 to ResolutionY
+			
+			rem calculate positions
+			x# = StartX# + (((EndX# - StartX#) * x) / ResolutionX)
+			z# = StartY# + (((EndY# - StartY#) * y) / ResolutionY)
+			
+			rem check if threshold is met
+			if SC_RayCast( uWorld.PathFinder.Obj , x# , 200 , z# , x# , -200 , z# , 0 )
+				if SC_GetStaticCollisionY() > HeightThreshold
+					iaa_set pathmap value uWorld.PathFinder.ID , x , y , 1
+				else
+					iaa_set pathmap value uWorld.PathFinder.ID , x , y , 0
+				endif
+			else
+				iaa_set pathmap value uWorld.PathFinder.ID , x , y , 0
+			endif
+		next y
+	next x
+	
+endfunction 0
+
+function WorldShowPathmap()
+	
+	rem activate
+	uWorld.PathFinder.ShowPathmap = 1
+	
+endfunction 0
+
+function WorldHidePathmap()
+	
+	rem deactivate
+	uWorld.PathFinder.ShowPathmap = 0
+	
+endfunction 0
+
+function WorldExport( Filename$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem cancel if file exists
+	if file exist( Filename$ )
+		AddTextToConsole( 3 , "File " + chr$(34) + Filename$ + chr$(34) + " already exists. Aborting..." )
+		exitfunction
+	endif
+	
+	rem open file
+	OpenToWrite( 1 , Filename$ )
+	
+	rem comments
+	write string 1 , "// Scenery export"
+	write string 1 , ""
+	write string 1 , "// Disable iteration. This stops the program until the script has finished"
+	write string 1 , "DisableIteration"
+	write string 1 , ""
+	write string 1 , "// Scene Data"
+	write string 1 , "// -------------------------------------------------"
+	write string 1 , ""
+	
+	rem loop through all world objects
+	for n = 0 to uWorld.SlotPointer
+		
+		rem terrain objects
+		if World( n ).Typ = WORLD_TERRAIN
+			write string 1 , "// Terrain, ID: " + str$(n)
+			write string 1 , "WorldAddTerrainObject " + chr$(34) + World( n ).Filename$ + chr$(34)
+		endif
+		
+		rem scenery objects
+		if World( n ).Typ = WORLD_SCENERY
+			write string 1 , "// Scenery, ID: " + str$(n)
+			write string 1 , "WorldAddSceneryObject " + chr$(34) + World( n ).Filename$ + chr$(34) + " " + chr$(34) + World( n ).TextureName$ + chr$(34)
+			write string 1 , "WorldPositionSceneryObject " + str$(object position x(World( n ).Obj)) + " " + str$(object position y(World( n ).Obj)) + " " + str$(object position z(World( n ).Obj))
+			write string 1 , "WorldRotateSceneryObject " + str$(object angle x(World( n ).Obj)) + " " + str$(object angle y(World( n ).Obj)) + " " + str$(object angle z(World( n ).Obj))
+			write string 1 , "WorldScaleSceneryObject " + str$(World( n ).scale#) + " " + str$(World( n ).scale#) + " " + str$(World( n ).scale#)
+			write string 1 , ""
+		endif
+		
+	next n
+
+	rem finish up
+	write string 1 , "// End Script"
+	write string 1 , "end"
+	close file 1
+	AddTextToConsole( 1 , "Export successful" )
+	
+endfunction
+
+function ControlWorld()
+	
+	rem local variables
+	local n as dword
+	local i as dword
+	local x as integer
+	local y as integer
+	local sx as integer
+	local sy as integer
+	local x# as float
+	local y# as float
+	local z# as float
+	local dist# as float
+	
+	rem control fog of war
+	if uWorld.FogOfWar.Obj > 0
+		
+		rem edit vertex data
+		lock vertexdata for limb uWorld.FogOfWar.Obj , 0
+		
+			rem process certain amount of vertices every loop
+			for n = 1 to uWorld.FogOfWar.VertexUpdateAmount
+				
+				rem select next vertex
+				inc uWorld.FogOfWar.CurrentUpdateVertex_x
+				if uWorld.FogOfWar.CurrentUpdateVertex_x > uWorld.FogOfWar.ResolutionX
+					uWorld.FogOfWar.CurrentUpdateVertex_x = 0
+					inc uWorld.FogOfWar.CurrentUpdateVertex_y
+					if uWorld.FogOfWar.CurrentUpdateVertex_y > uWorld.FogOfwar.ResolutionY
+						uWorld.FogOfWar.CurrentUpdateVertex_y = 0
+						uWorld.FogOfWar.UpdateTimerResult = hitimer( 1000 ) - uWorld.FogOfWar.UpdateTimer
+						uWorld.FogOfWar.UpdateTimer = hitimer( 1000 )
+					endif
+				endif
+				
+				rem write array to vertexdata
+				for i = 0 to 5
+					set vertexdata diffuse FogOfWarVertex( uWorld.FogOfWar.CurrentUpdateVertex_x , uWorld.FogOfWar.CurrentUpdateVertex_y , i ).VertexIndex , FogOfWarStaticBrush( uWorld.FogOfWar.CurrentUpdateVertex_x , uWorld.FogOfWar.CurrentUpdateVertex_y ).color
+				next i
+				
+				rem reset colour in array
+				if FogOfWarStaticBrush( uWorld.FogOfWar.CurrentUpdateVertex_x , uWorld.FogOfWar.CurrentUpdateVertex_y ).color < FogOfWarStaticBrush( uWorld.FogOfWar.CurrentUpdateVertex_x , uWorld.FogOfWar.CurrentUpdateVertex_y ).MinColor then FogOfWarStaticBrush( uWorld.FogOfWar.CurrentUpdateVertex_x , uWorld.FogOfWar.CurrentUpdateVertex_y ).color = FogOfWarStaticBrush( uWorld.FogOfWar.CurrentUpdateVertex_x , uWorld.FogOfWar.CurrentUpdateVertex_y ).MinColor
+				
+			next n
+			
+			rem increase update speed if necessary
+			if misc.ScreenFPS > 30
+				if uWorld.FogOfWar.UpdateTimerResult > 300 then inc uWorld.FogOfWar.VertexUpdateAmount , 40
+			else
+				if uWorld.FogOfWar.VertexUpdateAmount > 4000 then dec uWorld.FogOfWar.VertexUpdateAmount , 40
+			endif
+			
+			rem copy formation brush array to vertex diffuse data
+			for u = 0 to uUnit.CurrentFormationMax
+				if UnitFormation( u ).Active > 0
+				
+					rem get formation's grid positions
+					sx = ((UnitFormation( u ).AveragePos.x# - uWorld.FogOfWar.StartX#) * uWorld.FogOfWar.ResolutionX) / (uWorld.FogOfWar.EndX# - uWorld.FogOfWar.StartX#)
+					sy = ((UnitFormation( u ).AveragePos.z# - uWorld.FogOfWar.Starty#) * uWorld.FogOfWar.ResolutionY) / (uWorld.FogOfWar.EndY# - uWorld.FogOfWar.StartY#)
+					
+					rem i is set to 1 if high ground vision should be denied
+					i = 0
+					if UnitFormation( u ).DenyHighGroundVision = 1
+						if sx > -1 and sx < uWorld.FogOfWar.ResolutionX+1
+							if sy > -1 and sy < uWorld.FogOfWar.ResolutionY+1
+								i = 1
+								gx = sx
+								gy = sy
+							endif
+						endif
+					endif
+					
+					rem offset array so it draws correctly
+					dec sx , FogOfWarFormationBrush( u , 0 ).Center.x
+					dec sy , FogOfWarFormationBrush( u , 0 ).Center.y
+					
+					rem separated these two in order to gain some speed
+					rem copy data with high ground denial
+					if i = 1
+						pos = 0
+						for x = 0 to FogOfWarFormationBrush( u , 0 ).Size.x
+							for y = 0 to FogOfWarFormationBrush( u , 0 ).Size.y
+								
+								if sx + x > 0 and sx + x < uWorld.FogOfWar.ResolutionX
+									if sy + y > 0 and sy + y < uWorld.FogOfWar.ResolutionY
+										
+										rem deny high ground vision by comparing height difference with center coordinates
+										if FogOfWarStaticBrush( sx+x , sy+y ).Height# - FogOfWarStaticBrush( gx , gy ).Height# < uWorld.FogOfWar.DenyHighGroundVisionThreshold#
+											if FogOfWarStaticBrush( sx+x , sy+y ).Color > FogOfWarFormationBrush( u , pos ).Color
+												FogOfWarStaticBrush( sx+x , sy+y ).Color = FogOfWarFormationBrush( u , pos ).Color
+											endif
+										endif
+										
+									endif
+								endif
+								inc pos
+								
+							next y
+						next x
+						
+					rem copy data without high ground denial
+					else
+						pos = 0
+						for x = 0 to FogOfWarFormationBrush( u , 0 ).Size.x
+							for y = 0 to FogOfWarFormationBrush( u , 0 ).Size.y
+								
+								if sx + x > 0 and sx + x < uWorld.FogOfWar.ResolutionX
+									if sy + y > 0 and sy + y < uWorld.FogOfWar.ResolutionY
+										if FogOfWarStaticBrush( sx+x , sy+y ).Color > FogOfWarFormationBrush( u , pos ).Color
+											FogOfWarStaticBrush( sx+x , sy+y ).Color = FogOfWarFormationBrush( u , pos ).Color
+										endif
+									endif
+								endif
+								inc pos
+								
+							next y
+						next x
+					endif
+					
+				endif
+			next u
+			
+		unlock vertexdata
+		
+	endif
+		
+endfunction
+
+function WrapObjectOnTerrain( Obj )
+	
+	rem local variables
+	local i as integer
+	local x# as float
+	local y# as float
+	local z# as float
+	
+	rem loop through each vertex
+	lock vertexdata for limb Obj , 0
+		for i = 0 to get vertexdata vertex count() - 1
+			
+			rem get positions
+			x# = get vertexdata position x(i)
+			y# = get vertexdata position y(i)
+			z# = get vertexdata position z(i)
+			
+			rem raycast
+			if SC_RayCastGroup( COL_TERRAIN , x# , 200 , z# , x# , -200 , z# , 0 )
+				y# = SC_GetStaticCollisionY()
+				set vertexdata position i , x# , y# , z#
+			endif
+			
+		next i
+	unlock vertexdata
+	
+endfunction

@@ -1,0 +1,1342 @@
+rem ---------------------------------------------------------------------------
+rem GUI - handles the grahpical user interface
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem Constants
+rem ---------------------------------------------------------------------------
+
+#constant GUIBindUnitMax 500
+
+#constant GUICLICK_NOT_CLICKED		0
+#constant GUICLICK_CLICKED				1
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type ButtonVT
+   Clicked                          			as integer
+endtype
+
+type GUIVT
+	logging                          			as integer
+	Mouse3DInvalid                				as integer
+	CurrentMax											as integer
+	CurrentFrameMax									as integer
+	CurrentFrameCountMax								as integer
+	CurrentUnitBindMax								as integer
+	ButtonClicked										as integer
+	ButtonReleased										as integer
+	ButtonActivateAbility							as integer
+	ButtonCancelAbility								as integer
+	
+	PortraitPos											as vec2
+	InfoPanelPos										as vec2
+	InfoPanelDescriptionPos							as vec2
+	HealthPos											as vec2
+	ManaPos												as vec2
+	ShieldPos											as vec2
+	MiniatureGridStartPos							as vec2
+	MiniatureGridEndPos								as vec2
+	MiniatureGridSize									as vec2
+endtype
+
+type GUIAT
+	Active                           			as integer
+	pos                              			as vec2
+	EndPos                          	 			as vec2
+	IMG                              			as word
+	GlowIMG                          			as word
+	PressIMG                         			as word
+	LockedIMG                        			as word
+	IconIMG												as word
+	KeyBind                          			as byte
+	KeyBindFlag											as integer
+	ID														as integer
+	ToggleMode											as integer
+	
+	Locked                           			as integer
+	Hidden												as integer
+	ClickState											as integer
+	BindCount                        			as integer
+	
+	EventClickActive									as integer
+	EventClickScript									as integer
+	EventClickLine										as integer
+	EventReleaseActive								as integer
+	EventReleaseScript								as integer
+	EventReleaseLine									as integer
+	
+	BindKeyPressed                   			as integer
+	Ability                          			as integer
+endtype
+
+type GUIFrameAAT
+	Active												as integer
+	IMG													as integer
+	FrameCount											as integer
+	CurrentFrame										as integer
+	FrameDelay											as integer
+	FrameDelayCounter									as integer
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitGUI()
+	
+	rem local variables
+	local g 												as integer
+	local b 												as integer
+
+	rem debug
+	DebugOutput( 0 , "Initialising GUI" , DEBUG_NORMAL )
+
+	rem ---------------------------------------------------------------------------
+	rem Global Variables
+   rem ---------------------------------------------------------------------------
+
+	global uGUI                       			as GUIVT
+	global Button                    			as ButtonVT
+
+	rem ---------------------------------------------------------------------------
+	rem Global Arrays
+	rem ---------------------------------------------------------------------------
+	
+	global dim GUI()									as GUIAT
+	global dim GUIFrame()							as GUIFrameAAT
+	global dim GUIBindUnit() 						as integer
+	
+	Button.Clicked = -1
+	uGUI.CurrentMax = -1
+	uGUI.CurrentFrameMax = -1
+	uGUI.CurrentFrameCountMax = 0
+	uGUI.CurrentUnitBindMax = -1
+	
+	rem initialise other GUI elements
+	InitGUIDragBox()
+
+endfunction
+
+function GUIAddStaticImage( ID , x , y , Filename$ )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIAddStaticImage " + str$(ID) + "," + str$(x) + "," + str$(y) + chr$(34) + Filename$ + chr$(34) )
+	
+	rem local variable
+	local n as integer
+	
+	rem make sure ID doesn't already exist
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).Active > 1
+			if GUI( n ).ID = ID
+				AddTextToConsole( 3 , "ID already in use!" )
+				exitfunction -1
+			endif
+		endif
+	next n
+	
+	rem find free slot
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).Active < 2 then exit
+	next n
+	
+	rem no free slot, create
+	if n = uGUI.CurrentMax + 1
+		array insert at bottom GUI()
+		inc uGUI.CurrentMax
+	endif
+
+	rem add frame and image
+	GUI( n ).IMG = GUICreateFrame()
+	GUIAddFrame( GUI( n ).IMG , Filename$ )
+
+	rem set values
+	GUI( n ).Active = 2
+	GUI( n ).pos.x = GetRealScreenX( x )
+	GUI( n ).pos.y = GetRealScreenY( y )
+	GUI( n ).EndPos.x = GUI( n ).pos.x + image width( GUI( n ).IMG )
+	GUI( n ).EndPos.y = GUI( n ).pos.y + image height( GUI( n ).IMG )
+	GUI( n ).BindCount = -1
+	GUI( n ).Locked = 0
+	GUI( n ).Hidden = 0
+	GUI( n ).ToggleMode = 0
+	GUI( n ).EventClickActive = 0
+	GUI( n ).EventReleaseActive = 0
+	GUI( n ).Ability = 0
+	GUI( n ).ID = ID
+	
+endfunction n
+
+function GUICreateFrame()
+	
+	rem local variables
+	local n as integer
+	
+	rem find free slot
+	for n = 0 to uGUI.CurrentFrameMax
+		if GUIFrame( n , 0 ).Active < 0 then exit
+	next n
+	
+	rem none found, allocate space
+	if n = uGUI.CurrentFrameMax + 1
+		inc uGUI.CurrentFrameMax
+		dim GUIFrame( uGUI.CurrentFrameMax , uGUI.CurrentFrameCountMax ) as GUIFrameAAT
+	endif
+	
+	rem set parameters
+	GUIFrame( n , 0 ).Active = 2
+	GUIFrame( n , 0 ).FrameCount = -1
+	GUIFrame( n , 0 ).CurrentFrame = 0
+	GUIFrame( n , 0 ).FrameDelay = 0
+	
+endfunction n
+
+function GUIAddFrame( n , Filename$ )
+	
+	rem make sure file exists
+	if file exist( Filename$ ) = 0
+		AddTextToConsole( 3 , "File " + chr$(34) + Filename$ + chr$(34) + " does not exist!" )
+		exitfunction -1
+	endif
+	
+	rem allocate space
+	inc GUIFrame( n , 0 ).FrameCount
+	if GUIFrame( n , 0 ).FrameCount > uGUI.CurrentFrameCountMax
+		inc uGUI.CurrentFrameCountMax
+		dim GUIFrame( uGUI.CurrentFrameMax , uGUI.CurrentFrameCountMax ) as GUIFrameAAT		
+	endif
+	
+	rem add frame
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG = LoadImage( Filename$ , 1 )
+	
+	rem scale to fit screen resolution
+	ik resize image GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG , (image width( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG ) * uScreen.sc_wx) / 1600.0 , (image height( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG) * uScreen.sch) / 1200.0 , 1
+	
+endfunction n
+
+function GUIDestroyFrame( n )
+	
+	rem make sure in range
+	if n < 0 or n > uGUI.CurrentFrameMax then exitfunction
+	if GUIFrame( n , 0 ).Active < 2 then exitfunction
+	
+	rem delete images
+	for s = 0 to GUIFrame( n , 0 ).FrameCount
+		if image exist( GUIFrame( n , s ).IMG ) then delete image GUIFrame( n , s ).IMG
+	next s
+		
+	rem destroy
+	GUIFrame( n , 0 ).Active = 0
+	
+endfunction
+
+function GUIDrawFrame( n , x , y )
+	
+	rem paste current frame to screen
+	if GUIFrame( n , 0 ).FrameCount > -1
+		paste image GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).IMG , x , y , 1
+	endif
+	
+endfunction
+
+function GUIAddStaticFrame( ID , Filename$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 2
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add the frame
+	GUIAddFrame( GUI( n ).IMG , Filename$ )
+	
+endfunction n
+
+function GUIAddButtonNormalFrame( ID , Filename$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add the frame
+	GUIAddFrame( GUI( n ).IMG , Filename$ )
+	
+endfunction n
+
+function GUIAddButtonMouseOverFrame( ID , Filename$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add the frame
+	GUIAddFrame( GUI( n ).GlowIMG , Filename$ )
+	
+endfunction n
+
+function GUIAddButtonPressFrame( ID , Filename$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add the frame
+	GUIAddFrame( GUI( n ).PressIMG , Filename$ )
+	
+endfunction n
+
+function GUIAddButtonLockedFrame( ID , Filename$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add the frame
+	GUIAddFrame( GUI( n ).LockedIMG , Filename$ )
+	
+endfunction n
+
+function GUIAddButtonIconFrame( ID , Filename$ )
+	
+	rem local variables
+	local n as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add the frame
+	GUIAddFrame( GUI( n ).IconIMG , Filename$ )
+	
+endfunction n
+
+function GUISetStaticFrameDelay( ID , delay )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add delay
+	s = GUI( n ).IMG
+	GUIFrame( s , 0 ).FrameDelay = delay
+	
+endfunction n
+
+function GUISetButtonNormalFrameDelay( ID , delay )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add delay
+	s = GUI( n ).IMG
+	GUIFrame( s , 0 ).FrameDelay = delay
+	
+endfunction n
+
+function GUISetButtonMouseOverFrameDelay( ID , delay )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add delay
+	s = GUI( n ).GlowIMG
+	GUIFrame( s , 0 ).FrameDelay = delay
+	
+endfunction n
+
+function GUISetButtonPressFrameDelay( ID , delay )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add delay
+	s = GUI( n ).PressIMG
+	GUIFrame( s , 0 ).FrameDelay = delay
+	
+endfunction n
+
+function GUISetButtonLockedFrameDelay( ID , delay )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add delay
+	s = GUI( n ).LockedIMG
+	GUIFrame( s , 0 ).FrameDelay = delay
+	
+endfunction n
+
+function GUISetButtonIconFrameDelay( ID , delay )
+	
+	rem local variables
+	local n as integer
+	local s as integer
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem add delay
+	s = GUI( n ).IconIMG
+	GUIFrame( s , 0 ).FrameDelay = delay
+	
+endfunction n
+
+function GUIDestroyElement( ID )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIDestroyElement " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem not active
+	if GUI( n ).Active < 2
+		AddTextToConsole( 3 , "GUI ID not active!" )
+		exitfunction -1
+	endif
+	
+	rem unbind anything from it
+	for b = 0 to GUI( n ).BindCount
+		GUIBindUnit( n , b ) = -1
+	next b
+	GUI( n ).BindCount = -1
+	
+	rem destroy
+	GUIDestroyFrame( GUI( n ).IMG )
+	GUIDestroyFrame( GUI( n ).GlowIMG )
+	GUIDestroyFrame( GUI( n ).PressIMG )
+	GUIDestroyFrame( GUI( n ).LockedIMG )
+	GUIDestroyFrame( GUI( n ).IconIMG )
+	GUI( n ).Active = 0
+	
+endfunction n
+
+function GUIAddButton( ID , x , y , KeyBind , BackFilename$ , GlowFilename$ , PressFilename$ , LockedFilename$ , IconFilename$ )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIAddButton " + str$(ID) + "," + str$(x) + "," + str$(y) + "," + str$(KeyBind) + chr$(34) + BackFilename$ + chr$(34) + "," + chr$(34) + GlowFilename$ + chr$(34) + "," + chr$(34) + PressFilename$ + chr$(34) + "," + chr$(34) + LockedFilename$ + chr$(34) )
+		
+	rem local variables
+	local n as integer
+	
+	rem make sure ID doesn't already exist
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).Active > 1
+			if GUI( n ).ID = ID
+				AddTextToConsole( 3 , "ID already in use!" )
+				exitfunction -1
+			endif
+		endif
+	next n
+	
+	rem find free slot
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).Active < 2 then exit
+	next n
+	
+	rem no free slot, create
+	if n = uGUI.CurrentMax + 1
+		array insert at bottom GUI()
+		inc uGUI.CurrentMax
+	endif
+	
+	rem create frames
+	GUI( n ).IMG = GUICreateFrame()
+	GUI( n ).GlowIMG = GUICreateFrame()
+	GUI( n ).PressIMG = GUICreateFrame()
+	GUI( n ).LockedIMG = GUICreateFrame()
+	GUI( n ).IconIMG = GUICreateFrame()
+	GUIAddFrame( GUI( n ).IMG , BackFilename$ )
+	GUIAddFrame( GUI( n ).GlowIMG , GlowFilename$ )
+	GUIAddFrame( GUI( n ).PressIMG , PressFilename$ )
+	GUIAddFrame( GUI( n ).LockedIMG , LockedFilename$ )
+	GUIAddFrame( GUI( n ).IconIMG , IconFilename$ )
+		
+	rem set values
+	s = GUI( n ).IMG
+	GUI( n ).Active = 3
+	GUI( n ).pos.x = GetRealScreenX( x )
+	GUI( n ).pos.y = GetRealScreenY( y )
+	GUI( n ).EndPos.x = GUI( n ).pos.x + image width( GUIFrame( s , 0 ).IMG )
+	GUI( n ).EndPos.y = GUI( n ).pos.y + image height( GUIFrame( s , 0 ).IMG )
+	GUI( n ).Locked = 0
+	GUI( n ).Hidden = 0
+	GUI( n ).ToggleMode = 0
+	GUI( n ).EventClickActive = 0
+	GUI( n ).EventReleaseActive = 0
+	GUI( n ).BindCount = -1
+	GUI( n ).KeyBind = KeyBind
+	GUI( n ).Ability = 0
+	GUI( n ).ID = ID
+	
+endfunction n
+
+function GUILockButton( ID )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUILockButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem lock
+	GUI( n ).Locked = 1
+	
+endfunction n
+
+function GUIUnlockButton( ID )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIUnlockButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction -1
+	endif
+	
+	rem unlock
+	GUI( n ).Locked = 0
+
+endfunction n
+
+function GUIHideElement( ID )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIHideButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active > 1
+		AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem hide
+	GUI( n ).Hidden = 1
+	
+endfunction n
+
+function GUIShowElement( ID )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIHideButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active > 1
+		AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem hide
+	GUI( n ).Hidden = 0
+	
+endfunction n
+
+function GUIButtonEnableToggle( ID )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIButtonEnableToggle " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem hide
+	GUI( n ).ToggleMode = 1
+	
+endfunction n
+
+function GUIButtonDisableToggle( ID )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIButtonDisableToggle " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "Not active!" )
+		exitfunction -1
+	endif
+	
+	rem hide
+	GUI( n ).ToggleMode = 0
+	
+endfunction n
+
+function GUIBindButtonToUnit( ID , UnitID )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIBindButtonToUnit " + str$(ID) + "," + str$(UnitID) )
+	
+	rem make sure unit is in range
+	if UnitID < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( UnitID ).Active < 2
+		AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem make sure button is active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "Button not active!" )
+		exitfunction -1
+	endif
+
+	rem find or create binding slot
+	inc GUI( n ).BindCount
+	if GUI( n ).BindCount > uGUI.CurrentUnitBindMax
+		inc uGUI.CurrentUnitBindMax
+		dim GUIBindUnit( uGUI.CurrentMax , uGUI.CurrentUnitBindMax ) as integer
+	endif
+	
+	rem bind
+	GUIBindUnit( n , GUI( n ).BindCount ) = UnitID
+	
+endfunction n
+
+function GUIUnbindUnit( ID , UnitID )
+	
+	rem local variables
+	local s as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIUnbindUnit " + str$(ID) + "," + str$(UnitID) )
+	
+	rem make sure unit is in range
+	if UnitID < 0 or UnitID > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem find index for bound unit
+	for s = 0 to GUI( n ).BindCount
+		if GUIBindUnit( n , s ) = UnitID then exit
+	next s
+	
+	rem shift binding stack down
+	if s < GUI( n ).BindCount + 1
+		for UnitID = s + 1 to GUI( n ).BindCount
+			GUIBindUnit( n , UnitID - 1 ) = GUIBindUnit( n , UnitID )
+		next UnitID
+		if GUI( n ).BindCount > -1 then dec GUI( n ).BindCount
+	endif
+	
+	rem button is not clicked
+	GUI( n ).ClickState = GUICLICK_NOT_CLICKED
+	
+endfunction n
+
+function GUIPositionElement( ID , x , y )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIPositionElement " + str$(ID) + "," + str$(x) + "," + str$(y) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active < 2
+		AddTextToConsole( 3 , "GUI element not active!" )
+		exitfunction -1
+	endif
+	
+	rem reposition
+	GUI( n ).pos.x = GetRealScreenX( x )
+	GUI( n ).pos.y = GetRealScreenY( y )
+	
+endfunction n
+
+function GUISetPortraitPosition( x , y )
+	
+	rem set
+	uGUI.PortraitPos.x = GetRealScreenX( x )
+	uGUI.PortraitPos.y = GetRealScreenY( y )
+	
+endfunction
+
+function GUISetInfoPanelPosition( x , y )
+	
+	rem set
+	uGUI.InfoPanelPos.x = GetRealScreenX( x )
+	uGUI.InfoPanelPos.y = GetRealScreenY( y )
+	
+endfunction
+
+function GUISetInfoPanelDescriptionPosition( x , y )
+	
+	rem set
+	uGUI.InfoPanelDescriptionPos.x = GetRealScreenX( x )
+	uGUI.InfoPanelDescriptionPos.y = GetRealScreenY( y )
+	
+endfunction
+
+function GUISetInfoPanelHealthPosition( x , y )
+	
+	rem set
+	uGUI.HealthPos.x = GetRealScreenX( x )
+	uGUI.HealthPos.y = GetRealScreenY( y )
+
+endfunction
+
+function GUISetInfoPanelManaPosition( x , y )
+	
+	rem set
+	uGUI.ManaPos.x = GetRealScreenX( x )
+	uGUI.ManaPos.y = GetRealScreenY( y )
+	
+endfunction
+
+function GUISetInfoPanelShieldPosition( x , y )
+	
+	rem set
+	uGUI.ShieldPos.x = GetRealScreenX( x )
+	uGUI.ShieldPos.y = GetRealScreenY( y )
+	
+endfunction
+
+function GUISetMiniatureGrid( sx , sy , ex , ey , gridSizeX , gridSizeY )
+	
+	rem set
+	uGUI.MiniatureGridStartPos.x = GetRealScreenX( sx )
+	uGUI.MiniatureGridStartPos.y = GetRealScreenY( sy )
+	uGUI.MiniatureGridEndPos.x = GetRealScreenX( ex )
+	uGUI.MiniatureGridEndPos.y = GetRealScreenY( ey )
+	uGUI.MiniatureGridSize.x = GetRealScreenX( gridSizeX )
+	uGUI.MiniatureGridSize.y = GetRealScreenY( gridSizeY )
+	
+endfunction
+
+function ControlGUI()
+	
+	rem control drag box
+	ControlGUIDragBox()
+	
+	rem local variables
+   local n as integer
+	local u as integer
+	local a as integer
+	local success as integer
+
+	rem reset some values
+	uGUI.ButtonClicked = -1
+	uGUI.ButtonReleased = -1
+	uGUI.Mouse3DInvalid = 0
+	uGUI.ButtonActivateAbility = -1
+	uGUI.ButtonCancelAbility = -1
+
+	rem loop through all active 
+   for n = 0 to uGUI.CurrentMax
+		
+		rem static image
+		if GUI( n ).Active = 2
+			
+			rem paste static image
+			GUIDrawFrame( GUI( n ).IMG , GUI( n ).pos.x , GUI( n ).pos.y )
+			
+			rem check if 3D mouse is invalid
+			if uMouse.x > GUI( n ).pos.x and uMouse.x < GUI( n ).EndPos.x
+				if uMouse.y > GUI( n ).pos.y and uMouse.y < GUI( n ).EndPos.y then uGUI.Mouse3DInvalid = 1
+			endif
+			
+		endif
+		
+		rem button
+		if GUI( n ).Active = 3
+			
+			rem If button is not bound to any units, button will act like a normal menu button
+			rem if button is bound to units, the button is shown/hidden according to the current units selected
+			rem and according to the ability's settings its bound to
+			if GUI( n ).BindCount = -1
+				
+				rem draw and control input
+				_GUI_DrawAndControlButtons( n , 0 )
+				
+			rem button is bound to units
+			else
+			
+				rem loop through all selected units and find bound button
+				for s = 0 to uUnit.CurrentMax
+					if Unit( s ).Active > 1
+						if Unit( s ).Selected > 1
+							
+							rem check if button is bound to unit
+							for r = 0 to GUI( n ).BindCount
+								if GUIBindUnit( n , r ) = s then exit
+							next r
+							
+							rem found
+							if r < GUI( n ).BindCount + 1 then exit
+							
+						endif
+					endif
+				next s
+				
+				rem found
+				if s < uUnit.CurrentMax + 1
+					
+					rem find ability
+					for r = 0 to MaxUnitAbility
+						if UnitAbility( s , r ).Active > 0 and UnitAbility( s , r ).BindButton = n then exit
+					next r
+					if r < MaxUnitAbility + 1
+												
+						rem copy settings to GUI button
+						rem only lock or hide ability if all units have it locked or hidden
+						GUI( n ).Locked = 1
+						GUI( n ).Hidden = 1
+						for s = 0 to uUnit.CurrentMax
+							if Unit( s ).Active > 1
+								if Unit( s ).Selected > 1
+									
+									rem check if ability is bound to button
+									for r = 0 to MaxUnitAbility
+										if UnitAbility( s , r ).Active > 0
+											if UnitAbility( s , r ).BindButton = n then exit
+										endif
+									next r
+									
+									rem found
+									if r < MaxUnitAbility + 1
+										
+										rem copy ability settings to button
+										if UnitAbility( s , r ).LockButton = 0 and Unit( s ).Stats.CurrentMana# >= UnitAbility( s , r ).ManaDrain# then GUI( n ).Locked = 0
+										if UnitAbility( s , r ).HideButton = 0 then GUI( n ).Hidden = 0
+										
+									endif
+									
+									rem no need to carry on
+									if GUI( n ).Locked = 0 and GUI( n ).Hidden = 0 then exit
+								
+								endif
+							endif
+						next s
+						
+						rem draw and control input
+						_GUI_DrawAndControlButtons( n , 1 )
+						
+					endif
+					
+				endif
+				
+			endif
+
+		endif
+	next n
+	
+	rem draw unit related GUI
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1
+			if Unit( n ).Selected > 1
+				
+				rem portrait
+				GUIDrawFrame( Unit( n ).PortraitID , uGUI.PortraitPos.x , uGUI.PortraitPos.y )
+				
+			endif
+		endif
+	next n
+
+	rem if mouse is on minimap, calculate 3D coordinates
+	for n = 0 to uMinimap.CurrentMax
+		if Minimap( n ).Active > 1
+			if uMouse.x > Minimap( n ).StartPos.x and uMouse.x < Minimap( n ).EndPos.x
+				if uMouse.y > Minimap( n ).StartPos.y and uMouse.y < Minimap( n ).EndPos.y
+					
+					rem convert to XZ
+					x# = uMouse.y-Minimap( n ).StartPos.y : rem cast to float
+					uMouse.Click3D.x# = (uMouse.x-Minimap( n ).StartPos.x) * (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#) / Minimap( n ).Size.x + Minimap( n ).WorldStartPos.x#
+					uMouse.Click3D.z# = (1.0 - (x# / Minimap( n ).Size.y)) * (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#) + Minimap( n ).WorldStartPos.z#
+					
+					rem find ground height
+					if SC_RayCastGroup( COL_TERRAIN , uMouse.Click3D.x# , 200 , uMouse.Click3D.z# , uMouse.Click3D.x# , -200 , uMouse.Click3D.z# , 0 )
+						uMouse.Click3D.y# = SC_GetStaticCollisionY()
+					endif
+				
+				endif
+			endif
+		endif
+	next n
+	
+	rem call events
+	if uGUI.ButtonClicked > -1
+		if GUI( uGUI.ButtonClicked ).EventClickActive = 1
+			CallEvent( GUI( uGUI.ButtonClicked ).EventClickScript , GUI( uGUI.ButtonClicked ).EventClickLine )
+		endif
+	endif
+	if uGUI.ButtonReleased > -1
+		if GUI( uGUI.ButtonReleased ).EventReleaseActive = 1
+			CallEvent( GUI( uGUI.ButtonReleased ).EventReleaseScript , GUI( uGUI.ButtonReleased ).EventReleaseLine )
+		endif
+	endif
+
+endfunction
+
+function _GUI_DrawAndControlButtons( n , ManualPress )
+	
+	rem button is not hidden
+	if GUI( n ).Hidden = 0
+		
+		rem button is locked
+		if GUI( n ).Locked = 1
+			GUIDrawFrame( GUI( n ).LockedIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+			GUIDrawFrame( GUI( n ).IconIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+		
+		rem button is not locked
+		else
+		
+			rem button is currently not being pressed
+			if GUI( n ).ClickState = GUICLICK_NOT_CLICKED
+				
+				rem mouse is over button
+				if uMouse.x > GUI( n ).pos.x and uMouse.x < GUI( n ).EndPos.x and uMouse.y > GUI( n ).pos.y and uMouse.y < GUI( n ).EndPos.y
+					GUIDrawFrame( GUI( n ).GlowIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+					
+					rem Mouse clicks button
+					if uMouse.click = 1
+						_GUI_ReleaseOtherButtons()
+						if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_CLICKED
+						uGUI.ButtonClicked = n
+						GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+					endif
+					
+					rem 3D mouse is invalid
+					uGUI.Mouse3DInvalid = 1
+					
+				rem mouse is not over button
+				else
+				
+					rem paste normal image
+					GUIDrawFrame( GUI( n ).IMG , GUI( n ).pos.x , GUI( n ).pos.y )
+					
+				endif
+				
+				rem bind key presses
+				if keystate( GUI( n ).KeyBind ) and GUI( n ).KeyBindFlag = 0
+					_GUI_ReleaseOtherButtons()
+					GUI( n ).KeyBindFlag = 1
+					if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_CLICKED
+					uGUI.ButtonClicked = n
+					GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+				endif
+				if keystate( GUI( n ).KeyBind ) = 0 then GUI( n ).KeyBindFlag = 0
+				
+			rem button is being pressed
+			else
+			
+				rem toggle mode is activated
+				if GUI( n ).ToggleMode = 1
+					
+					rem mouse is over button
+					if uMouse.x > GUI( n ).pos.x and uMouse.x < GUI( n ).EndPos.x and uMouse.y > GUI( n ).pos.y and uMouse.y < GUI( n ).EndPos.y
+						GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+
+						rem Mouse clicks button
+						if uMouse.click = 1
+							if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_NOT_CLICKED
+							uGUI.ButtonReleased = n
+						endif
+						
+						rem 3D mouse is invalid
+						uGUI.Mouse3DInvalid = 1
+						
+					rem mouse is not over button
+					else
+					
+						rem paste pressed image
+						GUIDrawFrame( GUI( n ).PressIMG , GUi( n ).pos.x , GUI( n ).pos.y )
+						
+					endif
+					
+					rem bind key presses
+					if keystate( GUI( n ).KeyBind ) and GUI( n ).KeyBindFlag = 0
+						GUI( n ).KeyBindFlag = 1
+						if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_NOT_CLICKED
+						uGUI.ButtonReleased = n
+					endif
+					if keystate( GUI( n ).KeyBind ) = 0 then GUI( n ).KeyBindFlag = 0
+					
+				rem toggle mode is not activated
+				else
+				
+					rem button is being pressed
+					GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+				
+					rem release button if mouse is no longer clicking
+					if uMouse.click <> 2 and keystate( GUI( n ).KeyBind ) = 0
+						if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_NOT_CLICKED
+						uGUI.ButtonReleased = n
+					endif
+					
+					rem activate an ability if mouse is clicked
+					if uMouse.click = 1
+						uGUI.ButtonActivateAbility = n
+					endif
+					
+					rem cancel an ability
+					if uMouse.click = 4
+						uGUI.ButtonCancelAbility = n
+					endif
+					
+				endif
+			endif
+			
+			rem paste icon
+			GUIDrawFrame( GUI( n ).IconIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+			
+		endif
+	endif
+
+endfunction
+
+function GUIUpdateFrame()
+	
+	rem local variables
+	local n as integer
+	
+	rem loop through all active frames
+	for n = 0 to uGUI.CurrentFrameMax
+		if GUIFrame( n , 0 ).Active = 2
+						
+			rem update frame
+			inc GUIFrame( n , 0 ).FrameDelayCounter
+			if GUIFrame( n , 0 ).FrameDelayCounter > GUIFrame( n , 0 ).FrameDelay
+				GUIFrame( n , 0 ).FrameDelayCounter = 0
+				inc GUIFrame( n , 0 ).CurrentFrame
+				if GUIFrame( n , 0 ).CurrentFrame > GUIFrame( n , 0 ).FrameCount then GUIFrame( n , 0 ).CurrentFrame = 0
+			endif
+			
+		endif
+	next n
+	
+endfunction
+
+function _GUI_ReleaseOtherButtons()
+	
+	rem release any clicked buttons
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).Active = 3
+			GUI( n ).ClickState = GUICLICK_NOT_CLICKED
+		endif
+	next n
+	
+endfunction
