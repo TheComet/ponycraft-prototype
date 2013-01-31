@@ -59,6 +59,9 @@ for scd = 1 to 3
 	center text scw/2,sch/2,"...Initialising...":sync
 next scd
 
+rem set working directory
+set dir dir exe()
+
 rem ----------------------------------------------------------------------
 rem Constants
 rem ----------------------------------------------------------------------
