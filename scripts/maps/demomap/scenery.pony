@@ -6,6 +6,11 @@ DisableIteration
 // Scene Data
 // -------------------------------------------------
 
+WorldAddSceneryObject "media\objects\maps\derp\ruins4_lod0.x" "media\objects\maps\derp\ruins"
+WorldPositionSceneryObject 7.69999980927 -5.18300008774 27.9510002136
+WorldRotateSceneryObject 0 305 0
+WorldScaleSceneryObject 278 278 278
+
 // Scenery, ID: 2
 WorldAddSceneryObject "media\objects\maps\derp\ruins5_lod0.x" "media\objects\maps\derp\ruins"
 WorldPositionSceneryObject 16.593000412 -5.18300008774 38.5260009766

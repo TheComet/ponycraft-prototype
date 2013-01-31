@@ -432,7 +432,7 @@ function UnitUseAbility( n , ability , x# , z# , TargetUnit , Keys )
 		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
 		exitfunction
 	endif
-		
+
 	rem check if keys can be used
 	if Keys > -1
 
@@ -710,7 +710,7 @@ function _Unit_Handle_Active_Abilities( n )
 			rem check if enemy unit is in ability range
 			for r = 0 to uUnit.CurrentMax
 				if Unit( r ).Active > 1
-					if Unit( r ).Control <> Unit( n ).Control and Unit( r ).Control <> UNITCONTROL_NOONE
+					if Unit( r ).Control <> Unit( n ).Control and Unit( r ).Control <> UNITCONTROL_NOONE and Unit( r ).Control <> UNITCONTROL_STATIC
 						dist# = (Unit( r ).pos.x# - Unit( n ).pos.x#)^2 + (Unit( r ).pos.z# - Unit( n ).pos.z#)^2
 						
 						rem in range and visible

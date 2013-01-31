@@ -143,7 +143,7 @@ function InitWorld()
 	uWorld.FogOfwar.CurrentFormationVertexCountMax = -1
 	uWorld.FogOfWar.StartColor = 0xFF000000
 	uWorld.FogOfWar.MinColor = 0x8C000000
-	uWorld.FogOfWar.DenyHighGroundVisionThreshold# = 1.9
+	uWorld.FogOfWar.DenyHighGroundVisionThreshold# = 2.3
 	
 endfunction
 
@@ -396,15 +396,83 @@ endfunction 0
 
 function WorldShowPathmap()
 	
-	rem activate
-	uWorld.PathFinder.ShowPathmap = 1
+	rem local variables
+	local x as integer
+	local y as integer
+	local n as integer
+	local Obj as word
+	local mesh as word
+	local x# as float
+	local y# as float
+	local z# as float
+	
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "WorldShowPathmap" )
+	
+	rem check if pathfinder is active
+	if uWorld.PathFinder.ID = -1
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "Pathfinder not active!" )
+		exitfunction -1
+	endif
+	
+	rem check if pathmap is already showing
+	if uWorld.PathFinder.ShowPathmap = 1
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "Pathmap already active!" )
+		exitfunction -1
+	endif
+	
+	rem visualise pathmap
+	Obj = find free object()
+	make object cube Obj , 0.6
+	mesh = find free mesh()
+	make mesh from object mesh , Obj
+	delete object Obj
+	make object plain Obj , 0 , 0
+	n = 0
+	for x = 0 to uWorld.PathFinder.ResolutionX
+		for y = 0 to uWorld.PathFinder.ResolutionY
+			
+			rem get positions
+			x# = uWorld.PathFinder.StartX# + (((uWorld.PathFinder.EndX# - uWorld.PathFinder.StartX#) * x) / uWorld.PathFinder.ResolutionX)
+			z# = uWorld.PathFinder.StartY# + (((uWorld.PathFinder.EndY# - uWorld.PathFinder.StartY#) * y) / uWorld.PathFinder.ResolutionY)
+			if SC_RayCastGroup( 1 , x# , 200 , z# , x# , -200 , z# , 0 ) and iaa_get pathmap value( uWorld.PathFinder.ID , x , y )
+				y# = SC_GetStaticCollisionY()
+				inc n
+				add limb Obj , n , mesh
+				offset limb Obj , n , x# , y# , z#
+				color limb Obj , n , 0xFFFF0000
+			endif
+			
+		next y
+	next x
+	
+	rem clean up
+	delete mesh mesh
+	
+	rem store object in variable
+	uWorld.PathFinder.ShowPathmap = Obj
 	
 endfunction 0
 
 function WorldHidePathmap()
 	
-	rem deactivate
-	uWorld.PathFinder.ShowPathmap = 0
+	rem logging
+	if uWorld.logging = 1 then AddTextToConsole( 0 , "WorldHidePathmap" )
+	
+	rem check if pathfinder is active
+	if uWorld.PathFinder.ID = -1
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "Pathfinder not active!" )
+		exitfunction -1
+	endif
+	
+	rem check if pathmap is showing
+	if uWorld.PathFinder.ShowPathmap = -1
+		if uWorld.logging = 1 then AddTextToConsole( 3 , "Pathmap already hiding!" )
+		exitfunction -1
+	endif
+	
+	rem delete the object
+	if object exist( uWorld.PathFinder.ShowPathmap ) then delete object uWorld.PathFinder.ShowPathmap
 	
 endfunction 0
 
@@ -474,6 +542,7 @@ function ControlWorld()
 	local y# as float
 	local z# as float
 	local dist# as float
+	local height# as float
 	
 	rem control fog of war
 	if uWorld.FogOfWar.Obj > 0
@@ -523,12 +592,18 @@ function ControlWorld()
 					
 					rem i is set to 1 if high ground vision should be denied
 					i = 0
+					height# = 200.0
 					if UnitFormation( u ).DenyHighGroundVision = 1
 						if sx > -1 and sx < uWorld.FogOfWar.ResolutionX+1
 							if sy > -1 and sy < uWorld.FogOfWar.ResolutionY+1
+								for i = 0 to uUnit.CurrentMax
+									if Unit( i ).Active > 1
+										if Unit( i ).UseFormation = u
+											if Unit( i ).pos.y# < height# then height# = Unit( i ).pos.y#
+										endif
+									endif
+								next i
 								i = 1
-								gx = sx
-								gy = sy
 							endif
 						endif
 					endif
@@ -548,7 +623,7 @@ function ControlWorld()
 									if sy + y > 0 and sy + y < uWorld.FogOfWar.ResolutionY
 										
 										rem deny high ground vision by comparing height difference with center coordinates
-										if FogOfWarStaticBrush( sx+x , sy+y ).Height# - FogOfWarStaticBrush( gx , gy ).Height# < uWorld.FogOfWar.DenyHighGroundVisionThreshold#
+										if FogOfWarStaticBrush( sx+x , sy+y ).Height# - height# < uWorld.FogOfWar.DenyHighGroundVisionThreshold#
 											if FogOfWarStaticBrush( sx+x , sy+y ).Color > FogOfWarFormationBrush( u , pos ).Color
 												FogOfWarStaticBrush( sx+x , sy+y ).Color = FogOfWarFormationBrush( u , pos ).Color
 											endif
@@ -586,7 +661,7 @@ function ControlWorld()
 		unlock vertexdata
 		
 	endif
-		
+	
 endfunction
 
 function WrapObjectOnTerrain( Obj )

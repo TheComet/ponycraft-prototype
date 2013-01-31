@@ -1,0 +1,76 @@
+rem ---------------------------------------------------------------------------
+rem Music
+rem ---------------------------------------------------------------------------
+
+rem ---------------------------------------------------------------------------
+rem User Defined Types
+rem ---------------------------------------------------------------------------
+
+type MusicVT
+	Index														as integer
+	Filename$												as string
+endtype
+
+rem ---------------------------------------------------------------------------
+rem Initialise
+rem ---------------------------------------------------------------------------
+
+function InitMusic()
+	
+	rem debug
+	DebugOutput( 0 , "Initialising music" , DEBUG_NORMAL )
+	
+	rem ---------------------------------------------------------------------------
+	rem global variables
+	rem ---------------------------------------------------------------------------
+
+	global uMusic											as MusicVT
+	
+endfunction
+
+function PlayMusic( Filename$ )
+	
+	rem load if necessary
+	if Filename$ <> uMusic.Filename$
+		
+		rem file doesn't exist
+		if file exist( Filename$ ) = 0
+			AddTextToConsole( 3 , "File " + chr$(34) + Filename$ + chr$(34) + " does not exist!" ) : exitfunction
+		endif
+		
+		rem if index has been used, delete
+		if uMusic.Index > 0
+			delete music uMusic.Index
+		else
+			uMusic.Index = find free music()
+		endif
+		
+		rem load the music
+		load music Filename$ , uMusic.Index
+		uMusic.Filename$ = Filename$
+	endif
+	
+	rem play the music
+	loop music uMusic.Index
+	
+endfunction
+
+function SetMusicVolume( Value )
+	
+	rem make sure active
+	if uMusic.Index = 0 then exitfunction
+	
+	rem set volume
+	set music volume uMusic.Index , Value
+	
+endfunction
+
+function StopMusic()
+	
+	rem make sure active
+	if uMusic.Index = 0 then exitfunction
+	
+	rem stop the music
+	stop music uMusic.Index
+	
+endfunction

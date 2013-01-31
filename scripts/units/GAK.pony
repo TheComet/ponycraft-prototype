@@ -17,7 +17,7 @@ int unitID
 // -----------------------------------------------------------------------------------
 
 // create a unit
-CreateUnit 0 0 0 UNITCONTROL_PLAYER "media\objects\units\players\GAK\GAK.x"
+CreateUnit 75 0 99 UNITCONTROL_PLAYER "media\objects\units\players\GAK\GAK.x"
 UnitScale this 40 40 40
 
 // store unit ID

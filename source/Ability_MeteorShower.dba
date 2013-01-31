@@ -277,6 +277,7 @@ function _Ability_MeteorShower_DamageUnits( x# , z# , range# , damage# )
 		if Unit( n ).Active > 1
 			if (Unit( n ).pos.x#-x#)^2 + (Unit( n ).pos.z#-z#)^2 < range#^2
 				DamageUnit( n , damage# , 0.0 )
+				Unit( n ).CurrentSpeed# = 0.0
 			endif
 		endif
 	next n

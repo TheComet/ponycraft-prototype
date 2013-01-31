@@ -23,6 +23,7 @@ type MouseVT
 	Click3D as vec3
 	StorePos as vec2
 	Click3DFound as integer
+	OnMinimap as integer
 endtype
 
 rem ---------------------------------------------------------------------------

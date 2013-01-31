@@ -16,10 +16,8 @@ DestroyWorld
 // load terrain into world
 WorldAddTerrainObject "media\objects\maps\derp\derp.x"
 
-//WorldAddSceneryObject "media\objects\maps\derp\derp_pf.x" "media\objects\maps\derp\derp"
-
 // Add ruins
-//RunScript 2
+RunScript 2
 
 // Create the mini map
 // Must be created right after world is loaded, otherwise unwanted objects will be visible on it (such as Fog of War)
@@ -49,7 +47,10 @@ PanCamera 0 -15
 // -----------------------------------------------------------------------------------
 
 // map settings
-//RunScript 3
+RunScript 3
+
+// load music
+PlayMusic "media\music\music.mp3"
 
 // NEVER forget this
 END

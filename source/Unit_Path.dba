@@ -332,8 +332,8 @@ function _Unit_Handle_Paths( n )
 	endif
 	
 	rem check if unit has to evade another unit
-	rem this only works if the unit is not attacking
-	if Unit( n ).AttackActive = 0 and Unit( n ).HeightOffset# < 0.222
+	rem this only works if the unit is not attacking and is not static
+	if Unit( n ).AttackActive = 0 and Unit( n ).HeightOffset# < 0.222 and Unit( n ).Control <> UNITCONTROL_STATIC
 		for sx = 0 to uUnit.CurrentMax
 			if sx <> n
 				if Unit( sx ).Active > 1 and Unit( n ).Control <> Unit( sx ).Control

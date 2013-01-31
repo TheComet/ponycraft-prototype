@@ -33,7 +33,7 @@ function WorldCreateFogOfWar( StartX# , StartY# , EndX# , EndY# )
 	make object uWorld.FogOfWar.Obj , 1 , 0
 	delete mesh 1
 	set object transparency uWorld.FogOfWar.Obj , 2
-	disable object zwrite uWorld.FogOfwar.Obj
+	rem disable object zwrite uWorld.FogOfwar.Obj
 	disable object zdepth uWorld.FogOfWar.Obj
 	set object light uWorld.FogOfWar.Obj , 0
 	WrapObjectOnTerrain( uWorld.FogOfWar.Obj )
@@ -51,18 +51,7 @@ function WorldCreateFogOfWar( StartX# , StartY# , EndX# , EndY# )
 	uWorld.FogOfWar.UsableSize.y = ((uWorld.PathFinder.EndY#-uWorld.PathFinder.StartY#)*ResolutionY)/(EndY#-StartY#)
 	uWorld.FogOfWar.UsableStart.x = ((uWorld.PathFinder.StartX#-StartX#)*ResolutionX)/(EndX#-StartX#)
 	uWorld.FogOfWar.UsableStart.y = ((uWorld.PathFinder.StartY#-StartY#)*ResolutionY)/(EndY#-StartY#)
-	
-	repeat
-		set cursor 0,0
-		print uWorld.FogOfWar.UsableSize.x
-		print uWorld.FogOfWar.UsableSize.y
-		print uWorld.FogOfWar.UsableStart.x
-		print uWorld.FogOfWar.UsableStart.y
-		print ResolutionX
-		print ResolutionY
-		sync
-	until returnkey()
-	
+		
 	rem calculate fade speeds and processing amounts
 	uWorld.FogOfWar.VertexUpdateAmount = range( (4000 * ResolutionX * ResolutionY)/10000 , 4000 , 10000 )
 	

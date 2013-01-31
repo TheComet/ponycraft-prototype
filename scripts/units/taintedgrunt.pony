@@ -130,8 +130,8 @@ UnitSetAbilityGlobal this UNITABILITY_PATROL
 UnitSetAbilityGlobal this UNITABILITY_ATTACK
 
 // Ability settings
-UnitSetAbilityRange this UNITABILITY_CHANGELING_MELEE_ATTACK 2.0
-UnitSetAbilityHealthDamage this UNITABILITY_CHANGELING_MELEE_ATTACK 20
+UnitSetAbilityRange this UNITABILITY_CHANGELING_MELEE_ATTACK 2.5
+UnitSetAbilityHealthDamage this UNITABILITY_CHANGELING_MELEE_ATTACK 16
 UnitSetAbilityAutomatic this UNITABILITY_CHANGELING_MELEE_ATTACK
 
 // -----------------------------------------------------------------------------------

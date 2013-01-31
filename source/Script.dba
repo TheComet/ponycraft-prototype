@@ -1218,7 +1218,6 @@ function SetAllLoggingFlags( n )
 	uDistortion.logging                  = n
 	uGUI.logging                         = n
 	uMagicMissile.logging                = n
-	Menu.logging                         = n
 	uMessage.logging                     = n
 	uScript.logging                      = n
 	uTrigger.logging                     = n

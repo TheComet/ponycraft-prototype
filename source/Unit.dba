@@ -18,6 +18,7 @@ rem unit control
 #constant UNITCONTROL_PLAYER        1
 #constant UNITCONTROL_NOONE         2
 #constant UNITCONTROL_ENEMY         3
+#constant UNITCONTROL_STATIC			4
 
 rem unit sounds
 #constant UNITSOUND_SELECT				1
@@ -71,11 +72,19 @@ endtype
 
 type UnitSoundPlayerVT
 	CurrentSound							as integer
+	LastSoundIndex							as integer
+	LastTyp									as integer
+	CoolDown									as integer
 endtype
 
 type UnitSoundListAAT
 	SND										as integer
 	typ										as integer
+endtype
+
+type UnitControlGroupAAT
+	UnitCount								as integer
+	UnitID									as integer
 endtype
 
 type UnitVT
@@ -87,6 +96,7 @@ type UnitVT
 	CurrentSourceModelListMax			as integer
 	CurrentEffectListMax					as integer
 	CurrentSoundListMax					as integer
+	CurrentControlGroupUnitCountMax	as integer
 	
 	logging                          as integer
 	DrawPath                         as integer
@@ -186,6 +196,7 @@ function InitUnit()
 	global dim UnitSourceModelList()				as UnitSourceModelListAT
 	global dim UnitEffectList()					as UnitEffectListAAT
 	global dim UnitSoundList()						as UnitSoundListAAT
+	global dim UnitControlGroup( 9 , 0 )		as UnitControlGroupAAT
 
 	rem initial values
 	uUnit.CurrentMax = -1
@@ -196,12 +207,14 @@ function InitUnit()
 	uUnit.ForceMouseClick = 0
 	uUnit.CurrentSourceModelListMax = -1
 	uUnit.CurrentEffectListMax = -1
+	uUnit.CurrentControlGroupUnitCountMax = 0
 	
 	rem Initialise further components
 	InitUnitFormation()
 	InitUnitPath()
 	InitUnitAbility()
 	InitUnitCommandChain()
+	UnitClearControlGroups()
 	
 endfunction
 
@@ -211,6 +224,8 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 	local n as integer
 	local r as integer
 	local color as dword
+	local size# as float
+	local isNotTheSameModel as integer
 	
 	rem logging
 	if uUnit.logging = 1 then AddTextToConsole( 0 , "CreateUnit " + chr$(34) + Filename$ + chr$(34) + "," + str$(x#) + "," + str$(y#) + "," + str$(z#) + "," + str$(typ) )
@@ -253,39 +268,53 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 		dim UnitSoundList( uUnit.CurrentMax , uUnit.CurrentSoundListMax ) as UnitSoundListAAT
 	endif
 	
-	rem if model is not part of source list, load it
-	for s = 0 to uUnit.CurrentSourceModelListMax
-		if UnitSourceModelList( s ).Filename$ = Filename$ then exit
-	next s
-	if s = uUnit.CurrentSourceModelListMax + 1
-		
-		rem expand array
-		array insert at bottom UnitSourceModelList()
-		inc uUnit.CurrentSourceModelListMax
-		
-		rem load the object and add to source list
-		UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj = find free object()
-		UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = find free image()
-		UnitSourceModelList( uUnit.CurrentSourceModelListMax ).FileName$ = FileName$
-		LoadObject( Filename$ , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj )
-		if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" ) then UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" , 0 )
-		if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" ) then UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" , 0 )
-		texture object UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg
-		set object effect UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , FastBoneFX
-		hide object UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj
-		
-		rem clone it and create unit model
-		Unit( n ).Obj = find free object()
-		clone object Unit( n ).Obj , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , 1
-		Unit( n ).SourceModelID = uUnit.CurrentSourceModelListMax
-		
-	else
+	rem if slot was not created, check if we need to switch models
+	isNotTheSameModel = 1
+	if n < uUnit.CurrentMax
+		if Unit( n ).SourceModelID > -1 and Unit( n ).SourceModelID < uUnit.CurrentSourceModelListMax
+			if UnitSourceModelList( Unit( n ).SourceModelID ).Filename$ = Filename$ then isNotTheSameModel = 0
+		endif
+	endif
 	
-		rem clone the object
-		Unit( n ).Obj = find free object()
-		clone object Unit( n ).Obj , UnitSourceModelList( s ).Obj , 1
-		Unit( n ).SourceModelID = s
+	rem if model is not part of source list, load it
+	if isNotTheSameModel = 1
+		for s = 0 to uUnit.CurrentSourceModelListMax
+			if UnitSourceModelList( s ).Filename$ = Filename$ then exit
+		next s
+		if s = uUnit.CurrentSourceModelListMax + 1
+			
+			rem expand array
+			array insert at bottom UnitSourceModelList()
+			inc uUnit.CurrentSourceModelListMax
+			
+			rem load the object and add to source list
+			UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj = find free object()
+			UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = find free image()
+			UnitSourceModelList( uUnit.CurrentSourceModelListMax ).FileName$ = FileName$
+			LoadObject( Filename$ , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj )
+			if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" ) then UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.tga" , 0 )
+			if file exist( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" ) then UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg = LoadImage( left$( Filename$ , len(Filename$) - 2 ) + "_diffuse.png" , 0 )
+			texture object UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).DiffuseImg
+			set object effect UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , FastBoneFX
+			hide object UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj
+			
+			rem clone it and create unit model
+			Unit( n ).Obj = find free object()
+			clone object Unit( n ).Obj , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , 1
+			Unit( n ).SourceModelID = uUnit.CurrentSourceModelListMax
+			
+			DebugOutput( 4 , "Add model to source list: " + Filename$ , DEBUG_NORMAL )
+			
+		else
 		
+			rem clone the object
+			Unit( n ).Obj = find free object()
+			clone object Unit( n ).Obj , UnitSourceModelList( s ).Obj , 1
+			Unit( n ).SourceModelID = s
+			
+			DebugOutput( 4 , "Cloned model from source list" , DEBUG_NORMAL )
+			
+		endif
 	endif
 	
 	rem calculate size of unit
@@ -295,6 +324,7 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 	if control = UNITCONTROL_PLAYER then img = IMGUnitSelectFriendly
 	if control = UNITCONTROL_NOONE then img = IMGUnitSelectNeutral
 	if control = UNITCONTROL_ENEMY then img = IMGUnitSelectHostile
+	if control = UNITCONTROL_STATIC then img = IMGUnitSelectNeutral
 	
 	rem check if unit needs to load anything
 	if Unit( n ).Active = 0
@@ -302,7 +332,6 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 		rem load unit half selection ring
 		Unit( n ).HalfSelectObj = find free object()
 		load object "media\objects\unitselect\halfselected.x" , Unit( n ).HalfSelectObj
-		scale object Unit( n ).HalfSelectObj , size# , size# , size#
 		set object transparency Unit( n ).HalfSelectObj , 2
 		set object light Unit( n ).HalfSelectObj , 0
 		hide object Unit( n ).HalfSelectObj
@@ -310,7 +339,6 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 		rem load unit selection ring
 		Unit( n ).SelectObj = find free object()
 		load object "media\objects\unitselect\selected.x" , Unit( n ).SelectObj
-		scale object Unit( n ).SelectObj , size# , size# , size#
 		set object transparency Unit( n ).SelectObj , 2
 		set object light Unit( n ).SelectObj , 0
 		set object cull Unit( n ).SelectObj , 0
@@ -319,7 +347,6 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 		rem load shadow object
 		Unit( n ).ShadowObj = find free object()
 		load object "media\objects\unitselect\shadow.x" , Unit( n ).ShadowObj
-		scale object Unit( n ).ShadowObj , size# , size# , size#
 		set object transparency Unit( n ).ShadowObj , 2
 		set object light Unit( n ).ShadowObj , 0
 		disable object zwrite Unit( n ).ShadowObj
@@ -332,12 +359,15 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 	texture object Unit( n ).HalfSelectObj , img
 	texture object Unit( n ).SelectObj , img
 	show object Unit( n ).ShadowObj
+	scale object Unit( n ).HalfSelectObj , size# , size# , size#
+	scale object Unit( n ).SelectObj , size# , size# , size#
+	scale object Unit( n ).ShadowObj , size# , size# , size#
 	
 	rem reset command chain
 	CreateUnitCommandChain( n )
 	
 	rem add GUI frames
-	Unit( n ).PortraitID = GUICreateFrame()
+	Unit( n ).PortraitID = GUICreateFrame( uGUI.PortraitPos.x , uGUI.PortraitPos.y )
 	
 	rem set parameters
 	Unit( n ).Active = 2
@@ -437,6 +467,28 @@ function UnitScale( n , SizeX# , SizeY# , SizeZ# )
 	
 endfunction n
 
+function UnitRotate( n , angle# )
+	
+	rem logging
+	if uUnit.logging = 1 then AddTextToConsole( 0 , "UnitRotate " + str$(n) + "," + str$(x#) + "," + str$(y#) + "," + str$(z#) )
+	
+	rem make sure index is in range
+	if n < 0 or n > uUnit.CurrentMax
+		AddTextToConsole( 3 , "Unit index not found!" )
+		exitfunction -1
+	endif
+	
+	rem make sure unit is active
+	if Unit( n ).Active < 2
+		if uUnit.logging = 1 then AddTextToConsole( 3 , "Unit not active!" )
+		exitfunction -1
+	endif
+	
+	rem rotate
+	Unit( n ).angle.y# = wrapvalue( angle# )
+
+endfunction n
+
 function DestroyUnit( n )
 	
 	rem logging
@@ -489,6 +541,9 @@ function DestroyUnit( n )
 		delete sound UnitSoundList( n , g ).SND
 	next g
 	
+	rem destroy portrait
+	GUIDestroyFrame( Unit( n ).PortraitID )
+	
 	rem reset path
 	ResetUnitPath( n )
 	
@@ -529,6 +584,7 @@ function UnitChangeControl( n , control )
 	if control = UNITCONTROL_PLAYER then img = IMGUnitSelectFriendly
 	if control = UNITCONTROL_NOONE then img = IMGUnitSelectNeutral
 	if control = UNITCONTROL_ENEMY then img = IMGUnitSelectHostile
+	if control = UNITCONTROL_STATIC then img = IMGUnitSelectNeutral
 
 	rem properties
 	texture object Unit( n ).HalfSelectObj , img
@@ -658,7 +714,32 @@ function UnitPlaySound( n , typ )
 	rem local variables
 	local s as integer
 	local r as integer
-	s = -1
+	
+	rem choose last index so the same sound doesn't always repeat
+	if uUnitSoundPlayer.LastTyp <> typ
+		
+		rem will choose a random sound index
+		while rnd(range(Unit( n ).SoundListCount,0,10000)) > 0
+			r = 0
+			repeat
+				inc s
+				if s > Unit( n ).SoundListCount then s = 0:inc r
+				
+				rem type doesn't exist
+				if r = 2
+					s = -1
+					exit
+				endif
+				
+			until UnitSoundList( n , s ).typ = typ
+		endwhile
+		
+		rem save last type
+		uUnitSoundPlayer.LastTyp = typ
+		
+	else
+		s = uUnitSoundPlayer.LastSoundIndex
+	endif
 		
 	rem make sure no other sound is currently playing
 	if uUnitSoundPlayer.CurrentSound > 0
@@ -667,36 +748,31 @@ function UnitPlaySound( n , typ )
 		endif
 	endif
 	
-	rem randomly search for sound matching that type
-	while rnd( Unit( n ).SoundListCount+1 )
+	rem get next index for sound to play
+	r = 0
+	repeat
+		inc s
+		if s > Unit( n ).SoundListCount then s = 0:inc r
 		
-		rem store starting point
-		if s < 0 then s = 0
-		r = s
-
-		rem find next index with that type
-		repeat
-			inc s
-			if s > Unit( n ).SoundListCount then s = 0
-			
-			rem type doesn't exist
-			if s = r
-				s = -1
-				exit
-			endif
-				
-		until UnitSoundList( n , s ).typ = typ
-	endwhile
+		rem type doesn't exist
+		if r = 2
+			s = -1
+			exit
+		endif
+		
+	until UnitSoundList( n , s ).typ = typ
 	
 	rem play sound
-	if s > -1
+	if s > -1 and hitimer(1000) - uUnitSoundPlayer.CoolDown > 5000
+		uUnitSoundPlayer.CoolDown = hitimer(1000)
 		uUnitSoundPlayer.CurrentSound = UnitSoundList( n , s ).SND
+		uUnitSoundPlayer.LastSoundIndex = s
 		play sound uUnitSoundPlayer.CurrentSound
 	endif
 	
 endfunction
 
-function UnitAddPortraitFrame( n , Filename$ )
+function UnitAddPortraitFrame( n , Filename$ , delay )
 	
 	rem make sure index is in range
 	if n < 0 or n > uUnit.CurrentMax
@@ -711,11 +787,12 @@ function UnitAddPortraitFrame( n , Filename$ )
 	endif
 	
 	rem add frame
-	GUIAddFrame( Unit( n ).PortraitID , Filename$ )
+	GUIAddFrame( Unit( n ).PortraitID , Filename$ , delay )
+	GUIHideFrame( Unit( n ).PortraitID )
 	
 endfunction n
 
-function UnitSetPortraitFrameDelay( n , delay )
+function UnitSetPortraitFrameDelayDefault( n , delay )
 	
 	rem make sure index is in range
 	if n < 0 or n > uUnit.CurrentMax
@@ -731,7 +808,10 @@ function UnitSetPortraitFrameDelay( n , delay )
 
 	rem make sure portrait frame exists
 	if Unit( n ).PortraitID > -1
-		GUIFrame( Unit( n ).PortraitID , 0 ).FrameDelay = delay
+		GUIFrame( Unit( n ).PortraitID , 0 ).FrameDelayDefault = delay
+		for s = 0 to GUIFrame( Unit( n ).PortraitID , 0 ).FrameCount
+			GUIFrame( Unit( n ).PortraitID , s ).FrameDelay = delay
+		next s
 	endif
 	
 endfunction n
@@ -798,7 +878,9 @@ function ControlUnit()
 			endif
 			
 			rem control fully selected object
-			if Unit( n ).Selected = 2 or Unit( n ).Selected = 3
+			if Unit( n ).Selected > 1
+				
+				rem position fully selected object
 				position object Unit( n ).SelectObj , Unit( n ).pos.x# , Unit( n ).pos.y# + Unit( n ).HeightOffset# + 0.2 , Unit( n ).pos.z#
 				show object Unit( n ).SelectObj
 				if Unit( n ).HeightOffset# < 0.5
@@ -806,8 +888,16 @@ function ControlUnit()
 				else
 					rotate object Unit( n ).SelectObj , curveangle( 0 , object angle x(Unit( n ).SelectObj) , 7.1 ) , 0 , curveangle( 0 , object angle z(Unit( n ).SelectObj) , 7.1 )
 				endif
+				
+				rem show portrait
+				GUIShowFrame( Unit( n ).PortraitID )
 			else
+			
+				rem hide fully selected object
 				hide object Unit( n ).SelectObj
+				
+				rem hide portrait
+				GUIHideFrame( Unit( n ).PortraitID )
 			endif
 			
 			rem control shadow object
@@ -833,45 +923,55 @@ function ControlUnit()
 			if Unit( n ).Stats.CurrentHealth# = 0.0 and (Unit( n ).Active < 16 or Unit( n ).Active > 18) then Unit( n ).Active = 16
 			
 			rem handle collision with other units
-			for sx = 0 to uUnit.CurrentMax
-				if Unit( sx ).Active > 1
-					if sx <> n
-						dist# = ((Unit( n ).pos.x# - Unit( sx ).pos.x#)^2 + ((Unit( n ).pos.y# + Unit( n ).HeightOffset#) - (Unit( sx ).pos.y# + Unit( sx ).HeightOffset#))^2 + (Unit( n ).pos.z# - Unit( sx ).pos.z#)^2)^0.5
-						if dist# < Unit( n ).Size#
-							
-							rem handle collision for units with not the same control
-							a# = 90 - atanfull( Unit( n ).pos.z# - Unit( sx ).pos.z# , Unit( n ).pos.x# - Unit( sx ).pos.x# )
-							if Unit( n ).Control <> Unit( sx ).Control
-								rem if Unit( n ).Control = UNITCONTROL_PLAYER
-									Unit( n ).pos.x# = newxvalue( Unit( n ).pos.x# , a# , (Unit( n ).Size#) - dist# )
-									Unit( n ).pos.z# = newzvalue( Unit( n ).pos.z# , a# , (Unit( n ).Size#) - dist# )
-								rem endif
-							else
-								Unit( n ).pos.x# = curvevalue( newxvalue( Unit( n ).pos.x# , a# , (Unit( n ).Size#) - dist# ) , Unit( n ).pos.x# , 7.0 )
-								Unit( n ).pos.z# = curvevalue( newzvalue( Unit( n ).pos.z# , a# , (Unit( n ).Size#) - dist# ) , Unit( n ).pos.z# , 7.0 )
+			if Unit( n ).Control <> UNITCONTROL_STATIC
+				for sx = 0 to uUnit.CurrentMax
+					if Unit( sx ).Active > 1
+						if sx <> n
+							dist# = ((Unit( n ).pos.x# - Unit( sx ).pos.x#)^2 + ((Unit( n ).pos.y# + Unit( n ).HeightOffset#) - (Unit( sx ).pos.y# + Unit( sx ).HeightOffset#))^2 + (Unit( n ).pos.z# - Unit( sx ).pos.z#)^2)^0.5
+							if dist# < Unit( n ).Size#
+								
+								rem handle collision for units with not the same control
+								a# = 90 - atanfull( Unit( n ).pos.z# - Unit( sx ).pos.z# , Unit( n ).pos.x# - Unit( sx ).pos.x# )
+								if Unit( n ).Control <> Unit( sx ).Control
+									if Unit( n ).Control = UNITCONTROL_PLAYER
+										Unit( n ).pos.x# = newxvalue( Unit( n ).pos.x# , a# , (Unit( n ).Size#) - dist# )
+										Unit( n ).pos.z# = newzvalue( Unit( n ).pos.z# , a# , (Unit( n ).Size#) - dist# )
+									endif
+								else
+									Unit( n ).pos.x# = curvevalue( newxvalue( Unit( n ).pos.x# , a# , (Unit( n ).Size#) - dist# ) , Unit( n ).pos.x# , 7.0 )
+									Unit( n ).pos.z# = curvevalue( newzvalue( Unit( n ).pos.z# , a# , (Unit( n ).Size#) - dist# ) , Unit( n ).pos.z# , 7.0 )
+								endif
+								
 							endif
-							
 						endif
 					endif
-				endif
-			next sx
+				next sx
+			endif
 			
 			rem show or hide unit based on colour of Fog of War
-			sx = ((Unit( n ).pos.x# - uWorld.FogOfWar.StartX#) * uWorld.FogOfWar.ResolutionX) / (uWorld.FogOfWar.EndX# - uWorld.FogOfWar.StartX#)
-			sy = ((Unit( n ).pos.z# - uWorld.FogOfWar.Starty#) * uWorld.FogOfWar.ResolutionY) / (uWorld.FogOfWar.EndY# - uWorld.FogOfWar.StartY#)
-			if uWorld.FogOfWar.Obj > 0
-				if sx > -1 and sx < uWorld.FogOfWar.ResolutionX
-					if sy > -1 and sy < uWorld.FogOfwar.ResolutionY
-						if FogOfWarStaticBrush( sx , sy ).Color < FogOfWarStaticBrush( sx , sy ).MinColor
-							UnitShow( n )
-							Unit( n ).Visible = 1
-						else
-							UnitHide( n )
-							Unit( n ).Visible = 0
-							Unit( n ).Selected = 0
+			if Unit( n ).Control <> UNITCONTROL_STATIC
+				if Unit( n ).Control <> UNITCONTROL_PLAYER
+					sx = ((Unit( n ).pos.x# - uWorld.FogOfWar.StartX#) * uWorld.FogOfWar.ResolutionX) / (uWorld.FogOfWar.EndX# - uWorld.FogOfWar.StartX#)
+					sy = ((Unit( n ).pos.z# - uWorld.FogOfWar.Starty#) * uWorld.FogOfWar.ResolutionY) / (uWorld.FogOfWar.EndY# - uWorld.FogOfWar.StartY#)
+					if uWorld.FogOfWar.Obj > 0
+						if sx > -1 and sx < uWorld.FogOfWar.ResolutionX
+							if sy > -1 and sy < uWorld.FogOfwar.ResolutionY
+								if FogOfWarStaticBrush( sx , sy ).Color < FogOfWarStaticBrush( sx , sy ).MinColor
+									UnitShow( n )
+									Unit( n ).Visible = 1
+								else
+									UnitHide( n )
+									Unit( n ).Visible = 0
+									Unit( n ).Selected = 0
+								endif
+							endif
 						endif
 					endif
 				endif
+				
+			rem if unit is static, always show no matter what
+			else
+				Unit( n ).Visible = 1
 			endif
 			
 			rem update unit positions
@@ -892,9 +992,12 @@ function ControlUnit()
 			rem on ground units
 			case 2
 				
-				_Unit_Handle_Ground_Paths( n )
+				rem only works if unit isn't static
+				if Unit( n ).Control <> UNITCONTROL_STATIC
+					_Unit_Handle_Ground_Paths( n )
+					_Unit_Handle_Ground_Movement( n )
+				endif
 				_Unit_Handle_Ground_Animations( n )
-				_Unit_Handle_Ground_Movement( n )
 				
 			endcase
 			
@@ -1514,7 +1617,8 @@ function _Unit_Handle_Ground_Movement( n )
 	endif
 	
 	rem collision with pathfinding walls
-	if SC_SphereCastGroup( COL_PATHFINDER , Unit( n ).oldpos.x# , Unit( n ).oldpos.y# + (Unit( n ).Size#/2) , Unit( n ).oldpos.z# , Unit( n ).pos.x# , Unit( n ).pos.y# + (Unit( n ).Size#/2) , Unit( n ).pos.z# , Unit( n ).Size# / 3 , 0 )
+	rem added "+0.01" because collision wouldn't detect if the unit stopped moving
+	if SC_SphereSlideGroup( COL_PATHFINDER , Unit( n ).oldpos.x# , Unit( n ).oldpos.y# + (Unit( n ).Size#/2) + 0.01 , Unit( n ).oldpos.z# , Unit( n ).pos.x# , Unit( n ).pos.y# + (Unit( n ).Size#/2) , Unit( n ).pos.z# , Unit( n ).Size# / 3 , 0 )
 		Unit( n ).pos.x# = SC_GetCollisionSlideX()
 		Unit( n ).pos.z# = SC_GetCollisionSlideZ()
 	endif

@@ -13,7 +13,6 @@ function _ScriptCompileEntryHelp( slot , lin )
 		if ConsoleCmd$(1) = "clickobj" then Script( slot , lin  ).cmd = CMD_HELPCLICKOBJ           : exitfunction lin+1
 		if ConsoleCmd$(1) = "distortion" then Script( slot , lin  ).cmd = CMD_HELPDISTORTION       : exitfunction lin+1
 		if ConsoleCmd$(1) = "gui" then Script( slot , lin  ).cmd = CMD_HELPGUI                     : exitfunction lin+1
-		if ConsoleCmd$(1) = "menu" then Script( slot , lin  ).cmd = CMD_HELPMENU                   : exitfunction lin+1
 		if ConsoleCmd$(1) = "message" then Script( slot , lin  ).cmd = CMD_HELPMESSAGE             : exitfunction lin+1
 		if ConsoleCmd$(1) = "script" then Script( slot , lin  ).cmd = CMD_HELPSCRIPT               : exitfunction lin+1
 		if ConsoleCmd$(1) = "textentry" then Script( slot , lin  ).cmd = CMD_HELPTEXTENTRY         : exitfunction lin+1

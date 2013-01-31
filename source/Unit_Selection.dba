@@ -80,7 +80,7 @@ function UnitProcessSelectionList()
 					rem select any units that are half selected
 					if Unit( n ).Selected = 1
 						if Unit( n ).Control = UNITCONTROL_PLAYER then Unit( n ).Selected = 2 : ShowUnitPath( n )
-						if Unit( n ).Control = UNITCONTROL_NOONE and priority < 2 then Unit( n ).Selected = 2 : ShowUnitPath( n )
+						if (Unit( n ).Control = UNITCONTROL_NOONE or Unit( n ).Control = UNITCONTROL_STATIC) and priority < 2 then Unit( n ).Selected = 2 : ShowUnitPath( n )
 						if Unit( n ).Control = UNITCONTROL_ENEMY and priority < 1 then Unit( n ).Selected = 2 : ShowUnitPath( n )
 						
 						rem prioritise unit selection
@@ -89,12 +89,12 @@ function UnitProcessSelectionList()
 								priority = 2
 								for s = 0 to uUnit.CurrentMax
 									if Unit( s ).Active > 1
-										if Unit( s ).Control = UNITCONTROL_ENEMY or Unit( s ).Control = UNITCONTROL_NOONE then Unit( s ).Selected = 0 : HideUnitPath( s )
+										if Unit( s ).Control = UNITCONTROL_ENEMY or Unit( s ).Control = UNITCONTROL_NOONE or Unit( s ).Control = UNITCONTROL_STATIC then Unit( s ).Selected = 0 : HideUnitPath( s )
 									endif
 								next s
 							endif
 						endif
-						if Unit( n ).Control = UNITCONTROL_NOONE
+						if Unit( n ).Control = UNITCONTROL_NOONE or Unit( n ).Control = UNITCONTROL_STATIC
 							if priority < 1
 								priority = 1
 								for s = 0 to uUnit.CurrentMax
@@ -145,4 +145,103 @@ function UnitProcessSelectionList()
 		endif
 	endif
 	
+	rem if mouse click is ever greater than 3, reset counter of how many times a single unit was selected
+	if uMouse.Click > 3 then uUnit.SelectCounter = 0
+	
+	rem establish control groups
+	if controlkey()
+		if keystate( 2 ) then UnitCreateControlGroup( 0 )
+		if keystate( 3 ) then UnitCreateControlGroup( 1 )
+		if keystate( 4 ) then UnitCreateControlGroup( 2 )
+		if keystate( 5 ) then UnitCreateControlGroup( 3 )
+		if keystate( 6 ) then UnitCreateControlGroup( 4 )
+		if keystate( 7 ) then UnitCreateControlGroup( 5 )
+		if keystate( 8 ) then UnitCreateControlGroup( 6 )
+		if keystate( 9 ) then UnitCreateControlGroup( 7 )
+		if keystate( 10 ) then UnitCreateControlGroup( 8 )
+		if keystate( 11 ) then UnitCreateControlGroup( 9 )
+	endif
+	
+	rem select control groups
+	if keystate( 2 ) then SelectUnitsFromControlGroup( 0 )
+	if keystate( 3 ) then SelectUnitsFromControlGroup( 1 )
+	if keystate( 4 ) then SelectUnitsFromControlGroup( 2 )
+	if keystate( 5 ) then SelectUnitsFromControlGroup( 3 )
+	if keystate( 6 ) then SelectUnitsFromControlGroup( 4 )
+	if keystate( 7 ) then SelectUnitsFromControlGroup( 5 )
+	if keystate( 8 ) then SelectUnitsFromControlGroup( 6 )
+	if keystate( 9 ) then SelectUnitsFromControlGroup( 7 )
+	if keystate( 10 ) then SelectUnitsFromControlGroup( 8 )
+	if keystate( 11 ) then SelectUnitsFromControlGroup( 9 )
+	
+endfunction
+
+function UnitCreateControlGroup( groupID )
+	
+	rem local variables
+	local n as integer
+	
+	rem reset control group
+	UnitClearControlGroup( groupID )
+	
+	rem loop through all active units
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1
+			if Unit( n ).Selected > 1
+				
+				rem expand list
+				inc UnitControlGroup( groupID , 0 ).UnitCount
+				if UnitControlGroup( groupID , 0 ).UnitCount > uUnit.CurrentControlGroupUnitCountMax
+					inc uUnit.CurrentControlGroupUnitCountMax
+					dim UnitControlGroup( 9 , uUnit.CurrentControlGroupUnitCountMax ) as UnitControlGroupAAT
+				endif
+				
+				rem add to control group
+				UnitControlGroup( groupID , UnitControlGroup( groupID , 0 ).UnitCount ).UnitID = n
+				
+			endif
+		endif
+	next n
+	
+endfunction
+
+function SelectUnitsFromControlGroup( groupID )
+	
+	rem local variables
+	local n as integer
+	
+	rem deselect all units
+	for n = 0 to uUnit.CurrentMax
+		if Unit( n ).Active > 1
+			Unit( n ).Selected = 0
+			HideUnitPath( n )
+			GUIHideFrame( Unit( n ).PortraitID )
+		endif
+	next n
+	
+	rem select units in control group
+	for n = 0 to UnitControlGroup( groupID , 0 ).UnitCount
+		if Unit( UnitControlGroup( groupID , n ).UnitID ).Active > 1
+			if Unit( UnitControlGroup( groupID , n ).UnitID ).Visible = 1
+				Unit( UnitControlGroup( groupID , n ).UnitID ).Selected = 2
+				ShowUnitPath( n )
+				GUIShowFrame( Unit( n ).PortraitID )
+			endif
+		endif
+	next n
+	
+endfunction
+
+function UnitClearControlGroup( groupID )
+	
+	rem just reset counter
+	UnitControlGroup( groupID , 0 ).UnitCount = -1
+	
+endfunction
+
+function UnitClearControlGroups()
+	local n as integer
+	for n = 0 to 9
+		UnitClearControlGroup( n )
+	next n
 endfunction

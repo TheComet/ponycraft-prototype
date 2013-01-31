@@ -150,10 +150,6 @@ function _Process_Command_Allow_Queue( slot , lin )
 		uGUI.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_MENULOGGING
-		Menu.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
-		exitfunction 0
-	endif
 	if Script( slot , lin ).cmd = CMD_MESSAGELOGGING
 		uMessage.logging = ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat
 		exitfunction 0
@@ -268,7 +264,7 @@ function _Process_Command_Allow_Queue( slot , lin )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUIADDBUTTON
-		uScript.LastIndex = GUIAddButton( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,4).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,5).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,6).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,7).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,8).Index ).dat$ )
+		uScript.LastIndex = GUIAddButton( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,3).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,4).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,5).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,6).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,7).Index ).dat$ , ScriptStringData( ScriptDataList(slot,lin,8).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,9).Index ).dat )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUILOCKBUTTON
@@ -329,55 +325,79 @@ function _Process_Command_Allow_Queue( slot , lin )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUIADDSTATICFRAME
-		GUIAddStaticFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		GUIAddStaticFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONNORMALFRAME
-		GUIAddButtonNormalFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		GUIAddButtonNormalFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONMOUSEOVERFRAME
-		GUIAddButtonMouseOverFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		GUIAddButtonMouseOverFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONPRESSFRAME
-		GUIAddButtonPressFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		GUIAddButtonPressFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONLOCKEDFRAME
-		GUIAddButtonLockedFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		GUIAddButtonLockedFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUIADDBUTTONICONFRAME
-		GUIAddButtonIconFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		GUIAddButtonIconFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_GUISETSTATICFRAMEDELAY
-		GUISetStaticFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+	if Script( slot , lin ).cmd = CMD_GUISETSTATICFRAMEDELAYDEFAULT
+		GUISetStaticFrameDelayDefault( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_GUISETBUTTONNORMALFRAMEDELAY
-		GUISetButtonNormalFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONNORMALFRAMEDELAYDEFAULT
+		GUISetButtonNormalFrameDelayDefault( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_GUISETBUTTONMOUSEOVERFRAMEDELAY
-		GUISetButtonMouseOverFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONMOUSEOVERFRAMEDELAYDEFAULT
+		GUISetButtonMouseOverFrameDelayDefault( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_GUISETBUTTONPRESSFRAMEDELAY
-		GUISetButtonPressFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONPRESSFRAMEDELAYDEFAULT
+		GUISetButtonPressFrameDelayDefault( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_GUISETBUTTONLOCKEDFRAMEDELAY
-		GUISetButtonLockedFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONLOCKEDFRAMEDELAYDEFAULT
+		GUISetButtonLockedFrameDelayDefault( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_GUISETBUTTONICONFRAMEDELAY
-		GUISetButtonIconFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+	if Script( slot , lin ).cmd = CMD_GUISETBUTTONICONFRAMEDELAYDEFAULT
+		GUISetButtonIconFrameDelayDefault( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_GUISETPORTRAITPOSITION
 		GUISetPortraitPosition( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUICREATESPLASH
+		GUICreateSplash( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIDESTROYSPLASH
+		GUIDestroySplash()
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBUTTONSETICONDIFFUSEONNORMAL
+		GUIButtonSetIconDiffuseOnNormal( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBUTTONSETICONDIFFUSEONMOUSEOVER
+		GUIButtonSetIconDiffuseOnGlow( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBUTTONSETICONDIFFUSEONPRESS
+		GUIButtonSetIconDiffuseOnPress( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_GUIBUTTONSETICONDIFFUSEONLOCKED
+		GUIButtonSetIconDiffuseOnLocked( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
 
@@ -412,6 +432,23 @@ function _Process_Command_Allow_Queue( slot , lin )
 	endif
 	if Script( slot , lin ).cmd = CMD_DESTROYMINIMAP
 		DestroyMinimap( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	
+	rem ---------------------------------------------------------------------------
+	rem Minimap
+	rem ---------------------------------------------------------------------------
+	
+	if Script( slot , lin ).cmd = CMD_PLAYMUSIC
+		PlayMusic( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_SETMUSICVOLUME
+		SetMusicVolume( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
+		exitfunction 0
+	endif
+	if Script( slot , lin ).cmd = CMD_STOPMUSIC
+		StopMusic()
 		exitfunction 0
 	endif
 	
@@ -952,6 +989,10 @@ function _Process_Command_Allow_Queue( slot , lin )
 		UnitScale( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,2).Index ).dat# , ScriptFloatData( ScriptDataList(slot,lin,3).Index ).dat# )
 		exitfunction 0
 	endif
+	if Script( slot , lin ).cmd = CMD_UNITROTATE
+		UnitRotate( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptFloatData( ScriptDataList(slot,lin,1).Index ).dat# )
+		exitfunction 0
+	endif
 	if Script( slot , lin ).cmd = CMD_DESTROYUNIT
 		DestroyUnit( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat )
 		exitfunction 0
@@ -1034,11 +1075,11 @@ function _Process_Command_Allow_Queue( slot , lin )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_UNITADDPORTRAITFRAME
-		UnitAddPortraitFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ )
+		UnitAddPortraitFrame( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptStringData( ScriptDataList(slot,lin,1).Index ).dat$ , ScriptIntegerData( ScriptDataList(slot,lin,2).Index ).dat )
 		exitfunction 0
 	endif
-	if Script( slot , lin ).cmd = CMD_UNITSETPORTRAITFRAMEDELAY
-		UnitSetPortraitFrameDelay( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
+	if Script( slot , lin ).cmd = CMD_UNITSETPORTRAITFRAMEDELAYDEFAULT
+		UnitSetPortraitFrameDelayDefault( ScriptIntegerData( ScriptDataList(slot,lin,0).Index ).dat , ScriptIntegerData( ScriptDataList(slot,lin,1).Index ).dat )
 		exitfunction 0
 	endif
 
@@ -1084,14 +1125,6 @@ function _Process_Command_Allow_Queue( slot , lin )
 	endif
 	if Script( slot , lin ).cmd = CMD_WORLDEXPORT
 		WorldExport( ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
-		exitfunction 0
-	endif
-	if Script( slot , lin ).cmd = CMD_WORLDSHOWPATHMAP
-		WorldShowPathmap()
-		exitfunction 0
-	endif
-	if Script( slot , lin ).cmd = CMD_WORLDHIDEPATHMAP
-		WorldHidePathmap()
 		exitfunction 0
 	endif
 	

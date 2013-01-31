@@ -307,11 +307,11 @@ function ControlTrigger()
 					for a = 0 to uUnit.CurrentMax
 						if Unit( a ).Active > 1
 							if (Unit( a ).pos.x#-Trigger( n ).pos.x#)^2 + (Unit( a ).pos.y#-Trigger( n ).pos.y#)^2 + (Unit( a ).pos.z#-Trigger( n ).pos.z#)^2 < Trigger( n ).radius#*Trigger( n ).radius#
-								if TriggerElement( n , p ).value <> Unit( a ).Control then exit
+								if TriggerElement( n , p ).value = Unit( a ).Control then exit
 							endif
 						endif
 					next a
-					if a = uUnit.CurrentMax+1
+					if a < uUnit.CurrentMax+1
 						success = _Get_Trigger_State( success , TriggerElement( n , p ).junctionTyp , 1 )
 					
 					rem not true

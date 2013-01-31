@@ -70,6 +70,17 @@ UnitPosition 41 -11 0 -20
 UnitPosition 42 -11 0 -20
 
 // -----------------------------------------------------------------------------------
+// Billboard easter egg
+// -----------------------------------------------------------------------------------
+
+RunScript 20
+UnitPosition 43 71 0 100
+UnitRotate 43 20
+
+CreateTrigger 76 -5 103 2 1 "scripts\maps\demomap\triggers\easteregg.pony" 19
+AddTriggerCondition this TRIGGER_JUNCTION_OR TRIGGER_TYPE_UNIT_CONTROL UNITCONTROL_PLAYER
+
+// -----------------------------------------------------------------------------------
 // Set up triggers
 // -----------------------------------------------------------------------------------
 

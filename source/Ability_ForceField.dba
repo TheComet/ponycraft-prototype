@@ -14,7 +14,6 @@ endtype
 
 type ForceFieldAT
 	Active													as integer
-	pos														as vec3
 	Obj														as word
 	Life														as integer
 	Scale#													as float
@@ -107,9 +106,6 @@ function CreateForceField( x# , y# , z# , Life )
 	
 	rem set parameters
 	ForceField( n ).Active               = 2
-	ForceField( n ).pos.x#               = x#
-	ForceField( n ).pos.y#               = y#
-	ForceField( n ).pos.z#               = z#
 	ForceField( n ).Scale#               = 0
 	ForceField( n ).Life                 = TBM.Ticks + life
 	

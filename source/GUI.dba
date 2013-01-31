@@ -30,6 +30,9 @@ type GUIVT
 	ButtonReleased										as integer
 	ButtonActivateAbility							as integer
 	ButtonCancelAbility								as integer
+	SplashObj											as integer
+	SplashImg											as integer
+	SplashFillObj										as integer
 	
 	PortraitPos											as vec2
 	InfoPanelPos										as vec2
@@ -44,22 +47,27 @@ endtype
 
 type GUIAT
 	Active                           			as integer
-	pos                              			as vec2
-	EndPos                          	 			as vec2
 	IMG                              			as word
 	GlowIMG                          			as word
 	PressIMG                         			as word
 	LockedIMG                        			as word
 	IconIMG												as word
+	HotKeyIMG											as word
 	KeyBind                          			as byte
 	KeyBindFlag											as integer
 	ID														as integer
 	ToggleMode											as integer
+	KeepLastImage										as integer
 	
 	Locked                           			as integer
 	Hidden												as integer
 	ClickState											as integer
 	BindCount                        			as integer
+	
+	ButtonIconDiffuseNormal							as dword
+	ButtonIconDiffuseGlow							as dword
+	ButtonIconDiffusePress							as dword
+	ButtonIconDiffuseLocked							as dword
 	
 	EventClickActive									as integer
 	EventClickScript									as integer
@@ -74,9 +82,13 @@ endtype
 
 type GUIFrameAAT
 	Active												as integer
+	pos													as vec2
+	EndPos												as vec2
 	IMG													as integer
+	SPR													as integer
 	FrameCount											as integer
 	CurrentFrame										as integer
+	FrameDelayDefault									as integer
 	FrameDelay											as integer
 	FrameDelayCounter									as integer
 endtype
@@ -150,15 +162,11 @@ function GUIAddStaticImage( ID , x , y , Filename$ )
 	endif
 
 	rem add frame and image
-	GUI( n ).IMG = GUICreateFrame()
-	GUIAddFrame( GUI( n ).IMG , Filename$ )
+	GUI( n ).IMG = GUICreateFrame( GetRealScreenX( x ) , GetRealScreenY( y ) )
+	GUIAddFrame( GUI( n ).IMG , Filename$ , -1 )
 
 	rem set values
 	GUI( n ).Active = 2
-	GUI( n ).pos.x = GetRealScreenX( x )
-	GUI( n ).pos.y = GetRealScreenY( y )
-	GUI( n ).EndPos.x = GUI( n ).pos.x + image width( GUI( n ).IMG )
-	GUI( n ).EndPos.y = GUI( n ).pos.y + image height( GUI( n ).IMG )
 	GUI( n ).BindCount = -1
 	GUI( n ).Locked = 0
 	GUI( n ).Hidden = 0
@@ -170,7 +178,7 @@ function GUIAddStaticImage( ID , x , y , Filename$ )
 	
 endfunction n
 
-function GUICreateFrame()
+function GUICreateFrame( x , y )
 	
 	rem local variables
 	local n as integer
@@ -190,11 +198,14 @@ function GUICreateFrame()
 	GUIFrame( n , 0 ).Active = 2
 	GUIFrame( n , 0 ).FrameCount = -1
 	GUIFrame( n , 0 ).CurrentFrame = 0
-	GUIFrame( n , 0 ).FrameDelay = 0
+	GUIFrame( n , 0 ).FrameDelayDefault = 0
+	GUIFrame( n , 0 ).pos.x = x
+	GUIFrame( n , 0 ).pos.y = y
+	GUIFrame( n , 0 ).SPR = 0
 	
 endfunction n
 
-function GUIAddFrame( n , Filename$ )
+function GUIAddFrame( n , Filename$ , delay )
 	
 	rem make sure file exists
 	if file exist( Filename$ ) = 0
@@ -206,7 +217,7 @@ function GUIAddFrame( n , Filename$ )
 	inc GUIFrame( n , 0 ).FrameCount
 	if GUIFrame( n , 0 ).FrameCount > uGUI.CurrentFrameCountMax
 		inc uGUI.CurrentFrameCountMax
-		dim GUIFrame( uGUI.CurrentFrameMax , uGUI.CurrentFrameCountMax ) as GUIFrameAAT		
+		dim GUIFrame( uGUI.CurrentFrameMax , uGUI.CurrentFrameCountMax ) as GUIFrameAAT
 	endif
 	
 	rem add frame
@@ -214,6 +225,20 @@ function GUIAddFrame( n , Filename$ )
 	
 	rem scale to fit screen resolution
 	ik resize image GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG , (image width( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG ) * uScreen.sc_wx) / 1600.0 , (image height( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG) * uScreen.sch) / 1200.0 , 1
+	
+	rem sprite it
+	if GUIFrame( n , 0 ).SPR = 0 then GUIFrame( n , 0 ).SPR = find free sprite()
+	sprite GUIFrame( n , 0 ).SPR , GUIFrame( n , 0 ).pos.x , GUIFrame( n , 0 ).pos.y , GUIFrame( n , 0 ).IMG
+	
+	rem use default delay if necessary
+	if delay = -1 then delay = GUIFrame( n , 0 ).FrameDelayDefault
+	
+	rem set end positions
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).pos.x = GUIFrame( n , 0 ).pos.x
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).pos.y = GUIFrame( n , 0 ).pos.y
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).EndPos.x = GUIFrame( n , 0 ).pos.x + image width( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG )
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).EndPos.y = GUIFrame( n , 0 ).pos.y + image height( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG )
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).FrameDelay = delay
 	
 endfunction n
 
@@ -229,20 +254,76 @@ function GUIDestroyFrame( n )
 	next s
 		
 	rem destroy
+	if GUIFrame( n , 0 ).SPR > 0
+		if sprite exist( GUIFrame( n , 0 ).SPR ) then delete sprite GUIFrame( n , 0 ).SPR
+	endif
 	GUIFrame( n , 0 ).Active = 0
 	
 endfunction
 
-function GUIDrawFrame( n , x , y )
+function GUIPositionFrame( n , x , y )
 	
-	rem paste current frame to screen
+	rem re-sprite
 	if GUIFrame( n , 0 ).FrameCount > -1
-		paste image GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).IMG , x , y , 1
+		sprite GUIFrame( n , 0 ).SPR , x , y , GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).IMG
+	endif
+	
+	rem set positions
+	GUIFrame( n , 0 ).pos.x = x
+	GUIFrame( n , 0 ).pos.y = y
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).EndPos.x = GUIFrame( n , 0 ).pos.x + image width( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG )
+	GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).EndPos.x = GUIFrame( n , 0 ).pos.x + image height( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG )
+	
+endfunction
+
+function GUIShowFrame( n )
+	
+	rem show sprite
+	if GUIFrame( n , 0 ).SPR > 0
+		if sprite exist( GUIFrame( n , 0 ).SPR )
+			show sprite GUIFrame( n , 0 ).SPR
+		endif
+	endif
+		
+endfunction
+
+function GUIHideFrame( n )
+	
+	rem hide sprite
+	if GUIFrame( n , 0 ).SPR > 0
+		if sprite exist( GUIFrame( n , 0 ).SPR )
+			hide sprite GUIFrame( n , 0 ).SPR
+		endif
 	endif
 	
 endfunction
 
-function GUIAddStaticFrame( ID , Filename$ )
+function GUIGetFrameStartX( n )
+	if GUIFrame( n , 0 ).FrameCount = -1 then exitfunction 0
+	result = GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).pos.x
+endfunction result
+
+function GUIGetFrameEndX( n )
+	if GUIFrame( n , 0 ).FrameCount = -1 then exitfunction 0
+	result = GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).EndPos.x
+endfunction result
+
+function GUIGetFrameStartY( n )
+	if GUIFrame( n , 0 ).FrameCount = -1 then exitfunction 0
+	result = GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).pos.y
+endfunction result
+
+function GUIGetFrameEndY( n )
+	if GUIFrame( n , 0 ).FrameCount = -1 then exitfunction 0
+	result = GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).EndPos.y
+endfunction result
+
+function GUISetFrameDiffuse( n , diffuse )
+	if GUIFrame( n , 0 ).FrameCount = -1 then exitfunction
+	set sprite diffuse GUIFrame( n , 0 ).SPR , rgbr( diffuse ) , rgbg( diffuse ) , rgbb( diffuse )
+endfunction
+
+function GUIAddStaticFrame( ID , Filename$ , delay )
 	
 	rem local variables
 	local n as integer
@@ -265,11 +346,11 @@ function GUIAddStaticFrame( ID , Filename$ )
 	endif
 	
 	rem add the frame
-	GUIAddFrame( GUI( n ).IMG , Filename$ )
+	GUIAddFrame( GUI( n ).IMG , Filename$ , delay )
 	
 endfunction n
 
-function GUIAddButtonNormalFrame( ID , Filename$ )
+function GUIAddButtonNormalFrame( ID , Filename$ , delay )
 	
 	rem local variables
 	local n as integer
@@ -292,11 +373,11 @@ function GUIAddButtonNormalFrame( ID , Filename$ )
 	endif
 	
 	rem add the frame
-	GUIAddFrame( GUI( n ).IMG , Filename$ )
+	GUIAddFrame( GUI( n ).IMG , Filename$ , delay )
 	
 endfunction n
 
-function GUIAddButtonMouseOverFrame( ID , Filename$ )
+function GUIAddButtonMouseOverFrame( ID , Filename$ , delay )
 	
 	rem local variables
 	local n as integer
@@ -319,11 +400,11 @@ function GUIAddButtonMouseOverFrame( ID , Filename$ )
 	endif
 	
 	rem add the frame
-	GUIAddFrame( GUI( n ).GlowIMG , Filename$ )
+	GUIAddFrame( GUI( n ).GlowIMG , Filename$ , delay )
 	
 endfunction n
 
-function GUIAddButtonPressFrame( ID , Filename$ )
+function GUIAddButtonPressFrame( ID , Filename$ , delay )
 	
 	rem local variables
 	local n as integer
@@ -346,11 +427,11 @@ function GUIAddButtonPressFrame( ID , Filename$ )
 	endif
 	
 	rem add the frame
-	GUIAddFrame( GUI( n ).PressIMG , Filename$ )
+	GUIAddFrame( GUI( n ).PressIMG , Filename$ , delay )
 	
 endfunction n
 
-function GUIAddButtonLockedFrame( ID , Filename$ )
+function GUIAddButtonLockedFrame( ID , Filename$ , delay )
 	
 	rem local variables
 	local n as integer
@@ -373,11 +454,11 @@ function GUIAddButtonLockedFrame( ID , Filename$ )
 	endif
 	
 	rem add the frame
-	GUIAddFrame( GUI( n ).LockedIMG , Filename$ )
+	GUIAddFrame( GUI( n ).LockedIMG , Filename$ , delay )
 	
 endfunction n
 
-function GUIAddButtonIconFrame( ID , Filename$ )
+function GUIAddButtonIconFrame( ID , Filename$ , delay )
 	
 	rem local variables
 	local n as integer
@@ -400,11 +481,11 @@ function GUIAddButtonIconFrame( ID , Filename$ )
 	endif
 	
 	rem add the frame
-	GUIAddFrame( GUI( n ).IconIMG , Filename$ )
+	GUIAddFrame( GUI( n ).IconIMG , Filename$ , delay )
 	
 endfunction n
 
-function GUISetStaticFrameDelay( ID , delay )
+function GUISetStaticFrameDelayDefault( ID , delay )
 	
 	rem local variables
 	local n as integer
@@ -429,11 +510,14 @@ function GUISetStaticFrameDelay( ID , delay )
 	
 	rem add delay
 	s = GUI( n ).IMG
-	GUIFrame( s , 0 ).FrameDelay = delay
+	GUIFrame( s , 0 ).FrameDelayDefault = delay
+	for n = 0 to GUIFrame( s , 0 ).FrameCount
+		GUIFrame( s , n ).FrameDelay = delay
+	next n
 	
 endfunction n
 
-function GUISetButtonNormalFrameDelay( ID , delay )
+function GUISetButtonNormalFrameDelayDefault( ID , delay )
 	
 	rem local variables
 	local n as integer
@@ -458,11 +542,14 @@ function GUISetButtonNormalFrameDelay( ID , delay )
 	
 	rem add delay
 	s = GUI( n ).IMG
-	GUIFrame( s , 0 ).FrameDelay = delay
+	GUIFrame( s , 0 ).FrameDelayDefault = delay
+	for n = 0 to GUIFrame( s , 0 ).FrameCount
+		GUIFrame( s , n ).FrameDelay = delay
+	next n
 	
 endfunction n
 
-function GUISetButtonMouseOverFrameDelay( ID , delay )
+function GUISetButtonMouseOverFrameDelayDefault( ID , delay )
 	
 	rem local variables
 	local n as integer
@@ -487,11 +574,14 @@ function GUISetButtonMouseOverFrameDelay( ID , delay )
 	
 	rem add delay
 	s = GUI( n ).GlowIMG
-	GUIFrame( s , 0 ).FrameDelay = delay
+	GUIFrame( s , 0 ).FrameDelayDefault = delay
+	for n = 0 to GUIFrame( s , 0 ).FrameCount
+		GUIFrame( s , n ).FrameDelay = delay
+	next n
 	
 endfunction n
 
-function GUISetButtonPressFrameDelay( ID , delay )
+function GUISetButtonPressFrameDelayDefault( ID , delay )
 	
 	rem local variables
 	local n as integer
@@ -516,11 +606,14 @@ function GUISetButtonPressFrameDelay( ID , delay )
 	
 	rem add delay
 	s = GUI( n ).PressIMG
-	GUIFrame( s , 0 ).FrameDelay = delay
+	GUIFrame( s , 0 ).FrameDelayDefault = delay
+	for n = 0 to GUIFrame( s , 0 ).FrameCount
+		GUIFrame( s , n ).FrameDelay = delay
+	next n
 	
 endfunction n
 
-function GUISetButtonLockedFrameDelay( ID , delay )
+function GUISetButtonLockedFrameDelayDefault( ID , delay )
 	
 	rem local variables
 	local n as integer
@@ -545,11 +638,14 @@ function GUISetButtonLockedFrameDelay( ID , delay )
 	
 	rem add delay
 	s = GUI( n ).LockedIMG
-	GUIFrame( s , 0 ).FrameDelay = delay
+	GUIFrame( s , 0 ).FrameDelayDefault = delay
+	for n = 0 to GUIFrame( s , 0 ).FrameCount
+		GUIFrame( s , n ).FrameDelay = delay
+	next n
 	
 endfunction n
 
-function GUISetButtonIconFrameDelay( ID , delay )
+function GUISetButtonIconFrameDelayDefault( ID , delay )
 	
 	rem local variables
 	local n as integer
@@ -574,7 +670,10 @@ function GUISetButtonIconFrameDelay( ID , delay )
 	
 	rem add delay
 	s = GUI( n ).IconIMG
-	GUIFrame( s , 0 ).FrameDelay = delay
+	GUIFrame( s , 0 ).FrameDelayDefault = delay
+	for n = 0 to GUIFrame( s , 0 ).FrameCount
+		GUIFrame( s , n ).FrameDelay = delay
+	next n
 	
 endfunction n
 
@@ -615,11 +714,12 @@ function GUIDestroyElement( ID )
 	GUIDestroyFrame( GUI( n ).PressIMG )
 	GUIDestroyFrame( GUI( n ).LockedIMG )
 	GUIDestroyFrame( GUI( n ).IconIMG )
+	GUIDestroyFrame( GUI( n ).HotKeyIMG )
 	GUI( n ).Active = 0
 	
 endfunction n
 
-function GUIAddButton( ID , x , y , KeyBind , BackFilename$ , GlowFilename$ , PressFilename$ , LockedFilename$ , IconFilename$ )
+function GUIAddButton( ID , x , y , KeyBind , BackFilename$ , GlowFilename$ , PressFilename$ , LockedFilename$ , IconFilename$ , KeepLastImage )
 	
 	rem logging
 	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIAddButton " + str$(ID) + "," + str$(x) + "," + str$(y) + "," + str$(KeyBind) + chr$(34) + BackFilename$ + chr$(34) + "," + chr$(34) + GlowFilename$ + chr$(34) + "," + chr$(34) + PressFilename$ + chr$(34) + "," + chr$(34) + LockedFilename$ + chr$(34) )
@@ -649,24 +749,50 @@ function GUIAddButton( ID , x , y , KeyBind , BackFilename$ , GlowFilename$ , Pr
 	endif
 	
 	rem create frames
-	GUI( n ).IMG = GUICreateFrame()
-	GUI( n ).GlowIMG = GUICreateFrame()
-	GUI( n ).PressIMG = GUICreateFrame()
-	GUI( n ).LockedIMG = GUICreateFrame()
-	GUI( n ).IconIMG = GUICreateFrame()
-	GUIAddFrame( GUI( n ).IMG , BackFilename$ )
-	GUIAddFrame( GUI( n ).GlowIMG , GlowFilename$ )
-	GUIAddFrame( GUI( n ).PressIMG , PressFilename$ )
-	GUIAddFrame( GUI( n ).LockedIMG , LockedFilename$ )
-	GUIAddFrame( GUI( n ).IconIMG , IconFilename$ )
-		
+	GUI( n ).IMG = GUICreateFrame( GetRealScreenX( x ) , GetRealScreenY( y ) )
+	GUI( n ).GlowIMG = GUICreateFrame( GetRealScreenX( x ) , GetRealScreenY( y ) )
+	GUI( n ).PressIMG = GUICreateFrame( GetRealScreenX( x ) , GetRealScreenY( y ) )
+	GUI( n ).LockedIMG = GUICreateFrame( GetRealScreenX( x ) , GetRealScreenY( y ) )
+	GUI( n ).IconIMG = GUICreateFrame( GetRealScreenX( x ) , GetRealScreenY( y ) )
+	GUI( n ).HotKeyIMG = GUICreateFrame( GetRealScreenX( x ) , GetRealScreenY( y ) )
+	GUIAddFrame( GUI( n ).IMG , BackFilename$ , -1 )
+	GUIAddFrame( GUI( n ).GlowIMG , GlowFilename$ , -1 )
+	GUIAddFrame( GUI( n ).PressIMG , PressFilename$ , -1 )
+	GUIAddFrame( GUI( n ).LockedIMG , LockedFilename$ , -1 )
+	GUIAddFrame( GUI( n ).IconIMG , IconFilename$ , -1 )
+	
+	rem allocate space for frame
+	s = GUI( n ).HotKeyIMG
+	inc GUIFrame( s , 0 ).FrameCount
+	if GUIFrame( s , 0 ).FrameCount > uGUI.CurrentFrameCountMax
+		inc uGUI.CurrentFrameCountMax
+		dim GUIFrame( uGUI.CurrentFrameMax , uGUI.CurrentFrameCountMax ) as GUIFrameAAT
+	endif
+	
+	rem add frame
+	GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).IMG = find free image()
+	create bitmap 1 , 16 , 16
+	a2fillbox 0 , 0 , 15 , 15 , 0xFF0F0F0F
+	a2text FontID , 1 , 0 , chr$( _GUI_Get_Character_From_Scancode_Switzerland( KeyBind ) ) , 0xFFFFFFFF
+	get image GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).IMG , 0 , 0 , 16 , 16
+	delete bitmap 1
+	
+	rem scale to fit screen resolution
+	ik resize image GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).IMG , (image width( GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).IMG ) * uScreen.sc_wx) / 1600.0 , (image height( GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).IMG) * uScreen.sch) / 1200.0 , 1
+	
+	rem sprite it
+	if GUIFrame( s , 0 ).SPR = 0 then GUIFrame( s , 0 ).SPR = find free sprite()
+	sprite GUIFrame( s , 0 ).SPR , GUIFrame( s , 0 ).pos.x , GUIFrame( s , 0 ).pos.y , GUIFrame( s , 0 ).IMG
+
+	rem set end positions
+	GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).pos.x = GUIFrame( s , 0 ).pos.x
+	GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).pos.y = GUIFrame( s , 0 ).pos.y
+	GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).EndPos.x = GUIFrame( s , 0 ).pos.x + image width( GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).IMG )
+	GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).EndPos.y = GUIFrame( s , 0 ).pos.y + image height( GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).IMG )
+	GUIFrame( s , GUIFrame( s , 0 ).FrameCount ).FrameDelay = 0
+	
 	rem set values
-	s = GUI( n ).IMG
 	GUI( n ).Active = 3
-	GUI( n ).pos.x = GetRealScreenX( x )
-	GUI( n ).pos.y = GetRealScreenY( y )
-	GUI( n ).EndPos.x = GUI( n ).pos.x + image width( GUIFrame( s , 0 ).IMG )
-	GUI( n ).EndPos.y = GUI( n ).pos.y + image height( GUIFrame( s , 0 ).IMG )
 	GUI( n ).Locked = 0
 	GUI( n ).Hidden = 0
 	GUI( n ).ToggleMode = 0
@@ -676,8 +802,23 @@ function GUIAddButton( ID , x , y , KeyBind , BackFilename$ , GlowFilename$ , Pr
 	GUI( n ).KeyBind = KeyBind
 	GUI( n ).Ability = 0
 	GUI( n ).ID = ID
+	GUI( n ).KeepLastImage = KeepLastImage
+	GUI( n ).ButtonIconDiffuseNormal = 0xFFFFFFFF
+	GUI( n ).ButtonIconDiffuseGlow = 0xFFFFFFFF
+	GUI( n ).ButtonIconDiffusePress = 0xFFFFFFFF
+	GUI( n ).ButtonIconDiffuseLocked = 0xFFFFFFFF
 	
 endfunction n
+
+function _GUI_Hide_Button_Frames( n )
+	
+	rem hide frames
+	GUIHideFrame( GUI( n ).IMG )
+	GUIHideFrame( GUI( n ).GlowIMG )
+	GUIHideFrame( GUI( n ).PressIMG )
+	GUIHideFrame( GUI( n ).LockedIMG )
+	
+endfunction
 
 function GUILockButton( ID )
 	
@@ -742,7 +883,7 @@ endfunction n
 function GUIHideElement( ID )
 	
 	rem logging
-	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIHideButton " + str$(ID) )
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIHideEleemnt " + str$(ID) )
 	
 	rem find ID of GUI element
 	for n = 0 to uGUI.CurrentMax
@@ -756,7 +897,7 @@ function GUIHideElement( ID )
 	endif
 	
 	rem make sure active
-	if GUI( n ).Active > 1
+	if GUI( n ).Active < 2
 		AddTextToConsole( 3 , "Not active!" )
 		exitfunction -1
 	endif
@@ -769,7 +910,7 @@ endfunction n
 function GUIShowElement( ID )
 	
 	rem logging
-	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIHideButton " + str$(ID) )
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIShowElement " + str$(ID) )
 	
 	rem find ID of GUI element
 	for n = 0 to uGUI.CurrentMax
@@ -962,8 +1103,15 @@ function GUIPositionElement( ID , x , y )
 	endif
 	
 	rem reposition
-	GUI( n ).pos.x = GetRealScreenX( x )
-	GUI( n ).pos.y = GetRealScreenY( y )
+	GUIPositionFrame( GUI( n ).IMG , GetRealScreenX( x ) , GetRealScreenY( y ) )
+	
+	rem buttons have additional frames
+	if GUI( n ).Active = 3
+		GUIPositionFrame( GUI( n ).GlowIMG , GetRealScreenX( x ) , GetRealScreenY( y ) )
+		GUIPositionFrame( GUI( n ).PressIMG , GetRealScreenX( x ) , GetRealScreenY( y ) )
+		GUIPositionFrame( GUI( n ).LockedIMG , GetRealScreenX( x ) , GetRealScreenY( y ) )
+		GUIPositionFrame( GUI( n ).IconIMG , GetRealScreenX( x ) , GetRealScreenY( y ) )
+	endif
 	
 endfunction n
 
@@ -1027,6 +1175,176 @@ function GUISetMiniatureGrid( sx , sy , ex , ey , gridSizeX , gridSizeY )
 	
 endfunction
 
+function GUIButtonSetIconDiffuseOnNormal( ID , diffuse )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIUnlockButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction
+	endif
+	
+	rem set value
+	GUI( n ).ButtonIconDiffuseNormal = diffuse
+
+endfunction
+
+function GUIButtonSetIconDiffuseOnGlow( ID , diffuse )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIUnlockButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction
+	endif
+	
+	rem set value
+	GUI( n ).ButtonIconDiffuseGlow = diffuse
+
+endfunction
+
+function GUIButtonSetIconDiffuseOnPress( ID , diffuse )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIUnlockButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction
+	endif
+	
+	rem set value
+	GUI( n ).ButtonIconDiffusePress = diffuse
+
+endfunction
+
+function GUIButtonSetIconDiffuseOnLocked( ID , diffuse )
+	
+	rem local variables
+	local n as integer
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "GUIUnlockButton " + str$(ID) )
+	
+	rem find ID of GUI element
+	for n = 0 to uGUI.CurrentMax
+		if GUI( n ).ID = ID then exit
+	next n
+	
+	rem not found
+	if n = uGUI.CurrentMax + 1
+		AddTextToConsole( 3 , "GUI ID not found!" )
+		exitfunction
+	endif
+	
+	rem make sure active
+	if GUI( n ).Active <> 3
+		AddTextToConsole( 3 , "GUI element not in correct state!" )
+		exitfunction
+	endif
+	
+	rem set value
+	GUI( n ).ButtonIconDiffuseLocked = diffuse
+	
+endfunction
+
+function GUICreateSplash( imgFile$ )
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "CreateSplash" )
+	
+	rem make sure file exists
+	if file exist( imgFile$ ) = 0
+		AddTextToConsole( 3 , "File " + chr$(34) + imgfile$ + chr$(34) + " does not exist" )
+		exitfunction
+	endif
+
+   rem if not created, create
+   if uGUI.SplashObj = 0
+      uGUI.SplashObj = find free object()
+		uGUI.SplashImg = find free image()
+      make object plain uGUI.SplashObj , 16 , 12
+      lock object on uGUI.SplashObj
+      position object uGUI.SplashObj , 0 , 0 , 10
+		load image imgFile$ , uGUI.SplashImg
+      texture object uGUI.SplashObj , uGUI.SplashImg
+		set object light uGUI.SplashObj , 0
+		uGUI.SplashFillObj = find free object()
+		make object plain uGUI.SplashFillObj , 500 , 500
+		lock object on uGUI.SplashFillObj
+		position object uGUI.SplashFillObj , 0 , 0 , 11
+		set object light uGUI.SplashFillObj , 0
+		texture object uGUI.SplashFillObj , IMGBlack
+   endif
+	
+	rem refresh screen so it appears
+	sync
+	sync
+
+endfunction
+
+function GUIDestroySplash()
+	
+	rem logging
+	if uGUI.logging = 1 then AddTextToConsole( 0 , "DestroySplash" )
+
+   rem destroy splash object
+	if uGUI.SplashObj > 0
+		delete object uGUI.SplashObj
+		delete image uGUI.SplashImg
+		delete object uGUI.SplashFillObj
+		uGUI.SplashObj = 0
+	endif
+
+endfunction
+
 function ControlGUI()
 	
 	rem control drag box
@@ -1044,19 +1362,16 @@ function ControlGUI()
 	uGUI.Mouse3DInvalid = 0
 	uGUI.ButtonActivateAbility = -1
 	uGUI.ButtonCancelAbility = -1
-
+	
 	rem loop through all active 
    for n = 0 to uGUI.CurrentMax
 		
 		rem static image
 		if GUI( n ).Active = 2
 			
-			rem paste static image
-			GUIDrawFrame( GUI( n ).IMG , GUI( n ).pos.x , GUI( n ).pos.y )
-			
 			rem check if 3D mouse is invalid
-			if uMouse.x > GUI( n ).pos.x and uMouse.x < GUI( n ).EndPos.x
-				if uMouse.y > GUI( n ).pos.y and uMouse.y < GUI( n ).EndPos.y then uGUI.Mouse3DInvalid = 1
+			if uMouse.x > GUIGetFrameStartX( n ) and uMouse.x < GUIGetFrameEndX( n )
+				if uMouse.y > GUIGetFrameStartY( n ) and uMouse.y < GUIGetFrameEndY( n ) then uGUI.Mouse3DInvalid = 1
 			endif
 			
 		endif
@@ -1074,6 +1389,10 @@ function ControlGUI()
 				
 			rem button is bound to units
 			else
+			
+				rem default
+				GUI( n ).Locked = 1
+				GUI( n ).Hidden = 1
 			
 				rem loop through all selected units and find bound button
 				for s = 0 to uUnit.CurrentMax
@@ -1103,8 +1422,6 @@ function ControlGUI()
 												
 						rem copy settings to GUI button
 						rem only lock or hide ability if all units have it locked or hidden
-						GUI( n ).Locked = 1
-						GUI( n ).Hidden = 1
 						for s = 0 to uUnit.CurrentMax
 							if Unit( s ).Active > 1
 								if Unit( s ).Selected > 1
@@ -1132,31 +1449,19 @@ function ControlGUI()
 							endif
 						next s
 						
-						rem draw and control input
-						_GUI_DrawAndControlButtons( n , 1 )
-						
 					endif
-					
 				endif
 				
+				rem draw and control input
+				_GUI_DrawAndControlButtons( n , 1 )
+						
 			endif
 
 		endif
 	next n
 	
-	rem draw unit related GUI
-	for n = 0 to uUnit.CurrentMax
-		if Unit( n ).Active > 1
-			if Unit( n ).Selected > 1
-				
-				rem portrait
-				GUIDrawFrame( Unit( n ).PortraitID , uGUI.PortraitPos.x , uGUI.PortraitPos.y )
-				
-			endif
-		endif
-	next n
-
 	rem if mouse is on minimap, calculate 3D coordinates
+	uMouse.OnMinimap = 0
 	for n = 0 to uMinimap.CurrentMax
 		if Minimap( n ).Active > 1
 			if uMouse.x > Minimap( n ).StartPos.x and uMouse.x < Minimap( n ).EndPos.x
@@ -1166,6 +1471,7 @@ function ControlGUI()
 					x# = uMouse.y-Minimap( n ).StartPos.y : rem cast to float
 					uMouse.Click3D.x# = (uMouse.x-Minimap( n ).StartPos.x) * (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#) / Minimap( n ).Size.x + Minimap( n ).WorldStartPos.x#
 					uMouse.Click3D.z# = (1.0 - (x# / Minimap( n ).Size.y)) * (Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#) + Minimap( n ).WorldStartPos.z#
+					uMouse.OnMinimap = 1
 					
 					rem find ground height
 					if SC_RayCastGroup( COL_TERRAIN , uMouse.Click3D.x# , 200 , uMouse.Click3D.z# , uMouse.Click3D.x# , -200 , uMouse.Click3D.z# , 0 )
@@ -1192,14 +1498,23 @@ function ControlGUI()
 endfunction
 
 function _GUI_DrawAndControlButtons( n , ManualPress )
-	
+
 	rem button is not hidden
 	if GUI( n ).Hidden = 0
 		
+		rem show icon (isn't changed unless button is hidden)
+		GUIShowFrame( GUI( n ).IconIMG )
+		GUIShowFrame( GUI( n ).HotKeyIMG )
+		
 		rem button is locked
 		if GUI( n ).Locked = 1
-			GUIDrawFrame( GUI( n ).LockedIMG , GUI( n ).pos.x , GUI( n ).pos.y )
-			GUIDrawFrame( GUI( n ).IconIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+			
+			rem draw locked image
+			if GUI( n ).KeepLastImage = 0
+				_GUI_Hide_Button_Frames( n )
+			endif
+			GUIShowFrame( GUI( n ).LockedIMG )
+			GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffuseLocked )
 		
 		rem button is not locked
 		else
@@ -1208,15 +1523,28 @@ function _GUI_DrawAndControlButtons( n , ManualPress )
 			if GUI( n ).ClickState = GUICLICK_NOT_CLICKED
 				
 				rem mouse is over button
-				if uMouse.x > GUI( n ).pos.x and uMouse.x < GUI( n ).EndPos.x and uMouse.y > GUI( n ).pos.y and uMouse.y < GUI( n ).EndPos.y
-					GUIDrawFrame( GUI( n ).GlowIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+				if uMouse.x > GUIGetFrameStartX( GUI( n ).IMG ) and uMouse.x < GUIGetFrameEndX( GUI( n ).IMG ) and uMouse.y > GUIGetFrameStartY( GUI( n ).IMG ) and uMouse.y < GUIGetFrameEndY( GUI( n ).IMG )
 					
+					rem sprite glow image
+					if GUI( n ).KeepLastImage = 0
+						_GUI_Hide_Button_Frames( n )
+					endif
+					GUIShowFrame( GUI( n ).GlowIMG )
+					GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffuseGlow )
+										
 					rem Mouse clicks button
 					if uMouse.click = 1
 						_GUI_ReleaseOtherButtons()
 						if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_CLICKED
 						uGUI.ButtonClicked = n
-						GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+						
+						rem sprite press image
+						if GUI( n ).KeepLastImage = 0
+							_GUI_Hide_Button_Frames( n )
+						endif
+						GUIShowFrame( GUI( n ).PressIMG )
+						GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffusePress )
+																		
 					endif
 					
 					rem 3D mouse is invalid
@@ -1225,8 +1553,10 @@ function _GUI_DrawAndControlButtons( n , ManualPress )
 				rem mouse is not over button
 				else
 				
-					rem paste normal image
-					GUIDrawFrame( GUI( n ).IMG , GUI( n ).pos.x , GUI( n ).pos.y )
+					rem show normal image
+					_GUI_Hide_Button_Frames( n )
+					GUIShowFrame( GUI( n ).IMG )
+					GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffuseNormal )
 					
 				endif
 				
@@ -1236,7 +1566,15 @@ function _GUI_DrawAndControlButtons( n , ManualPress )
 					GUI( n ).KeyBindFlag = 1
 					if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_CLICKED
 					uGUI.ButtonClicked = n
-					GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+					
+					rem sprite press image
+					if GUI( n ).KeepLastImage = 0
+						_GUI_Hide_Button_Frames( n )
+					endif
+					GUIShowFrame( GUI( n ).GlowIMG )
+					GUIShowFrame( GUI( n ).PressIMG )
+					GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffusePress )
+
 				endif
 				if keystate( GUI( n ).KeyBind ) = 0 then GUI( n ).KeyBindFlag = 0
 				
@@ -1247,8 +1585,12 @@ function _GUI_DrawAndControlButtons( n , ManualPress )
 				if GUI( n ).ToggleMode = 1
 					
 					rem mouse is over button
-					if uMouse.x > GUI( n ).pos.x and uMouse.x < GUI( n ).EndPos.x and uMouse.y > GUI( n ).pos.y and uMouse.y < GUI( n ).EndPos.y
-						GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
+					if uMouse.x > GUIGetFrameStartX( GUI( n ).IMG ) and uMouse.x < GUIGetFrameEndX( GUI( n ).IMG ) and uMouse.y > GUIGetFrameStartY( GUI( n ).IMG ) and uMouse.y < GUIGetFrameEndY( GUI( n ).IMG )
+						if GUI( n ).KeepLastImage = 0
+							_GUI_Hide_Button_Frames( n )
+						endif
+						GUIShowFrame( GUI( n ).PressIMG )
+						GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffusePress )
 
 						rem Mouse clicks button
 						if uMouse.click = 1
@@ -1263,7 +1605,11 @@ function _GUI_DrawAndControlButtons( n , ManualPress )
 					else
 					
 						rem paste pressed image
-						GUIDrawFrame( GUI( n ).PressIMG , GUi( n ).pos.x , GUI( n ).pos.y )
+						if GUI( n ).KeepLastImage = 0
+							_GUI_Hide_Button_Frames( n )
+						endif
+						GUIShowFrame( GUI( n ).PressIMG )
+						GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffusePress )
 						
 					endif
 					
@@ -1279,8 +1625,13 @@ function _GUI_DrawAndControlButtons( n , ManualPress )
 				else
 				
 					rem button is being pressed
-					GUIDrawFrame( GUI( n ).PressIMG , GUI( n ).pos.x , GUI( n ).pos.y )
-				
+					if GUI( n ).KeepLastImage = 0
+						_GUI_Hide_Button_Frames( n )
+					endif
+					GUIShowFrame( GUI( n ).GlowIMG )
+					GUIShowFrame( GUI( n ).PressIMG )
+					GUISetFrameDiffuse( GUI( n ).IconIMG , GUI( n ).ButtonIconDiffusePress )
+					
 					rem release button if mouse is no longer clicking
 					if uMouse.click <> 2 and keystate( GUI( n ).KeyBind ) = 0
 						if ManualPress = 0 then GUI( n ).ClickState = GUICLICK_NOT_CLICKED
@@ -1299,11 +1650,16 @@ function _GUI_DrawAndControlButtons( n , ManualPress )
 					
 				endif
 			endif
-			
-			rem paste icon
-			GUIDrawFrame( GUI( n ).IconIMG , GUI( n ).pos.x , GUI( n ).pos.y )
-			
+						
 		endif
+		
+	rem button is hidden
+	else
+	
+		_GUI_Hide_Button_Frames( n )
+		GUIHideFrame( GUI( n ).IconIMG )
+		GUIHideFrame( GUI( n ).HotKeyIMG )
+	
 	endif
 
 endfunction
@@ -1316,15 +1672,18 @@ function GUIUpdateFrame()
 	rem loop through all active frames
 	for n = 0 to uGUI.CurrentFrameMax
 		if GUIFrame( n , 0 ).Active = 2
+			if GUIFrame( n , 0 ).FrameCount > -1
 						
-			rem update frame
-			inc GUIFrame( n , 0 ).FrameDelayCounter
-			if GUIFrame( n , 0 ).FrameDelayCounter > GUIFrame( n , 0 ).FrameDelay
-				GUIFrame( n , 0 ).FrameDelayCounter = 0
-				inc GUIFrame( n , 0 ).CurrentFrame
-				if GUIFrame( n , 0 ).CurrentFrame > GUIFrame( n , 0 ).FrameCount then GUIFrame( n , 0 ).CurrentFrame = 0
-			endif
+				rem update frame
+				inc GUIFrame( n , 0 ).FrameDelayCounter
+				if GUIFrame( n , 0 ).FrameDelayCounter > GUIFrame( n , GUIFrame( n ).CurrentFrame ).FrameDelay
+					GUIFrame( n , 0 ).FrameDelayCounter = 0
+					inc GUIFrame( n , 0 ).CurrentFrame
+					if GUIFrame( n , 0 ).CurrentFrame > GUIFrame( n , 0 ).FrameCount then GUIFrame( n , 0 ).CurrentFrame = 0
+					sprite GUIFrame( n , 0 ).SPR , GUIFrame( n , 0 ).pos.x , GUIFrame( n , 0 ).pos.y , GUIFrame( n , GUIFrame( n , 0 ).CurrentFrame ).IMG
+				endif
 			
+			endif
 		endif
 	next n
 	
@@ -1340,3 +1699,42 @@ function _GUI_ReleaseOtherButtons()
 	next n
 	
 endfunction
+
+function _GUI_Get_Character_From_Scancode_Switzerland( scan )
+
+	rem lookup table
+	if scan = 16 then exitfunction asc( "Q" )
+	if scan = 17 then exitfunction asc( "W" )
+	if scan = 18 then exitfunction asc( "E" )
+	if scan = 19 then exitfunction asc( "R" )
+	if scan = 20 then exitfunction asc( "T" )
+	if scan = 21 then exitfunction asc( "Z" )
+	if scan = 22 then exitfunction asc( "U" )
+	if scan = 23 then exitfunction asc( "I" )
+	if scan = 24 then exitfunction asc( "O" )
+	if scan = 25 then exitfunction asc( "P" )
+	if scan = 26 then exitfunction asc( "Ü" )
+	if scan = 30 then exitfunction asc( "A" )
+	if scan = 31 then exitfunction asc( "S" )
+	if scan = 32 then exitfunction asc( "D" )
+	if scan = 33 then exitfunction asc( "F" )
+	if scan = 34 then exitfunction asc( "G" )
+	if scan = 35 then exitfunction asc( "H" )
+	if scan = 36 then exitfunction asc( "J" )
+	if scan = 37 then exitfunction asc( "K" )
+	if scan = 38 then exitfunction asc( "L" )
+	if scan = 39 then exitfunction asc( "Ö" )
+	if scan = 40 then exitfunction asc( "Ä" )
+	if scan = 43 then exitfunction asc( "$" )
+	if scan = 44 then exitfunction asc( "Y" )
+	if scan = 45 then exitfunction asc( "X" )
+	if scan = 46 then exitfunction asc( "C" )
+	if scan = 47 then exitfunction asc( "V" )
+	if scan = 48 then exitfunction asc( "B" )
+	if scan = 49 then exitfunction asc( "N" )
+	if scan = 50 then exitfunction asc( "M" )
+	if scan = 51 then exitfunction asc( "," )
+	if scan = 52 then exitfunction asc( "." )
+	if scan = 53 then exitfunction asc( "-" )
+	
+endfunction 0

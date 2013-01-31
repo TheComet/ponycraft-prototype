@@ -8,63 +8,40 @@ function UnitQueueAbilities()
 	for n = 0 to uUnit.CurrentMax
 		if Unit( n ).Active > 1
 			if Unit( n ).Selected > 1
+				if Unit( n ).Control = UNITCONTROL_PLAYER
 
-				rem ------------------------------------------------------------------------------------------
-				rem move ability
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_MOVE ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_MOVE ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				rem special case with move ability -> Right click directly activates it
-				if UnitAbility( n , UNITABILITY_MOVE ).BindButton = uGUI.ButtonActivateAbility
+					rem ------------------------------------------------------------------------------------------
+					rem move ability
+					rem ------------------------------------------------------------------------------------------
 					
-					rem if shiftkey is not held, return button and selections
-					if shiftkey() = 0
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_MOVE ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
+					
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_MOVE ).BindButton = uGUI.ButtonCancelAbility
 						UnitSelection.state = _ENABLE
 						GUIDragBoxEnable()
-						GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
 					endif
 					
-					rem play sound
-					UnitPlaySound( n , UNITSOUND_MOVE )
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_MOVE )
-					
-					rem create click ping
-					CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
-					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_MOVE ).Active = 1 then exitfunction
-
-				endif
-				if uMouse.click = 4 and uGUI.ButtonCancelAbility = -1
-					
-					rem if unit under mouse is an enemy, attack instead of move
-					success = GetUnitUnderMouse()
-					if success > -1
-						if Unit( success ).Control <> UNITCONTROL_ENEMY then success = -1
-					endif
-					
-					rem move
-					if success = -1
+					rem queue ability so it can be activated
+					rem special case with move ability -> Right click directly activates it
+					if UnitAbility( n , UNITABILITY_MOVE ).BindButton = uGUI.ButtonActivateAbility
+						
+						rem if shiftkey is not held, return button and selections
+						if shiftkey() = 0
+							UnitSelection.state = _ENABLE
+							GUIDragBoxEnable()
+							GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						endif
 						
 						rem play sound
 						UnitPlaySound( n , UNITSOUND_MOVE )
-				
+						
 						rem queue it
 						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_MOVE )
 						
@@ -73,10 +50,162 @@ function UnitQueueAbilities()
 						
 						rem local ability only works for one unit
 						if UnitAbility( n , UNITABILITY_MOVE ).Active = 1 then exitfunction
+
+					endif
+					if uMouse.click = 4 and uGUI.ButtonCancelAbility = -1
 						
-					rem attack
-					else
+						rem if unit under mouse is an enemy, attack instead of move
+						success = GetUnitUnderMouse()
+						if success > -1
+							if Unit( success ).Control <> UNITCONTROL_ENEMY then success = -1
+						endif
+						
+						rem move
+						if success = -1
+							
+							rem play sound
+							UnitPlaySound( n , UNITSOUND_MOVE )
 					
+							rem queue it
+							_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_MOVE )
+							
+							rem create click ping
+							CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
+							
+							rem local ability only works for one unit
+							if UnitAbility( n , UNITABILITY_MOVE ).Active = 1 then exitfunction
+							
+						rem attack
+						else
+						
+							rem play sound
+							UnitPlaySound( n , UNITSOUND_TARGET )
+							
+							rem queue it
+							_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_ATTACK )
+							
+							rem create click ping
+							CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
+							
+							rem local ability only works for one unit
+							if UnitAbility( n , UNITABILITY_ATTACK ).Active = 1 then exitfunction
+							
+						endif
+						
+					endif
+					
+					rem ------------------------------------------------------------------------------------------
+					rem stop ability
+					rem ------------------------------------------------------------------------------------------
+					
+					rem release button
+					if UnitAbility( n , UNITABILITY_STOP ).BindButton = uGUI.ButtonReleased
+						GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
+					endif
+					
+					rem activate ability
+					if UnitAbility( n , UNITABILITY_STOP ).BindButton = uGUI.ButtonClicked
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+						
+						rem queue it
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_STOP )
+						
+						rem local ability only works for one unit
+						if UnitAbility( n , UNITABILITY_STOP ).Active = 1 then exitfunction
+
+					endif
+					
+					rem ------------------------------------------------------------------------------------------
+					rem hold ability
+					rem ------------------------------------------------------------------------------------------
+					
+					rem release button
+					if UnitAbility( n , UNITABILITY_HOLD ).BindButton = uGUI.ButtonReleased
+						GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
+					endif
+					
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_HOLD ).BindButton = uGUI.ButtonClicked
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+						
+						rem queue it
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_HOLD )
+						
+						rem local ability only works for one unit
+						if UnitAbility( n , UNITABILITY_HOLD ).Active = 1 then exitfunction
+
+					endif
+
+					rem ------------------------------------------------------------------------------------------
+					rem patrol ability
+					rem ------------------------------------------------------------------------------------------
+					
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_PATROL ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
+					
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_PATROL ).BindButton = uGUI.ButtonCancelAbility
+						UnitSelection.state = _ENABLE
+						GUIDragBoxEnable()
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
+					endif
+					
+					rem queue ability so it can be activated
+					if UnitAbility( n , UNITABILITY_PATROL ).BindButton = uGUI.ButtonActivateAbility
+						
+						rem if shiftkey is not held, return button and selections
+						if shiftkey() = 0
+							UnitSelection.state = _ENABLE
+							GUIDragBoxEnable()
+							GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						endif
+						
+						rem play sound
+						UnitPlaySound( n , UNITSOUND_TARGET )
+						
+						rem queue it
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_PATROL )
+
+						rem create click ping
+						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
+						
+						rem local ability only works for one unit
+						if UnitAbility( n , UNITABILITY_PATROL ).Active = 1 then exitfunction
+
+					endif
+
+					rem ------------------------------------------------------------------------------------------
+					rem attack
+					rem ------------------------------------------------------------------------------------------
+					
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_ATTACK ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
+					
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_ATTACK ).BindButton = uGUI.ButtonCancelAbility
+						UnitSelection.state = _ENABLE
+						GUIDragBoxEnable()
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
+					endif
+					
+					rem queue ability so it can be activated
+					if UnitAbility( n , UNITABILITY_ATTACK ).BindButton = uGUI.ButtonActivateAbility
+						
+						rem if shiftkey is not held, return button and selections
+						if shiftkey() = 0
+							UnitSelection.state = _ENABLE
+							GUIDragBoxEnable()
+							GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						endif
+						
 						rem play sound
 						UnitPlaySound( n , UNITSOUND_TARGET )
 						
@@ -84,207 +213,173 @@ function UnitQueueAbilities()
 						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_ATTACK )
 						
 						rem create click ping
-						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
+						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFFFF4040 , 320 , 0 , 0 )
 						
 						rem local ability only works for one unit
 						if UnitAbility( n , UNITABILITY_ATTACK ).Active = 1 then exitfunction
+
+					endif
+					
+					rem ------------------------------------------------------------------------------------------
+					rem fly
+					rem ------------------------------------------------------------------------------------------
+					
+					rem release button
+					if UnitAbility( n , UNITABILITY_FLY ).BindButton = uGUI.ButtonReleased
+						GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
+					endif
+					
+					rem use ability
+					if UnitAbility( n , UNITABILITY_FLY ).BindButton = uGUI.ButtonClicked
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
 						
+						rem queue it
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_FLY )
+						
+						rem local ability only works for one unit
+						if UnitAbility( n , UNITABILITY_FLY ).Active = 1 then exitfunction
+
+					endif
+
+					rem ------------------------------------------------------------------------------------------
+					rem land
+					rem ------------------------------------------------------------------------------------------
+					
+					rem release button
+					if UnitAbility( n , UNITABILITY_LAND ).BindButton = uGUI.ButtonReleased
+						GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
 					endif
 					
-				endif
-				
-				rem ------------------------------------------------------------------------------------------
-				rem stop ability
-				rem ------------------------------------------------------------------------------------------
-				
-				rem release button
-				if UnitAbility( n , UNITABILITY_STOP ).BindButton = uGUI.ButtonReleased
-					GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem activate ability
-				if UnitAbility( n , UNITABILITY_STOP ).BindButton = uGUI.ButtonClicked
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_STOP )
-					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_STOP ).Active = 1 then exitfunction
+					rem use ability
+					if UnitAbility( n , UNITABILITY_LAND ).BindButton = uGUI.ButtonClicked
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+						
+						rem queue it
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_LAND )
+						
+						rem local ability only works for one unit
+						if UnitAbility( n , UNITABILITY_LAND ).Active = 1 then exitfunction
 
-				endif
-				
-				rem ------------------------------------------------------------------------------------------
-				rem hold ability
-				rem ------------------------------------------------------------------------------------------
-				
-				rem release button
-				if UnitAbility( n , UNITABILITY_HOLD ).BindButton = uGUI.ButtonReleased
-					GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_HOLD ).BindButton = uGUI.ButtonClicked
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
 					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_HOLD )
+					rem ------------------------------------------------------------------------------------------
+					rem magic missile
+					rem ------------------------------------------------------------------------------------------
 					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_HOLD ).Active = 1 then exitfunction
-
-				endif
-
-				rem ------------------------------------------------------------------------------------------
-				rem patrol ability
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_PATROL ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_PATROL ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				if UnitAbility( n , UNITABILITY_PATROL ).BindButton = uGUI.ButtonActivateAbility
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
 					
-					rem if shiftkey is not held, return button and selections
-					if shiftkey() = 0
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).BindButton = uGUI.ButtonCancelAbility
 						UnitSelection.state = _ENABLE
 						GUIDragBoxEnable()
-						GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
 					endif
 					
-					rem play sound
-					UnitPlaySound( n , UNITSOUND_TARGET )
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_PATROL )
+					rem queue ability so it can be activated
+					if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).BindButton = uGUI.ButtonActivateAbility
+						
+						rem this ability requires a target unit
+						if uUnit.UnitUnderMouse > -1
+						
+							rem if shiftkey is not held, return button and selections to normal
+							if shiftkey() = 0
+								UnitSelection.state = _ENABLE
+								GUIDragBoxEnable()
+								GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+							endif
+							
+							rem play sound
+							UnitPlaySound( n , UNITSOUND_TARGET )
+							
+							rem queue it
+							_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_MAGIC_MISSILE )
+							
+							rem create click ping
+							CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFFFF4040 , 320 , 0 , 0 )
+							
+							rem local ability only works for one unit
+							if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).Active = 1 then exitfunction
+							
+						rem error message
+						else
+							AddTextToConsole( 3 , "Target Unit Required!" )
+						endif
 
-					rem create click ping
-					CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
+					endif
 					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_PATROL ).Active = 1 then exitfunction
-
-				endif
-
-				rem ------------------------------------------------------------------------------------------
-				rem attack
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_ATTACK ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_ATTACK ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				if UnitAbility( n , UNITABILITY_ATTACK ).BindButton = uGUI.ButtonActivateAbility
+					rem ------------------------------------------------------------------------------------------
+					rem changeling melee attack
+					rem ------------------------------------------------------------------------------------------
 					
-					rem if shiftkey is not held, return button and selections
-					if shiftkey() = 0
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
+					
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).BindButton = uGUI.ButtonCancelAbility
 						UnitSelection.state = _ENABLE
 						GUIDragBoxEnable()
-						GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
 					endif
 					
-					rem play sound
-					UnitPlaySound( n , UNITSOUND_TARGET )
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_ATTACK )
-					
-					rem create click ping
-					CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFFFF4040 , 320 , 0 , 0 )
-					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_ATTACK ).Active = 1 then exitfunction
+					rem queue ability so it can be activated
+					if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).BindButton = uGUI.ButtonActivateAbility
+						
+						rem this ability requires a target unit
+						if uUnit.UnitUnderMouse > -1
+						
+							rem if shiftkey is not held, return button and selections to normal
+							if shiftkey() = 0
+								UnitSelection.state = _ENABLE
+								GUIDragBoxEnable()
+								GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+							endif
+							
+							rem queue it
+							_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_CHANGELING_MELEE_ATTACK )
+							
+							rem create click ping
+							CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFFFF4040 , 320 , 0 , 0 )
+							
+							rem local ability only works for one unit
+							if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).Active = 1 then exitfunction
+							
+						rem error message
+						else
+							AddTextToConsole( 3 , "Target Unit Required!" )
+						endif
 
-				endif
-				
-				rem ------------------------------------------------------------------------------------------
-				rem fly
-				rem ------------------------------------------------------------------------------------------
-				
-				rem release button
-				if UnitAbility( n , UNITABILITY_FLY ).BindButton = uGUI.ButtonReleased
-					GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem use ability
-				if UnitAbility( n , UNITABILITY_FLY ).BindButton = uGUI.ButtonClicked
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
 					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_FLY )
+					rem ------------------------------------------------------------------------------------------
+					rem Force Field
+					rem ------------------------------------------------------------------------------------------
 					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_FLY ).Active = 1 then exitfunction
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_FORCE_FIELD ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
+					
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_FORCE_FIELD ).BindButton = uGUI.ButtonCancelAbility
+						UnitSelection.state = _ENABLE
+						GUIDragBoxEnable()
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
+					endif
+					
+					rem queue ability so it can be activated
+					if UnitAbility( n , UNITABILITY_FORCE_FIELD ).BindButton = uGUI.ButtonActivateAbility
 
-				endif
-
-				rem ------------------------------------------------------------------------------------------
-				rem land
-				rem ------------------------------------------------------------------------------------------
-				
-				rem release button
-				if UnitAbility( n , UNITABILITY_LAND ).BindButton = uGUI.ButtonReleased
-					GUI( uGUI.ButtonReleased ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem use ability
-				if UnitAbility( n , UNITABILITY_LAND ).BindButton = uGUI.ButtonClicked
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_LAND )
-					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_LAND ).Active = 1 then exitfunction
-
-				endif
-				
-				rem ------------------------------------------------------------------------------------------
-				rem magic missile
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).BindButton = uGUI.ButtonActivateAbility
-					
-					rem this ability requires a target unit
-					if uUnit.UnitUnderMouse > -1
-					
 						rem if shiftkey is not held, return button and selections to normal
 						if shiftkey() = 0
 							UnitSelection.state = _ENABLE
@@ -293,48 +388,40 @@ function UnitQueueAbilities()
 						endif
 						
 						rem play sound
-						UnitPlaySound( n , UNITSOUND_TARGET )
+						UnitPlaySound( n , UNITSOUND_FORCEFIELD )
 						
 						rem queue it
-						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_MAGIC_MISSILE )
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_FORCE_FIELD )
 						
 						rem create click ping
-						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFFFF4040 , 320 , 0 , 0 )
+						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
 						
 						rem local ability only works for one unit
-						if UnitAbility( n , UNITABILITY_MAGIC_MISSILE ).Active = 1 then exitfunction
+						if UnitAbility( n , UNITABILITY_FORCE_FIELD ).Active = 1 then exitfunction
 						
-					rem error message
-					else
-						AddTextToConsole( 3 , "Target Unit Required!" )
 					endif
 
-				endif
-				
-				rem ------------------------------------------------------------------------------------------
-				rem changeling melee attack
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).BindButton = uGUI.ButtonActivateAbility
+					rem ------------------------------------------------------------------------------------------
+					rem Teleport
+					rem ------------------------------------------------------------------------------------------
 					
-					rem this ability requires a target unit
-					if uUnit.UnitUnderMouse > -1
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_TELEPORT ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
 					
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_TELEPORT ).BindButton = uGUI.ButtonCancelAbility
+						UnitSelection.state = _ENABLE
+						GUIDragBoxEnable()
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
+					endif
+					
+					rem queue ability so it can be activated
+					if UnitAbility( n , UNITABILITY_TELEPORT ).BindButton = uGUI.ButtonActivateAbility
+
 						rem if shiftkey is not held, return button and selections to normal
 						if shiftkey() = 0
 							UnitSelection.state = _ENABLE
@@ -342,148 +429,63 @@ function UnitQueueAbilities()
 							GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
 						endif
 						
+						rem play sound
+						UnitPlaySound( n , UNITSOUND_TELEPORT )
+						
 						rem queue it
-						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_CHANGELING_MELEE_ATTACK )
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_TELEPORT )
 						
 						rem create click ping
-						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFFFF4040 , 320 , 0 , 0 )
+						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
 						
 						rem local ability only works for one unit
-						if UnitAbility( n , UNITABILITY_CHANGELING_MELEE_ATTACK ).Active = 1 then exitfunction
+						if UnitAbility( n , UNITABILITY_TELEPORT ).Active = 1 then exitfunction
 						
-					rem error message
-					else
-						AddTextToConsole( 3 , "Target Unit Required!" )
 					endif
-
-				endif
 				
-				rem ------------------------------------------------------------------------------------------
-				rem Force Field
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_FORCE_FIELD ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_FORCE_FIELD ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				if UnitAbility( n , UNITABILITY_FORCE_FIELD ).BindButton = uGUI.ButtonActivateAbility
-
-					rem if shiftkey is not held, return button and selections to normal
-					if shiftkey() = 0
+					rem ------------------------------------------------------------------------------------------
+					rem Meteor Shower
+					rem ------------------------------------------------------------------------------------------
+					
+					rem activate destination selection
+					if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).BindButton = uGUI.ButtonClicked
+						UnitSelection.state = _DISABLE
+						GUIDragBoxDisable()
+						GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
+					endif
+					
+					rem cancel ability
+					if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).BindButton = uGUI.ButtonCancelAbility
 						UnitSelection.state = _ENABLE
 						GUIDragBoxEnable()
-						GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
 					endif
 					
-					rem play sound
-					UnitPlaySound( n , UNITSOUND_FORCEFIELD )
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_FORCE_FIELD )
-					
-					rem create click ping
-					CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
-					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_FORCE_FIELD ).Active = 1 then exitfunction
-					
-				endif
+					rem queue ability so it can be activated
+					if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).BindButton = uGUI.ButtonActivateAbility
 
-				rem ------------------------------------------------------------------------------------------
-				rem Teleport
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_TELEPORT ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
-				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_TELEPORT ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				if UnitAbility( n , UNITABILITY_TELEPORT ).BindButton = uGUI.ButtonActivateAbility
-
-					rem if shiftkey is not held, return button and selections to normal
-					if shiftkey() = 0
-						UnitSelection.state = _ENABLE
-						GUIDragBoxEnable()
-						GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						rem if shiftkey is not held, return button and selections to normal
+						if shiftkey() = 0
+							UnitSelection.state = _ENABLE
+							GUIDragBoxEnable()
+							GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
+						endif
+						
+						rem play sound
+						UnitPlaySound( n , UNITSOUND_METEOR_SHOWER )
+						
+						rem queue it
+						_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_METEOR_SHOWER )
+						
+						rem create click ping
+						CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
+						
+						rem local ability only works for one unit
+						if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).Active = 1 then exitfunction
+						
 					endif
-					
-					rem play sound
-					UnitPlaySound( n , UNITSOUND_TELEPORT )
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_TELEPORT )
-					
-					rem create click ping
-					CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
-					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_TELEPORT ).Active = 1 then exitfunction
-					
-				endif
 			
-				rem ------------------------------------------------------------------------------------------
-				rem Meteor Shower
-				rem ------------------------------------------------------------------------------------------
-				
-				rem activate destination selection
-				if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).BindButton = uGUI.ButtonClicked
-					UnitSelection.state = _DISABLE
-					GUIDragBoxDisable()
-					GUI( uGUI.ButtonClicked ).ClickState = GUICLICK_CLICKED
 				endif
-				
-				rem cancel ability
-				if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).BindButton = uGUI.ButtonCancelAbility
-					UnitSelection.state = _ENABLE
-					GUIDragBoxEnable()
-					GUI( uGUI.ButtonCancelAbility ).ClickState = GUICLICK_NOT_CLICKED
-				endif
-				
-				rem queue ability so it can be activated
-				if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).BindButton = uGUI.ButtonActivateAbility
-
-					rem if shiftkey is not held, return button and selections to normal
-					if shiftkey() = 0
-						UnitSelection.state = _ENABLE
-						GUIDragBoxEnable()
-						GUI( uGUI.ButtonActivateAbility ).ClickState = GUICLICK_NOT_CLICKED
-					endif
-					
-					rem play sound
-					UnitPlaySound( n , UNITSOUND_METEOR_SHOWER )
-					
-					rem queue it
-					_Unit_Ability_QueueAbilities_AddToQueue( n , UNITABILITY_METEOR_SHOWER )
-					
-					rem create click ping
-					CreateClickObj( uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z# , 0xFF00FFFF , 320 , 0 , 0 )
-					
-					rem local ability only works for one unit
-					if UnitAbility( n , UNITABILITY_METEOR_SHOWER ).Active = 1 then exitfunction
-					
-				endif
-			
 			endif
 		endif
 	next n

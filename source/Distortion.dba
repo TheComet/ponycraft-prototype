@@ -80,7 +80,7 @@ function CreateDistortion( x# , y# , z# , bend# , bend_dec# , speed# , sector )
    rem locals
    local n as integer
 	
-	  rem log in console
+	rem log in console
    if uDistortion.logging = 1 then AddTextToConsole( 0 , "CreateDistortion " + str$(n) + "," + str$(x#) + "," + str$(y#) + "," + str$(z#) + "," + str$(bend#) + "," + str$(bend_dec#) + "," + str$(speed#) + "," + str$(sector) )
 
    rem search for free distortion

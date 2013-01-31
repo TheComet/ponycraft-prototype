@@ -11,13 +11,12 @@ rem help
 #constant CMD_HELPCLICKOBJ																6
 #constant CMD_HELPDISTORTION															7
 #constant CMD_HELPGUI																	8
-#constant CMD_HELPMENU																	9
-#constant CMD_HELPMESSAGE																10
-#constant CMD_HELPSCRIPT																11
-#constant CMD_HELPTEXTENTRY															12
-#constant CMD_HELPTRIGGER																13
-#constant CMD_HELPUNIT																	14
-#constant CMD_HELPWORLD																	15
+#constant CMD_HELPMESSAGE																9
+#constant CMD_HELPSCRIPT																10
+#constant CMD_HELPTEXTENTRY															11
+#constant CMD_HELPTRIGGER																12
+#constant CMD_HELPUNIT																	13
+#constant CMD_HELPWORLD																	14
 
 rem core
 #constant CMD_SETCONSOLESIZE															1000
@@ -80,15 +79,13 @@ rem game controls
 #constant CMD_CTRL_CONSOLE                      								2003
 #constant CMD_CTRL_DISTORTION                   								2004
 #constant CMD_CTRL_GUI                          								2005
-#constant CMD_CTRL_MENU                         								2006
-#constant CMD_CTRL_MESSAGE                      								2007
-#constant CMD_CTRL_MOUSE                        								2008
-#constant CMD_CTRL_SCRIPT                       								2009
-#constant CMD_CTRL_SLIDER                       								2010
-#constant CMD_CTRL_TEXTENTRY                    								2011
-#constant CMD_CTRL_TRIGGER                      								2012
-#constant CMD_CTRL_UNIT                         								2013
-#constant CMD_CTRL_WORLD                        								2014
+#constant CMD_CTRL_MESSAGE                      								2006
+#constant CMD_CTRL_MOUSE                        								2007
+#constant CMD_CTRL_SCRIPT                       								2008
+#constant CMD_CTRL_TEXTENTRY                    								2009
+#constant CMD_CTRL_TRIGGER                      								2010
+#constant CMD_CTRL_UNIT                         								2011
+#constant CMD_CTRL_WORLD                        								2012
 
 rem logging
 #constant CMD_TURNALLLOGGINGON                  								3000
@@ -97,13 +94,12 @@ rem logging
 #constant CMD_CLICKOBJLOGGING                   								3003
 #constant CMD_DISTORTIONLOGGING                 								3004
 #constant CMD_GUILOGGING                        								3005
-#constant CMD_MENULOGGING                       								3006
-#constant CMD_MESSAGELOGGING                    								3007
-#constant CMD_SCRIPTLOGGING                     								3008
-#constant CMD_TRIGGERLOGGING                    								3009
-#constant CMD_UNITLOGGING                       								3010
-#constant CMD_WORLDLOGGING                      								3011
-#constant CMD_FORCEFIELDLOGGING														3012
+#constant CMD_MESSAGELOGGING                    								3006
+#constant CMD_SCRIPTLOGGING                     								3007
+#constant CMD_TRIGGERLOGGING                    								3008
+#constant CMD_UNITLOGGING                       								3009
+#constant CMD_WORLDLOGGING                      								3010
+#constant CMD_FORCEFIELDLOGGING														3011
 
 rem camera commands
 #constant CMD_SETCAMERAMODE                     								3900
@@ -146,19 +142,24 @@ rem gui commands
 #constant CMD_GUIADDBUTTONPRESSFRAME												6019
 #constant CMD_GUIADDBUTTONLOCKEDFRAME												6020
 #constant CMD_GUIADDBUTTONICONFRAME													6021
-#constant CMD_GUISETSTATICFRAMEDELAY												6022
-#constant CMD_GUISETBUTTONNORMALFRAMEDELAY										6023
-#constant CMD_GUISETBUTTONMOUSEOVERFRAMEDELAY									6024
-#constant CMD_GUISETBUTTONPRESSFRAMEDELAY											6025
-#constant CMD_GUISETBUTTONLOCKEDFRAMEDELAY										6026
-#constant CMD_GUISETBUTTONICONFRAMEDELAY											6027
+#constant CMD_GUISETSTATICFRAMEDELAYDEFAULT										6022
+#constant CMD_GUISETBUTTONNORMALFRAMEDELAYDEFAULT								6023
+#constant CMD_GUISETBUTTONMOUSEOVERFRAMEDELAYDEFAULT							6024
+#constant CMD_GUISETBUTTONPRESSFRAMEDELAYDEFAULT								6025
+#constant CMD_GUISETBUTTONLOCKEDFRAMEDELAYDEFAULT								6026
+#constant CMD_GUISETBUTTONICONFRAMEDELAYDEFAULT									6027
 #constant CMD_GUISETPORTRAITPOSITION												6028
+#constant CMD_GUICREATESPLASH															6029
+#constant CMD_GUIDESTROYSPLASH														6030
+#constant CMD_GUIBUTTONSETICONDIFFUSEONNORMAL									6031
+#constant CMD_GUIBUTTONSETICONDIFFUSEONMOUSEOVER								6032
+#constant CMD_GUIBUTTONSETICONDIFFUSEONPRESS										6033
+#constant CMD_GUIBUTTONSETICONDIFFUSEONLOCKED									6034
 
-rem menu commands
-#constant CMD_CREATESPLASH                      								7000
-#constant CMD_DESTROYSPLASH                     								7001
-#constant CMD_CREATEMENU                        								7002
-#constant CMD_DESTROYMENU                       								7003
+rem music commands
+#constant CMD_PLAYMUSIC																	7000
+#constant CMD_SETMUSICVOLUME															7001
+#constant CMD_STOPMUSIC																	7002
 
 rem message commands
 #constant CMD_CREATEMESSAGE                     								8000
@@ -206,7 +207,8 @@ rem unit commands
 #constant CMD_UNITADDSOUND																11026
 #constant CMD_UNITCHANGECONTROL														11027
 #constant CMD_UNITADDPORTRAITFRAME													11028
-#constant CMD_UNITSETPORTRAITFRAMEDELAY											11029
+#constant CMD_UNITSETPORTRAITFRAMEDELAYDEFAULT											11029
+#constant CMD_UNITROTATE																11030
 
 rem world commands
 #constant CMD_DESTROYWORLD                      								12000
@@ -453,11 +455,15 @@ function CompileEntry( inString$ , slot , lin )
 	
 	rem pre-process static values
 	for n = 1 to SplitCount
+		
+		rem hexadecimal colours
+		if left$( ConsoleCmd$( n ) , 2 ) = "0x" then ConsoleCmd$( n ) = str$( hex to decimal( right$( ConsoleCmd$( n ) , len( ConsoleCmd$( n ) ) - 2 ) ) )
 
 		rem unit control
 		if ConsoleCmd$( n ) = "unitcontrol_player" then ConsoleCmd$( n ) = str$( UNITCONTROL_PLAYER )
 		if ConsoleCmd$( n ) = "unitcontrol_noone" then ConsoleCmd$( n ) = str$( UNITCONTROL_NOONE )
 		if ConsoleCmd$( n ) = "unitcontrol_enemy" then ConsoleCmd$( n ) = str$( UNITCONTROL_ENEMY )
+		if ConsoleCmd$( n ) = "unitcontrol_static" then ConsoleCmd$( n ) = str$( UNITCONTROL_STATIC )
 		
 		rem unit abilities
 		if ConsoleCmd$( n ) = "unitability_move" then ConsoleCmd$( n ) = str$( UNITABILITY_MOVE )
@@ -512,6 +518,7 @@ function CompileEntry( inString$ , slot , lin )
 	n = _ScriptCompileEntryGUI( slot , lin )								: if n > -3 then exitfunction n
 	n = _ScriptCompileEntryMessage( slot , lin )							: if n > -3 then exitfunction n
 	n = _ScriptCompileEntryMinimap( slot , lin )							: if n > -3 then exitfunction n
+	n = _ScriptCompileEntryMusic( slot , lin )							: if n > -3 then exitfunction n
 	n = _ScriptCompileEntryScript( slot , lin )							: if n > -3 then exitfunction n
 	n = _ScriptCompileEntryUnit( slot , lin )								: if n > -3 then exitfunction n
 	n = _ScriptCompileEntryWorld( slot , lin )							: if n > -3 then exitfunction n

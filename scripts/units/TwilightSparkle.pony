@@ -2,6 +2,28 @@
 // by TheComet
 
 // -----------------------------------------------------------------------------------
+// Notes
+// -----------------------------------------------------------------------------------
+
+/*
+
+	Buttons IDs are as follows
+	-------------------------------
+		2 - move
+		3 - stop
+		4 - hold
+		5 - patrol
+		6 - attack
+		7 - teleport
+		8 - force field
+		9 - fly
+		10 - land
+		11 - meteor shower
+	
+
+*/
+
+// -----------------------------------------------------------------------------------
 // Initial setups
 // -----------------------------------------------------------------------------------
 
@@ -214,7 +236,6 @@ UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_annoyed2.wav" UNITSO
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_annoyed3.wav" UNITSOUND_ANNOYED
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_annoyed4.wav" UNITSOUND_ANNOYED
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_annoyed5.wav" UNITSOUND_ANNOYED
-UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_annoyed6.wav" UNITSOUND_ANNOYED
 
 // movement
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_move1.wav" UNITSOUND_MOVE
@@ -244,13 +265,16 @@ UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_shield1.wav" UNITSOU
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_shield2.wav" UNITSOUND_FORCEFIELD
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_shield3.wav" UNITSOUND_FORCEFIELD
 
+// meteor shower
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_meteorshower1.wav" UNITSOUND_METEOR_SHOWER
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_meteorshower2.wav" UNITSOUND_METEOR_SHOWER
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_meteorshower3.wav" UNITSOUND_METEOR_SHOWER
+
 // -----------------------------------------------------------------------------------
-// GUI
+// Portrait
 // -----------------------------------------------------------------------------------
 
-UnitAddPortraitFrame unitID "media\images\GUI\btn_g.png"
-UnitAddPortraitFrame unitID "media\images\GUI\btn_p.png"
-UnitSetPortraitFrameDelay unitID 5
+UnitAddPortraitFrame unitID media\images\GUI\portTwilight.png
 
 // NEVER forget
 end

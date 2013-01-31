@@ -90,6 +90,12 @@ function ControlCamera()
 				inc uCamera.Pos.z# , uMouse.Movey * 0.03
 			endif
 			
+			rem mouse on minimap
+			if uMouse.OnMinimap = 1 and uMouse.click = 2
+				uCamera.Pos.x# = uMouse.Click3D.x#
+				uCamera.Pos.z# = uMouse.Click3D.z# - 5
+			endif
+			
 			rem camera limits
 			if uCamera.pos.x# > uCamera.MaxPos.x# then uCamera.Pos.x# = uCamera.MaxPos.x#
 			if uCamera.Pos.x# < uCamera.MinPos.x# then uCamera.Pos.x# = uCamera.MinPos.x#
@@ -106,7 +112,7 @@ function ControlCamera()
 			if SC_RayCastGroup( 1 , uCamera.Pos.x# , 200 , uCamera.Pos.z# + 8 , uCamera.Pos.x# , -200 , uCamera.Pos.z# + 8 , 0 )
 				uCamera.Pos.y# = curvevalue( SC_GetStaticCollisionY() + uCamera.Height# , uCamera.Pos.y# , 5 / TBM.delta# )
 			endif
-			
+						
 		endif
 	endif
 

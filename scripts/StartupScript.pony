@@ -9,6 +9,9 @@ DisableIteration
 TurnAllLoggingOn
 ForceOutput 1
 
+// create splash screen
+GUICreateSplash "media\images\splashscreens\loading.png"
+
 // load necessary scripts
 LoadScript "scripts\maps\demomap\demomap.pony" 1
 LoadScript "scripts\maps\demomap\scenery.pony" 2
@@ -17,7 +20,8 @@ LoadScript "scripts\gui\gui_ingame.pony" 4
 LoadScript "scripts\units\twilightsparkle.pony" 5
 LoadScript "scripts\units\genericpegasus.pony" 6
 LoadScript "scripts\units\taintedgrunt.pony" 7
-LoadScript "scripts\units\gak.pony" 8
+LoadScript "scripts\units\GAK.pony" 8
+LoadScript "scripts\units\billboard.pony" 20
 
 // NOTE: script indexes 9-19 are used in map triggers. DON'T USE THEM.
 
@@ -26,6 +30,9 @@ RunScript 4
 
 // create world
 RunScript 1
+
+// destroy splash screen
+GUIDestroySplash
 
 // enables the drag box so units can be selected
 GUIDragBoxEnable

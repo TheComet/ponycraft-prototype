@@ -324,20 +324,4 @@ function _ScriptCompileEntryWorld( slot , lin )
 		
 	endif
 	
-	if ConsoleCmd$(0) = "worldhidepathmap"
-		
-		rem create command
-		Script( slot , lin ).cmd = CMD_WORLDHIDEPATHMAP
-		exitfunction lin+1
-		
-	endif
-	
-	if ConsoleCmd$(0) = "worldshowpathmap"
-		
-		rem create command
-		Script( slot , lin ).cmd = CMD_WORLDSHOWPATHMAP
-		exitfunction lin+1
-		
-	endif
-	
 endfunction -3

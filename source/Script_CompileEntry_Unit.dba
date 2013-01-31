@@ -143,6 +143,36 @@ function _ScriptCompileEntryUnit( slot , lin )
 		exitfunction lin+1
 	endif
 	
+	if ConsoleCmd$(0) = "unitrotate"
+		
+		rem error
+		if ConsoleCmd$(2) = ""
+			AddTextToConsole( 3 , "UnitRotate expects <UnitID> <angle#>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		endif
+		b = ScriptGetVariableID( slot , ConsoleCmd$(2) )
+		if b > -1
+			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_FLOAT then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a float! " ) : exitfunction -1
+			b = ScriptVariableList( slot , b ).Index
+		endif
+		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		if b = -1 then b = ScriptAddDataFloat( val(ConsoleCmd$(2)) )
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_UNITROTATE
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_FLOAT )
+		exitfunction lin+1
+	endif
+			
+	
 	if ConsoleCmd$(0) = "destroyunit"
 		
 		rem error
@@ -808,9 +838,12 @@ function _ScriptCompileEntryUnit( slot , lin )
 		
 		rem error
 		if ConsoleCmd$(2) = ""
-			AddTextToConsole( 3 , "UnitAddPortraitFrame expects <UnitID> <Filename$>" )
+			AddTextToConsole( 3 , "UnitAddPortraitFrame expects <UnitID> <Filename$> [Delay]" )
 			exitfunction -1
 		endif
+		
+		rem if delay wasn't specified, set -1 so default value is used
+		if ConsoleCmd$(3) = "" then ConsoleCmd$(3) = "-1"
 		
 		rem variable support
 		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
@@ -823,13 +856,20 @@ function _ScriptCompileEntryUnit( slot , lin )
 			if ScriptVariableList( slot , b ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(2) + chr$(34) + " is not a string!" ) : exitfunction -1
 			b = ScriptVariableList( slot , b ).Index
 		endif
+		c = ScriptGetVariableID( slot , ConsoleCmd$(3) )
+		if c > -1
+			if ScriptVariableList( slot , c ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(3) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			c = ScriptVariableList( slot , c ).Index
+		endif
 		if a = -1 then a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
 		if b = -1 then b = ScriptAddDataString( ConsoleCmd$(2) )
+		if c = -1 then c = ScriptAddDataInteger( val(ConsoleCmd$(3)) )
 		
 		rem create command
 		Script( slot , lin ).cmd = CMD_UNITADDPORTRAITFRAME
 		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
 		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_STRING )
+		ScriptAddDataIndexToList( slot , lin , 2 , c , SCRIPTDATA_INTEGER )
 		exitfunction lin+1
 	endif
 	
@@ -856,7 +896,7 @@ function _ScriptCompileEntryUnit( slot , lin )
 		if b = -1 then b = ScriptAddDataInteger( val(ConsoleCmd$(2)) )
 		
 		rem create command
-		Script( slot , lin ).cmd = CMD_UNITSETPORTRAITFRAMEDELAY
+		Script( slot , lin ).cmd = CMD_UNITSETPORTRAITFRAMEDELAYDEFAULT
 		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
 		ScriptAddDataIndexToList( slot , lin , 1 , b , SCRIPTDATA_INTEGER )
 		exitfunction lin+1

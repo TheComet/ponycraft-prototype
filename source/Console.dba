@@ -7,7 +7,7 @@ rem Constants
 rem ---------------------------------------------------------------------------
 
 #constant ConsoleTextMax                     100
-#constant ConsoleArgMax                      10
+#constant ConsoleArgMax                      9
 #constant ConsoleArgExtractMax					100
 
 rem ---------------------------------------------------------------------------

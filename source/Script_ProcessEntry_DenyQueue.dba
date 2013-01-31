@@ -124,17 +124,6 @@ function _Process_Command_Deny_Queue( slot , lin )
 		 AddTextToConsole( 0 , "===================================================" )
 		exitfunction 0
 	endif
-
-   rem help menu
-   if Script( slot , lin ).cmd = CMD_HELPMENU
-       AddTextToConsole( 0 , "===================================================" )
-		 AddTextToConsole( 0 , "CreateSplash                              - Creates the splash screen" )
-		 AddTextToConsole( 0 , "DestroySplash                             - Destroys the splash screen" )
-       AddTextToConsole( 0 , "CreateMenu <Menu Index>                   - Creates a menu" )
-       AddTextToConsole( 0 , "DestroyMenu                               - Destroys the menu" )
-       AddTextToConsole( 0 , "===================================================" )
-		exitfunction 0
-	endif
 	
 	rem help message
 	if Script( slot , lin ).cmd = CMD_HELPMESSAGE

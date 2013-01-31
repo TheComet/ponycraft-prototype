@@ -299,6 +299,12 @@ function _Update_Terrain_Image( n )
 	local CenterX# as float
 	local CenterZ# as float
 	
+	rem we'll want to hide the splash screen if it exists
+	if uGUI.SplashObj > 0
+		hide object uGUI.SplashObj
+		hide object uGUI.SplashFillObj
+	endif
+	
 	rem get data
 	SizeX = image width( Minimap( n ).BaseImg )
 	SizeY = image height( Minimap( n ).BaseImg )
@@ -328,8 +334,8 @@ function _Update_Terrain_Image( n )
 	set camera aspect cam , (Minimap( n ).WorldEndPos.x# - Minimap( n ).WorldStartPos.x#)/(Minimap( n ).WorldEndPos.z# - Minimap( n ).WorldStartPos.z#)
 	
 	rem get the image
-	sync
-	sync
+	sync camera cam
+	sync camera cam
 	ik paste image on image getImg , Minimap( n ).BaseImg , 0 , 0
 	
 	rem delete the camera
@@ -338,5 +344,11 @@ function _Update_Terrain_Image( n )
 	
 	rem reset current camera
 	set current camera 0
+	
+	rem show splash screen again
+	if uGUI.SplashObj > 0
+		show object uGUI.SplashObj
+		show object uGUI.SplashFillObj
+	endif
 	
 endfunction

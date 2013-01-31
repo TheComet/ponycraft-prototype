@@ -2,6 +2,28 @@
 // by TheComet
 
 // -----------------------------------------------------------------------------------
+// Notes
+// -----------------------------------------------------------------------------------
+
+/*
+
+	Buttons IDs are as follows
+	-------------------------------
+		2 - move
+		3 - stop
+		4 - hold
+		5 - patrol
+		6 - attack
+		7 - teleport
+		8 - force field
+		9 - fly
+		10 - land
+		11 - meteor shower
+	
+
+*/
+
+// -----------------------------------------------------------------------------------
 // Initial setups
 // -----------------------------------------------------------------------------------
 
@@ -18,7 +40,7 @@ int n
 // create a unit
 // position at 0,0,0
 // control is by player
-CreateUnit 4 0 0 UNITCONTROL_PLAYER "media\objects\units\players\DerpyHooves\DerpyHooves.x"
+CreateUnit 4 0 0 UNITCONTROL_NOONE "media\objects\units\players\DerpyHooves\DerpyHooves.x"
 n = this
 UnitScale n 3.5 3.5 3.5
 

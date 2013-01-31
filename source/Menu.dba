@@ -79,34 +79,7 @@ function InitMenu()
 
 endfunction
 
-function CreateSplash()
-	
-	rem logging
-	if Menu.logging = 1 then AddTextToConsole( 0 , "CreateSplash" )
 
-   rem if not created, create
-   if Menu.SplashObj = 0
-      Menu.SplashObj = find free object()
-      make object plain Menu.SplashObj , 640 , 480
-      lock object on Menu.SplashObj
-      position object Menu.SplashObj , 0 , 0 , 400
-      texture object Menu.SplashObj , SplashIMG
-   endif
-   
-   rem show splash object
-   show object Menu.SplashObj
-
-endfunction
-
-function DestroySplash()
-	
-	rem logging
-	if Menu.logging = 1 then AddTextToConsole( 0 , "DestroySplash" )
-
-   rem destroy splash object
-   hide object Menu.SplashObj
-
-endfunction
 
 function CreateMenu(n)
 

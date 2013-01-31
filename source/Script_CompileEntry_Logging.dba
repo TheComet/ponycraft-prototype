@@ -133,30 +133,7 @@ function _ScriptCompileEntryLogging( slot , lin )
 		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
 		exitfunction lin+1
 	endif
-	
-	if ConsoleCmd$(0) = "menulogging"
 		
-		rem error
-		if ConsoleCmd$(1) = ""
-			AddTextToConsole( 3 , "MenuLogging expects <value>" )
-			exitfunction -1
-		endif
-		
-		rem variable support
-		n = ScriptGetVariableID( slot , ConsoleCmd$(1) )
-		if n > -1
-			if ScriptVariableList( slot , n ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
-			n = ScriptVariableList( slot , n ).Index
-		else
-			n = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
-		endif
-		
-		rem create command
-		Script( slot , lin ).cmd = CMD_MENULOGGING
-		ScriptAddDataIndexToList( slot , lin , 0 , n , SCRIPTDATA_INTEGER )
-		exitfunction lin+1
-	endif
-	
 	if ConsoleCmd$(0) = "messagelogging"
 		
 		rem error

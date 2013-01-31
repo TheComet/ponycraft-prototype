@@ -1,0 +1,60 @@
+function _ScriptCompileEntryMusic( slot ,lin )
+	
+	rem local variables
+	local a as integer
+	
+	if ConsoleCmd$(0) = "playmusic"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "PlayMusic expects <Filename$>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_STRING then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not a string!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataString( ConsoleCmd$(1) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_PLAYMUSIC
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_STRING )
+		exitfunction lin+1
+	endif
+	
+	if ConsoleCmd$(0) = "setmusicvolume"
+		
+		rem error
+		if ConsoleCmd$(1) = ""
+			AddTextToConsole( 3 , "SetMusicVolume expects <Value>" )
+			exitfunction -1
+		endif
+		
+		rem variable support
+		a = ScriptGetVariableID( slot , ConsoleCmd$(1) )
+		if a > -1
+			if ScriptVariableList( slot , a ).DatType <> SCRIPTDATA_INTEGER then AddTextToConsole( 3 , "Variable " + chr$(34) + ConsoleCmd$(1) + chr$(34) + " is not an integer!" ) : exitfunction -1
+			a = ScriptVariableList( slot , a ).Index
+		else
+			a = ScriptAddDataInteger( val(ConsoleCmd$(1)) )
+		endif
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_PLAYMUSIC
+		ScriptAddDataIndexToList( slot , lin , 0 , a , SCRIPTDATA_INTEGER )
+		exitfunction lin+1
+	endif
+
+	if ConsoleCmd$(0) = "stopmusic"
+		
+		rem create command
+		Script( slot , lin ).cmd = CMD_STOPMUSIC
+		exitfunction lin+1
+		
+	endif
+	
+endfunction -3

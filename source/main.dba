@@ -6,7 +6,7 @@ rem ----------------------------------------------------------------------
 rem Author                    : TheComet (Alex Murray)
 rem Programmer                : TheComet (Alex Murray)
 rem Start Date                : 06. March 2012
-rem End Date                  : 
+rem End Date(Prototype)       : 15. January 2012
 rem ----------------------------------------------------------------------
 
 rem ----------------------------------------------------------------------
@@ -55,6 +55,9 @@ show mouse
 autocam off
 position mouse scw/2,sch/2
 disable escapekey
+for scd = 1 to 3
+	center text scw/2,sch/2,"...Initialising...":sync
+next scd
 
 rem ----------------------------------------------------------------------
 rem Constants
@@ -137,13 +140,11 @@ type CTRLVT
 	ForceField								as integer
 	GUI                              as integer
 	MagicMissile                     as integer
-   Menu                             as integer
 	MeteorShower                     as integer
    Message                          as integer
 	Minimap									as integer
    Mouse                            as integer
 	Script                           as integer
-	Slider                           as integer
 	TeleportEffect                   as integer
    TextEntry                        as integer
 	Trigger                          as integer
@@ -155,31 +156,6 @@ rem misc data
 type MiscVT
 	pos2D										as vec2
 	ScreenFPS								as integer
-	mousetimer								as integer
-	textentrytimer							as integer
-	guitimer									as integer
-	selectionlisttimer					as integer
-	unitqueuetimer							as integer
-	animationtimer							as integer
-	cameratimer								as integer
-	clickobjtimer							as integer
-	distortiontimer						as integer
-	magicmissiletimer						as integer
-	menutimer								as integer
-	messagetimer							as integer
-	minimaptimer							as integer
-	scripttimer								as integer
-	slidertimer								as integer
-	teleporteffecttimer					as integer
-	triggertimer							as integer
-	unittimer								as integer
-	worldtimer								as integer
-	consoletimer							as integer
-	synctimer								as integer
-	forcefieldtimer						as integer
-	meteorshowertimer						as integer
-	effecttimer								as integer
-	unitscreendrawtimer					as integer
 endtype
 
 rem ----------------------------------------------------------------------
@@ -224,13 +200,11 @@ CTRL.Effects                        = 1
 CTRL.ForceField                     = 1
 CTRL.GUI                            = 1
 CTRL.MagicMissile                   = 1
-CTRL.Menu                           = 1
 CTRL.Message                        = 1
 CTRL.MeteorShower                   = 1
 CTRL.Minimap                        = 1
 CTRL.Mouse                          = 1
 CTRL.Script                         = 1
-CTRL.Slider                         = 1
 CTRL.TeleportEffect                 = 1
 CTRL.TextEntry                      = 1
 CTRL.Trigger                        = 1
@@ -281,11 +255,11 @@ Effects_InitTeleport()
 Effects_InitTeleportSparks()
 InitGUI()
 InitMagicMissile()
-InitMenu()
 InitMessage()
 InitMeteorShower()
 InitMinimap()
 InitMouse()
+InitMusic()
 InitScript()
 InitTextEntry()
 InitTrigger()
@@ -313,18 +287,12 @@ uConsole.active = 0
 rem run startup script
 LoadScript( "scripts\StartupScript.pony" , 0 )
 RunScript( 0 )
-ControlScript()
 
 rem clip the mouse to the window
 ClipMouse()
 
 rem entering game loop
 DebugOutput( 1 , "Entering Game Loop -------------------------------" , DEBUG_NORMAL )
-
-rem load and loop music
-load music "media\music\music.mp3" , 1
-set music volume 1 , 50
-loop music 1
 
 rem ----------------------------------------------------------------------------------
 
@@ -468,6 +436,7 @@ do
 	next n
 	remend
 	
+	remstart
 	if uUnit.CurrentMax > -1
 		print "active: ";Unit( 0 ).Active
 		print "ability: ";Unit( 0 ).Ability.Active
@@ -486,6 +455,7 @@ do
 			print "    ability: ";UnitCommandChain( 0 , n ).Ability
 		next n
 	endif
+	remend
 	
 	remstart
 	b = 0
@@ -570,9 +540,7 @@ do
    a2setlineAA 0
 	
    rem refresh screen
-	misc.synctimer = hitimer(1000000)
 	sync
-	misc.synctimer = hitimer(1000000) - misc.synctimer
 
 rem end of main loop
 loop
@@ -603,16 +571,11 @@ function ControlGameElements()
 	uUnit.FormationWasCalculated = 0
 	
 	rem higher functionality elements (order of execution is relevant)
-	misc.mousetimer = hitimer(1000000)
-	if CTRL.Mouse                    = 1 then ControlMouse() : misc.mousetimer = hitimer(1000000) - misc.mousetimer
-	misc.textentrytimer = hitimer(1000000)
-	if CTRL.TextEntry                = 1 then ControlTextEntry() : misc.textentrytimer = hitimer(1000000) - misc.textentrytimer
-	misc.guitimer = hitimer(1000000)
-	if CTRL.GUI                      = 1 then ControlGUI() : misc.guitimer = hitimer(1000000) - misc.guitimer
-	misc.selectionlisttimer = hitimer(1000000)
-	if CTRL.Unit							= 1 then UnitProcessSelectionList() : misc.selectionlisttimer = hitimer(1000000) - misc.selectionlisttimer
-	misc.unitqueuetimer = hitimer(1000000)
-	if CTRL.Unit							= 1 then UnitQueueAbilities() : misc.unitqueuetimer = hitimer(1000000) - misc.unitqueuetimer
+	if CTRL.Mouse                    = 1 then ControlMouse()
+	if CTRL.TextEntry                = 1 then ControlTextEntry()
+	if CTRL.GUI                      = 1 then ControlGUI()
+	if CTRL.Unit							= 1 then UnitProcessSelectionList()
+	if CTRL.Unit							= 1 then UnitQueueAbilities()
 	
 	rem tick based controls (dependant on network code and tick counter)
 	while TBM.TickTracker < TBM.Ticks
@@ -623,22 +586,14 @@ function ControlGameElements()
 		endwhile
 		
 		rem process tick
-		misc.animationtimer = hitimer(1000000)
-		if CTRL.Animation                = 1 then ControlAnimation() : misc.animationtimer = hitimer(1000000) - misc.animationtimer
-		misc.forcefieldtimer = hitimer(1000000)
-		if CTRL.ForceField					= 1 then ControlForceField() : misc.forcefieldtimer = hitimer(1000000) - misc.forcefieldtimer
+		if CTRL.Animation                = 1 then ControlAnimation()
+		if CTRL.ForceField					= 1 then ControlForceField()
 		if CTRL.GUI                      = 1 then GUIUpdateFrame()
-		misc.magicmissiletimer = hitimer(1000000)
-		if CTRL.MagicMissile             = 1 then ControlMagicMissile() : misc.magicmissiletimer = hitimer(1000000) - misc.magicmissiletimer
-		misc.meteorshowertimer = hitimer(1000000)
-		if CTRL.MeteorShower					= 1 then ControlMeteorShower() : misc.meteorshowertimer = hitimer(1000000) - misc.meteorshowertimer
-		misc.scripttimer = hitimer(1000000)
-		if CTRL.Script                   = 1 then ControlScript() : misc.scripttimer = hitimer(1000000) - misc.scripttimer
-		misc.unittimer = hitimer(1000000)
-		if CTRL.Unit                     = 1 then ControlUnit() : misc.unittimer = hitimer(1000000) - misc.unittimer
-		misc.worldtimer = hitimer(1000000)
-		if CTRL.World                    = 1 then ControlWorld() : misc.worldtimer = hitimer(1000000) - misc.worldtimer
-		misc.effecttimer = hitimer(1000000)
+		if CTRL.MagicMissile             = 1 then ControlMagicMissile()
+		if CTRL.MeteorShower					= 1 then ControlMeteorShower()
+		if CTRL.Script                   = 1 then ControlScript()
+		if CTRL.Unit                     = 1 then ControlUnit()
+		if CTRL.World                    = 1 then ControlWorld()
 		if CTRL.Effects						= 1
 																Effects_Control3DFire()
 																Effects_Control3DSparks()
@@ -650,7 +605,6 @@ function ControlGameElements()
 																Effects_ControlTeleport()
 																Effects_ControlTeleportSparks()
 		endif
-		misc.effecttimer = hitimer(1000000) - misc.effecttimer
 		
 		rem next tick
 		inc TBM.TickTracker
@@ -659,28 +613,16 @@ function ControlGameElements()
 	rem timer based controls (not dependant on tick counter, such as interface and effects)
 	rem some of these are controlled by ticks, but don't have the need to be called exactly the same as the ticks.
 	rem these were moved here for refresh reasons.
-	misc.clickobjtimer = hitimer(1000000)
-	if CTRL.ClickObj                 = 1 then ControlClickObj() : misc.clickobjtimer = hitimer(1000000) - misc.clickobjtimer
-	misc.cameratimer = hitimer(1000000)
-	if CTRL.Camera                   = 1 then ControlCamera() : misc.cameratimer = hitimer(1000000) - misc.cameratimer
-	misc.distortiontimer = hitimer(1000000)
-   if CTRL.Distortion               = 1 then ControlDistortion() : misc.distortiontimer = hitimer(1000000) - misc.distortiontimer
-   misc.menutimer = hitimer(1000000)
-	if CTRL.Menu                     = 1 then ControlMenu() : misc.menutimer = hitimer(1000000) - misc.menutimer
-	misc.messagetimer = hitimer(1000000)
-	if CTRL.Message                  = 1 then ControlMessage() : misc.messagetimer = hitimer(1000000) - misc.messagetimer
-	misc.minimaptimer = hitimer(1000000)
-	if CTRL.Minimap						= 1 then ControlMinimap() : misc.minimaptimer = hitimer(1000000) - misc.minimaptimer
-	misc.slidertimer = hitimer(1000000)
-	if CTRL.Slider                   = 1 then ControlSlider() : misc.slidertimer = hitimer(1000000) - misc.slidertimer
-	misc.triggertimer = hitimer(1000000)
-	if CTRL.Trigger                  = 1 then ControlTrigger() : misc.triggertimer = hitimer(1000000) - misc.triggertimer
-	misc.unitscreendrawtimer = hitimer(1000000)
-	if CTRL.Unit							= 1 then ControlUnitScreenDraws() : misc.unitscreendrawtimer = hitimer(1000000) - misc.unitscreendrawtimer
+	if CTRL.ClickObj                 = 1 then ControlClickObj()
+	if CTRL.Camera                   = 1 then ControlCamera()
+   if CTRL.Distortion               = 1 then ControlDistortion()
+	if CTRL.Message                  = 1 then ControlMessage()
+	if CTRL.Minimap						= 1 then ControlMinimap()
+	if CTRL.Trigger                  = 1 then ControlTrigger()
+	if CTRL.Unit							= 1 then ControlUnitScreenDraws()
 	
 	rem higher drawing priority elements
-	misc.consoletimer = hitimer(1000000)
-	if CTRL.Console                  = 1 then ControlConsole() : misc.consoletimer = hitimer(1000000) - misc.consoletimer
+	if CTRL.Console                  = 1 then ControlConsole()
 	
 	rem distortion object
 	texture object 1001,1001
