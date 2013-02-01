@@ -40,7 +40,7 @@ int unitID
 
 // create a unit
 CreateUnit 0 0 0 UNITCONTROL_PLAYER "media\objects\units\players\TwilightSparkle\TwilightSparkle.x"
-UnitScale this 3 3 3
+UnitScale this 3.5 3.5 3.5
 
 // store unit ID
 unitID = this
@@ -121,7 +121,7 @@ SetValue Unit.Anim.GroundDieBurn.Speed 0.34
 // -----------------------------------------------------------------------------------
 
 // set speed values
-SetValue Unit.GroundSpeed 0.1
+SetValue Unit.GroundSpeed 0.112
 
 // -----------------------------------------------------------------------------------
 // View ranges
@@ -152,8 +152,7 @@ SetValue Unit.Stats.MaxMana 200
 SetValue Unit.Stats.CurrentMana 200
 
 // Regeneration rates
-SetValue Unit.Stats.ManaRegenerationRate 0.02
-SetValue Unit.Stats.HealthRegenerationRate 0.005
+SetValue Unit.Stats.ManaRegenerationRate 0.011
 
 // -----------------------------------------------------------------------------------
 // Abilities

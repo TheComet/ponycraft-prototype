@@ -18,7 +18,7 @@ int unitID
 
 // create a unit
 CreateUnit 0 0 0 UNITCONTROL_ENEMY "media\objects\units\players\Grunt\Grunt.x"
-UnitScale this 3 3 3
+UnitScale this 4.0 4.0 4.0
 
 // store unit ID
 unitID = this
@@ -87,14 +87,14 @@ SetValue Unit.Anim.GroundDieBurn.Speed 0.34
 // -----------------------------------------------------------------------------------
 
 // set speed values
-SetValue Unit.GroundSpeed 0.07
+SetValue Unit.GroundSpeed 0.14
 
 // -----------------------------------------------------------------------------------
 // View ranges
 // -----------------------------------------------------------------------------------
 
 // set ranges
-SetValue Unit.GroundViewRange 20
+SetValue Unit.GroundViewRange 17.5
 
 // -----------------------------------------------------------------------------------
 // Stats
@@ -102,8 +102,8 @@ SetValue Unit.GroundViewRange 20
 
 // health bar
 SetValue Unit.Stats.HealthEnable 1
-SetValue Unit.Stats.MaxHealth 110
-SetValue Unit.Stats.CurrentHealth 110
+SetValue Unit.Stats.MaxHealth 80
+SetValue Unit.Stats.CurrentHealth 80
 
 // -----------------------------------------------------------------------------------
 // Abilities
@@ -131,7 +131,7 @@ UnitSetAbilityGlobal this UNITABILITY_ATTACK
 
 // Ability settings
 UnitSetAbilityRange this UNITABILITY_CHANGELING_MELEE_ATTACK 2.5
-UnitSetAbilityHealthDamage this UNITABILITY_CHANGELING_MELEE_ATTACK 10
+UnitSetAbilityHealthDamage this UNITABILITY_CHANGELING_MELEE_ATTACK 16
 UnitSetAbilityAutomatic this UNITABILITY_CHANGELING_MELEE_ATTACK
 
 // -----------------------------------------------------------------------------------

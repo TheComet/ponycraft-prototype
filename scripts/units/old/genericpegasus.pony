@@ -42,7 +42,7 @@ int n
 // control is by player
 CreateUnit 4 0 0 UNITCONTROL_NOONE "media\objects\units\players\DerpyHooves\DerpyHooves.x"
 n = this
-UnitScale n 3 3 3
+UnitScale n 3.5 3.5 3.5
 
 // -----------------------------------------------------------------------------------
 // set keyframes
@@ -120,7 +120,7 @@ SetValue Unit.Anim.GroundDieBurn.Speed 0.33 n
 // -----------------------------------------------------------------------------------
 
 // set speed values
-SetValue Unit.GroundSpeed 0.1 n
+SetValue Unit.GroundSpeed 0.112 n
 SetValue Unit.AirSpeed 0.134 n
 
 // -----------------------------------------------------------------------------------
@@ -128,8 +128,8 @@ SetValue Unit.AirSpeed 0.134 n
 // -----------------------------------------------------------------------------------
 
 // ranges
-SetValue Unit.GroundViewRange 20.0 n
-SetValue Unit.AirViewRange 30.0 n
+SetValue Unit.GroundViewRange 15.0 n
+SetValue Unit.AirViewRange 28.0 n
 
 // -----------------------------------------------------------------------------------
 // Stats
@@ -139,7 +139,6 @@ SetValue Unit.AirViewRange 30.0 n
 SetValue Unit.Stats.HealthEnable 1 n
 SetValue Unit.Stats.MaxHealth 100 n
 SetValue Unit.Stats.CurrentHealth 100 n
-SetValue Unit.Stats.HealthRegenerationRate 0.005
 
 // -----------------------------------------------------------------------------------
 // Abilities

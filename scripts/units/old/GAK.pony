@@ -18,7 +18,7 @@ int unitID
 
 // create a unit
 CreateUnit 75 0 99 UNITCONTROL_PLAYER "media\objects\units\players\GAK\GAK.x"
-UnitScale this 30 30 30
+UnitScale this 40 40 40
 
 // store unit ID
 unitID = this
@@ -107,24 +107,6 @@ UnitSetAbilityGlobal this UNITABILITY_MOVE
 UnitSetAbilityGlobal this UNITABILITY_STOP
 UnitSetAbilityGlobal this UNITABILITY_HOLD
 UnitSetAbilityGlobal this UNITABILITY_PATROL
-
-// -----------------------------------------------------------------------------------
-// Sounds
-// -----------------------------------------------------------------------------------
-
-// select
-UnitAddSound unitID "media\sounds\units\GAK\GAK_select1.wav" UNITSOUND_SELECT
-UnitAddSound unitID "media\sounds\units\GAK\GAK_select2.wav" UNITSOUND_SELECT
-UnitAddSound unitID "media\sounds\units\GAK\GAK_select3.wav" UNITSOUND_SELECT
-UnitAddSound unitID "media\sounds\units\GAK\GAK_select4.wav" UNITSOUND_SELECT
-UnitAddSound unitID "media\sounds\units\GAK\GAK_annoyed1.wav" UNITSOUND_ANNOYED
-
-// move
-UnitAddSound unitID "media\sounds\units\GAK\GAK_move1.wav" UNITSOUND_MOVE
-UnitAddSound unitID "media\sounds\units\GAK\GAK_move2.wav" UNITSOUND_MOVE
-UnitAddSound unitID "media\sounds\units\GAK\GAK_move3.wav" UNITSOUND_MOVE
-UnitAddSound unitID "media\sounds\units\GAK\GAK_move4.wav" UNITSOUND_MOVE
-UnitAddSound unitID "media\sounds\units\GAK\GAK_move5.wav" UNITSOUND_MOVE
 
 // NEVER forget
 end
