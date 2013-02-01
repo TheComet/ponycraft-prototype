@@ -152,7 +152,7 @@ SetValue Unit.Stats.MaxMana 200
 SetValue Unit.Stats.CurrentMana 200
 
 // Regeneration rates
-SetValue Unit.Stats.ManaRegenerationRate 0.035
+SetValue Unit.Stats.ManaRegenerationRate 0.025
 SetValue Unit.Stats.HealthRegenerationRate 0.005
 
 // -----------------------------------------------------------------------------------

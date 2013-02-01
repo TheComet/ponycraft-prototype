@@ -65,7 +65,7 @@ SetValue Unit.Anim.GroundDieBurn.Speed 0.1
 // -----------------------------------------------------------------------------------
 
 // set speed values
-SetValue Unit.GroundSpeed 0.112
+SetValue Unit.GroundSpeed 0.05
 
 // -----------------------------------------------------------------------------------
 // View ranges
@@ -80,13 +80,8 @@ SetValue Unit.GroundViewRange 20.0
 
 // health bar
 SetValue Unit.Stats.HealthEnable 1
-SetValue Unit.Stats.MaxHealth 200
-SetValue Unit.Stats.CurrentHealth 200
-
-// Mana bar
-SetValue Unit.Stats.ManaEnable 1
-SetValue Unit.Stats.MaxMana 200
-SetValue Unit.Stats.CurrentMana 200
+SetValue Unit.Stats.MaxHealth 50
+SetValue Unit.Stats.CurrentHealth 50
 
 // -----------------------------------------------------------------------------------
 // Abilities
