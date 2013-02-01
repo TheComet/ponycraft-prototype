@@ -334,7 +334,7 @@ do
 		end
 	endif
 	
-	remstart props
+	remstart primitive world editor
 	if press = 0
 		if controlkey()
 			
@@ -444,21 +444,7 @@ do
 	rem get screen fps
 	misc.ScreenFPS = screen fps()
 	
-	remstart
-	for n = 0 to uUnit.CurrentMax
-		if Unit( n ).Control = UNITCONTROL_PLAYER
-			if Unit( n ).Active > 1
-				print "Unit ";n
-				print
-				for g = 0 to MaxUnitAbility
-					print "    (";g;") - button: ";UnitAbility( n , g ).BindButton;", hide: ";UnitAbility( n , g ).HideButton
-				next g
-			endif
-		endif
-	next n
-	remend
-	
-	remstart
+	remstart Unit debug information
 	if uUnit.CurrentMax > -1
 		print "active: ";Unit( 0 ).Active
 		print "ability: ";Unit( 0 ).Ability.Active
@@ -479,7 +465,7 @@ do
 	endif
 	remend
 	
-	remstart
+	remstart Script data trackers
 	b = 0
 	for n = 0 to uScript.CurrentIntegerDataMax
 		if ScriptIntegerData( n ).Active = 2
@@ -502,7 +488,7 @@ do
 	rem control game elements
    ControlGameElements()
 	
-	remstart world edit position
+	remstart primitive world editor
 	if controlkey()
 		if uMouse.Click = 2
 			position object World( uWorld.SlotPointer ).Obj , uMouse.Click3D.x# , uMouse.Click3D.y# , uMouse.Click3D.z#
@@ -528,34 +514,6 @@ do
 			position object World( uWorld.SlotPointer ).Obj , uMouse.Click3D.x# , object position y( World( uWorld.SlotPointer ).Obj ) , uMouse.Click3D.z#
 		endif
 	endif
-	
-	rem timer info
-	print "MouseTimer: ";misc.mousetimer
-	print "TextEntryTimer: ";misc.textentrytimer
-	print "GUITimer: ";misc.guitimer
-	print "SelectionListTimer: ";misc.selectionlisttimer
-	print "UnitQueueTimer: ";misc.unitqueuetimer
-	print "AnimationTimer: ";misc.animationtimer
-	print "ForceFieldTimer: ";misc.forcefieldtimer
-	print "MagicMissileTimer: ";misc.magicmissiletimer
-	print "MeteorShowerTimer: ";misc.meteorshowertimer
-	print "ScriptTimer: ";misc.scripttimer
-	print "TeleportEffectTimer: ";misc.teleporteffecttimer
-	print "UnitTimer: ";misc.unittimer
-	print "WorldTimer: ";misc.worldtimer
-	print "EffectTimer: ";misc.effecttimer
-	print "ClickObjTimer: ";misc.clickobjtimer
-	print "CameraTimer: ";misc.cameratimer
-	print "DistortionTimer: ";misc.distortiontimer
-	print "MenuTimer: ";misc.menutimer
-	print "MessageTimer: ";misc.messagetimer
-	print "MinimapTimer: ";misc.minimaptimer
-	print "SliderTimer: ";misc.slidertimer
-	print "TriggerTimer: ";misc.triggertimer
-	print "UnitScreenDrawTimer: ";misc.unitscreendrawtimer
-	print "SyncTimer: ";misc.synctimer
-	print "World.FogOfWar.VertexUpdateAmount: ";uWorld.FogOfWar.VertexUpdateAmount
-	print "uUnit.CurrentFormationMax: ";uUnit.CurrentFormationMax
 	remend
 
 	rem Advanced 2D fix

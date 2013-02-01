@@ -71,7 +71,7 @@ function UnitQueueAbilities()
 						if UnitAbility( n , UNITABILITY_MOVE ).Active = 1 then exitfunction
 
 					endif
-					if uMouse.click = 4 and uGUI.ButtonCancelAbility = -1
+					if uMouse.click = 4
 						
 						rem if unit under mouse is an enemy, attack instead of move
 						success = GetUnitUnderMouse()
