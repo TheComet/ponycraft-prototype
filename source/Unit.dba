@@ -930,6 +930,9 @@ function ControlUnit()
 			Unit( n ).Stats.ManaRecoil# = curvevalue( Unit( n ).Stats.CurrentMana# , Unit( n ).Stats.ManaRecoil# , 14.2 )
 			Unit( n ).Stats.ShieldRecoil# = curvevalue( Unit( n ).Stats.CurrentShield# , Unit( n ).Stats.ShieldRecoil# , 14.2 )
 			
+			rem if at any point the health drops to 0, kill unit
+			if Unit( n ).Stats.CurrentHealth# = 0.0 and (Unit( n ).Active < 16 or Unit( n ).Active > 18) then Unit( n ).Active = 16
+			
 			rem regeneration
 			if Unit( n ).Stats.CurrentHealth# < Unit( n ).Stats.MaxHealth then inc Unit( n ).Stats.CurrentHealth# , Unit( n ).Stats.HealthRegenerationRate#
 			if Unit( n ).Stats.CurrentHealth# > Unit( n ).Stats.MaxHealth then Unit( n ).Stats.CurrentHealth# = Unit( n ).Stats.MaxHealth
@@ -937,9 +940,6 @@ function ControlUnit()
 			if Unit( n ).Stats.CurrentMana# > Unit( n ).Stats.MaxMana then Unit( n ).Stats.CurrentMana# = Unit( n ).Stats.MaxMana
 			if Unit( n ).Stats.CurrentShield# < Unit( n ).Stats.MaxShield then inc Unit( n ).Stats.CurrentShield# , Unit( n ).Stats.ShieldRegenerationRate#
 			if Unit( n ).Stats.CurrentShield# > Unit( n ).Stats.MaxShield then Unit( n ).Stats.CurrentShield# = Unit( n ).Stats.MaxShield
-			
-			rem if at any point the health drops to 0, kill unit
-			if Unit( n ).Stats.CurrentHealth# = 0.0 and (Unit( n ).Active < 16 or Unit( n ).Active > 18) then Unit( n ).Active = 16
 			
 			rem handle collision with other units
 			if Unit( n ).Control <> UNITCONTROL_STATIC
