@@ -121,7 +121,9 @@ function CreateForceField( x# , y# , z# , Life )
 	show object ForceField( n ).Obj
 	scale object ForceField( n ).Obj , 0 , 0 , 0
 	position object ForceField( n ).Obj , x# , y# , z#
+	TiltObjectToTerrain( ForceField( n ).Obj , 0 )
 	SC_SetObjectCollisionOn ForceField( n ).Obj
+	SC_UpdateObject ForceField( n ).Obj
 	
 	rem set parameters
 	ForceField( n ).Active               = 2
