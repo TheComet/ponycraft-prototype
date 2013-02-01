@@ -1218,6 +1218,9 @@ function ControlUnit()
 					Unit( n ).Active = 15
 				endif
 				
+				rem allow "canceling" ability
+				Unit( n ).Ability.Active = -1
+				
 			endcase
 			
 			rem wait for recoil animation to finish
@@ -1245,6 +1248,9 @@ function ControlUnit()
 					endif
 					
 				endif
+				
+				rem allow "canceling" ability
+				Unit( n ).Ability.Active = -1
 				
 			endcase
 			

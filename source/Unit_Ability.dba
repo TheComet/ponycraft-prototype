@@ -735,11 +735,18 @@ function _Unit_Handle_Active_Abilities( n )
 						rem in range and visible
 						if dist# < Unit( n  ).GroundViewRange#^2 and Unit( r ).Visible = 1
 							
-							rem activate ability
-							Unit( n ).Ability.Active = Unit( n ).Ability.Automatic
-							Unit( n ).AttackActive = 1
-							if Unit( n ).FollowUnit = -1 then Unit( n ).FollowUnit = r
-							exit
+							rem special cases ---------------
+							
+							rem changeling melee attack cannot attack air
+							if Unit( r ).HeightOffset# < 0.222
+							
+								rem activate ability
+								Unit( n ).Ability.Active = Unit( n ).Ability.Automatic
+								Unit( n ).AttackActive = 1
+								if Unit( n ).FollowUnit = -1 then Unit( n ).FollowUnit = r
+								exit
+								
+							endif
 							
 						endif
 						
@@ -752,6 +759,9 @@ function _Unit_Handle_Active_Abilities( n )
 	
 	rem unit is moving
 	if Unit( n ).Ability.Active = UNITABILITY_MOVE
+		
+		rem set correct state
+		Unit( n ).Active = 2
 		
 		rem check if unit has a target unit
 		if Unit( n ).FollowUnit > -1
