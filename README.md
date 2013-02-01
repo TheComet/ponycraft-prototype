@@ -18,10 +18,14 @@
 # Programming
 #  *TheComet
 
+# Updater "AdvUpdate"
+#  *SergioK
+
 # 2D Artwork
 #  *Alccarion
 #  *Xatiav
 #  *The Raincloud
+#  *nonZero
 
 # 3D Scenery
 #  *mrHandy

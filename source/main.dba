@@ -444,7 +444,7 @@ do
 	rem get screen fps
 	misc.ScreenFPS = screen fps()
 	
-	rem Unit debug information
+	remstart Unit debug information
 	if uUnit.CurrentMax > -1
 		print "active: ";Unit( 0 ).Active
 		print "ability: ";Unit( 0 ).Ability.Active
@@ -463,6 +463,7 @@ do
 			print "    ability: ";UnitCommandChain( 0 , n ).Ability
 		next n
 	endif
+	remend
 	
 	remstart Script data trackers
 	b = 0
