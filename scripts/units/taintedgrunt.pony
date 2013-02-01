@@ -102,8 +102,8 @@ SetValue Unit.GroundViewRange 20
 
 // health bar
 SetValue Unit.Stats.HealthEnable 1
-SetValue Unit.Stats.MaxHealth 110
-SetValue Unit.Stats.CurrentHealth 110
+SetValue Unit.Stats.MaxHealth 80
+SetValue Unit.Stats.CurrentHealth 80
 
 // -----------------------------------------------------------------------------------
 // Abilities

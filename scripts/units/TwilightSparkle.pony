@@ -152,7 +152,7 @@ SetValue Unit.Stats.MaxMana 200
 SetValue Unit.Stats.CurrentMana 200
 
 // Regeneration rates
-SetValue Unit.Stats.ManaRegenerationRate 0.02
+SetValue Unit.Stats.ManaRegenerationRate 0.035
 SetValue Unit.Stats.HealthRegenerationRate 0.005
 
 // -----------------------------------------------------------------------------------
@@ -200,7 +200,7 @@ UnitSetAbilityLocal this UNITABILITY_METEOR_SHOWER
 
 // Magic Missile
 UnitSetAbilityRange this UNITABILITY_MAGIC_MISSILE 17.0
-UnitSetAbilityHealthDamage this UNITABILITY_MAGIC_MISSILE 20
+UnitSetAbilityHealthDamage this UNITABILITY_MAGIC_MISSILE 18
 UnitSetAbilityAutomatic this UNITABILITY_MAGIC_MISSILE
 UnitSetAbilityManaDrain this UNITABILITY_MAGIC_MISSILE 200
 
