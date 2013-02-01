@@ -3,22 +3,22 @@ rem Unit - Controls all basic movements of units
 rem ---------------------------------------------------------------------------
 
 remstart
-	 This file is part of PonyCraft - Tainted Skies (prototype)
+    This file is part of PonyCraft - Tainted Skies (prototype)
 
     PonyCraft - Tainted Skies (prototype) is free software: you can
-	 redistribute it and/or modify it under the terms of the
-	 GNU General Public License as published by the Free Software
-	 Foundation, either version 3 of the License, or (at your option)
-	 any later version.
+    redistribute it and/or modify it under the terms of the
+    GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option)
+    any later version.
 
     PonyCraft - Tainted Skies (prototype) is distributed in the hope
-	 that it will be useful, but WITHOUT ANY WARRANTY; without even
-	 the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-	 PURPOSE.  See the GNU General Public License for more details.
+    that it will be useful, but WITHOUT ANY WARRANTY; without even
+    the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+    PURPOSE.  See the GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
     along with PonyCraft - Tainted Skies (prototype). If not, see
-	 <http://www.gnu.org/licenses/>.
+    <http://www.gnu.org/licenses/>.
 remend
 
 remstart
@@ -1779,37 +1779,39 @@ function ControlUnitScreenDraws()
 			rem only draw bars if unit is selected or ALT is pressed and unit is visible
 			if (keystate(56) or Unit( n ).Selected > 0) and Unit( n ).Visible = 1
 				
-				rem get screen coordinates of unit
+				rem check if unit is in screen
 				if ObjectInScreen( Unit( n ).Obj )
+					
+					rem get screen coordinates
 					sx = object screen x( Unit( n ).Obj )
 					sy = object screen y( Unit( n ).Obj )
-				endif
+					
+					rem draw health bar
+					success = Unit( n ).Stats.HealthEnable
+					if success = 1 and Unit( n ).Stats.ShieldEnable = 0
+						a2box sx - 40 , sy - 80 , sx + 40 , sy - 75 , 0x80808080
+						a2fillbox sx - 39 , sy - 79 , sx - 38 + ((Unit( n ).Stats.HealthRecoil# * 78) / Unit( n ).Stats.MaxHealth ) , sy - 75 , 0xFFFF0000
+						a2fillbox sx - 39 , sy - 79 , sx - 38 + ((Unit( n ).Stats.CurrentHealth# * 78) / Unit( n ).Stats.MaxHealth ) , sy - 75 , 0xFF00FF50
+					endif
+					
+					rem draw health and shield bar
+					if success = 1 and Unit( n ).Stats.ShieldEnable = 1
+						a2box sx - 40 , sy - 80 , sx + 40 , sy - 75 , 0x80808080
+						a2line sx , sy - 79 , sx , sy - 75 , 0x80808080
+						a2fillbox sx - 39 , sy - 79 , sx - 37 + ((Unit( n ).Stats.HealthRecoil# * 38) / Unit( n ).Stats.MaxHealth ) , sy -  75 , 0xFFFF0000
+						a2fillbox sx + 1 , sy - 79 , sx + 2 + ((Unit( n ).Stats.ShieldRecoil# * 38) / Unit( n ).Stats.MaxShield ) , sy - 75 , 0xFFFF0000
+						a2fillbox sx - 39 , sy - 79 , sx - 37 + ((Unit( n ).Stats.CurrentHealth# * 38) / Unit( n ).Stats.MaxHealth ) , sy -  75 , 0xFF00FF50
+						a2fillbox sx + 1 , sy - 79 , sx + 2 + ((Unit( n ).Stats.CurrentShield# * 38) / Unit( n ).Stats.MaxShield ) , sy - 75 , 0xFFF000FF
+					endif
+					
+					rem draw mana bar
+					if Unit( n ).Stats.ManaEnable = 1
+						a2box sx - 40 , sy - 75 , sx + 40 , sy - 70 , 0x80808080
+						a2fillbox sx - 39 , sy - 74 , sx - 38 + ((Unit( n ).Stats.ManaRecoil# * 78) / Unit( n ).Stats.MaxMana ) , sy - 70 , 0xFFFF0000
+						a2fillbox sx - 39 , sy - 74 , sx - 38 + ((Unit( n ).Stats.CurrentMana# * 78) / Unit( n ).Stats.MaxMana ) , sy - 70 , 0xFF0060FF
+					endif
 				
-				rem draw health bar
-				success = Unit( n ).Stats.HealthEnable
-				if success = 1 and Unit( n ).Stats.ShieldEnable = 0
-					a2box sx - 40 , sy - 80 , sx + 40 , sy - 75 , 0x80808080
-					a2fillbox sx - 39 , sy - 79 , sx - 38 + ((Unit( n ).Stats.HealthRecoil# * 78) / Unit( n ).Stats.MaxHealth ) , sy - 75 , 0xFFFF0000
-					a2fillbox sx - 39 , sy - 79 , sx - 38 + ((Unit( n ).Stats.CurrentHealth# * 78) / Unit( n ).Stats.MaxHealth ) , sy - 75 , 0xFF00FF50
 				endif
-				
-				rem draw health and shield bar
-				if success = 1 and Unit( n ).Stats.ShieldEnable = 1
-					a2box sx - 40 , sy - 80 , sx + 40 , sy - 75 , 0x80808080
-					a2line sx , sy - 79 , sx , sy - 75 , 0x80808080
-					a2fillbox sx - 39 , sy - 79 , sx - 37 + ((Unit( n ).Stats.HealthRecoil# * 38) / Unit( n ).Stats.MaxHealth ) , sy -  75 , 0xFFFF0000
-					a2fillbox sx + 1 , sy - 79 , sx + 2 + ((Unit( n ).Stats.ShieldRecoil# * 38) / Unit( n ).Stats.MaxShield ) , sy - 75 , 0xFFFF0000
-					a2fillbox sx - 39 , sy - 79 , sx - 37 + ((Unit( n ).Stats.CurrentHealth# * 38) / Unit( n ).Stats.MaxHealth ) , sy -  75 , 0xFF00FF50
-					a2fillbox sx + 1 , sy - 79 , sx + 2 + ((Unit( n ).Stats.CurrentShield# * 38) / Unit( n ).Stats.MaxShield ) , sy - 75 , 0xFFF000FF
-				endif
-				
-				rem draw mana bar
-				if Unit( n ).Stats.ManaEnable = 1
-					a2box sx - 40 , sy - 75 , sx + 40 , sy - 70 , 0x80808080
-					a2fillbox sx - 39 , sy - 74 , sx - 38 + ((Unit( n ).Stats.ManaRecoil# * 78) / Unit( n ).Stats.MaxMana ) , sy - 70 , 0xFFFF0000
-					a2fillbox sx - 39 , sy - 74 , sx - 38 + ((Unit( n ).Stats.CurrentMana# * 78) / Unit( n ).Stats.MaxMana ) , sy - 70 , 0xFF0060FF
-				endif
-				
 			endif
 			
 		endif

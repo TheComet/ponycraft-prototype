@@ -10,40 +10,41 @@
 # CREDITS
 # --------------------------------------------------------------------
 
-# Concept(s)
-#  *TheComet
-#  *CoffeeGrunt
-#  *ScreenedPlum
+Concept(s)
+ *Alex "" Murray (TheComet)
+ *Jamie "Mac-No-Coffee" Macdonald (CoffeeGrunt)
+ *Ben "The Plum" Tompsett
 
-# Programming
-#  *TheComet
+Programming
+ *Alex "" Murray (TheComet)
 
-# Updater "AdvUpdate"
-#  *SergioK
+Updater "AdvUpdate"
+ *SergioK
 
-# 2D Artwork
-#  *Alccarion
-#  *Xatiav
-#  *The Raincloud
-#  *nonZero
+Web Programming
+ *Jooles "Jesus" Cromarty
 
-# 3D Scenery
-#  *mrHandy
-#  *TheComet
-#  *puzzleowl
+2D Artwork
+ *Florent "Melon" Biton
+ *Xatiav "Rage Quit"
+ *The Raincloud
+ *nonZero
 
-# 3D Characters
-#  *Darth Biomech
+3D Scenery
+ *mr "ASBO" Handy
+ *Alex "" Murray (TheComet)
+ *puzzleowl
 
-# Music
-#  *Legendary
+3D Characters
+ *Darth Biomech
 
-# Voice Acting
-#  *Rina-Chan
+Music
+ *Legendary
 
-# Web Programming
-#  *Urioxis
+Voice Acting
+ *Rina-Chan
 
 
 
-# ©BlankFlankStudios
+©BlankFlankStudios
+
