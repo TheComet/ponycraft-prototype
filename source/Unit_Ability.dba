@@ -676,12 +676,11 @@ function UnitUseAbility( n , ability , x# , z# , TargetUnit , Keys )
 		ResetUnitPath( n )
 		
 		rem activate teleport
-		Unit( n ).Ability.Active = UNITABILITY_MOVE
+		Unit( n ).Ability.Active = UNITABILITY_TELEPORT
 		Unit( n ).AttackActive = 0
 		Unit( n ).FollowUnit = -1
 		Unit( n ).Ability.Destination.x# = x#
 		Unit( n ).Ability.Destination.z# = z#
-		Unit( n ).Active = 19
 		
 		rem exit
 		exitfunction
@@ -761,7 +760,7 @@ function _Unit_Handle_Active_Abilities( n )
 	if Unit( n ).Ability.Active = UNITABILITY_MOVE
 		
 		rem set correct state
-		Unit( n ).Active = 2
+		if Unit( n ).HeightOffset# < 0.222 then Unit( n ).Active = 2
 		
 		rem check if unit has a target unit
 		if Unit( n ).FollowUnit > -1
@@ -877,6 +876,15 @@ function _Unit_Handle_Active_Abilities( n )
 			Unit( n ).Ability.Active = -1
 			Unit( n ).AttackActive = 0
 		endif
+		
+	endif
+	
+	rem teleport
+	if Unit( n ).Ability.Active = UNITABILITY_TELEPORT
+		
+		rem set state
+		Unit( n ).Active = 19
+		Unit( n ).Ability.Active = UNITABILITY_MOVE
 		
 	endif
 	
