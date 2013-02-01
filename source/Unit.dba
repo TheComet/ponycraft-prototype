@@ -782,7 +782,7 @@ function UnitPlaySound( n , typ )
 	until UnitSoundList( n , s ).typ = typ
 	
 	rem play sound
-	if s > -1 and hitimer(1000) - uUnitSoundPlayer.CoolDown > 5000
+	if s > -1 and hitimer(1000) - uUnitSoundPlayer.CoolDown > 3000
 		uUnitSoundPlayer.CoolDown = hitimer(1000)
 		uUnitSoundPlayer.CurrentSound = UnitSoundList( n , s ).SND
 		uUnitSoundPlayer.LastSoundIndex = s
