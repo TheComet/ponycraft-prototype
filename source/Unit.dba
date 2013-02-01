@@ -3,6 +3,25 @@ rem Unit - Controls all basic movements of units
 rem ---------------------------------------------------------------------------
 
 remstart
+	 This file is part of PonyCraft - Tainted Skies (prototype)
+
+    PonyCraft - Tainted Skies (prototype) is free software: you can
+	 redistribute it and/or modify it under the terms of the
+	 GNU General Public License as published by the Free Software
+	 Foundation, either version 3 of the License, or (at your option)
+	 any later version.
+
+    PonyCraft - Tainted Skies (prototype) is distributed in the hope
+	 that it will be useful, but WITHOUT ANY WARRANTY; without even
+	 the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	 PURPOSE.  See the GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with PonyCraft - Tainted Skies (prototype). If not, see
+	 <http://www.gnu.org/licenses/>.
+remend
+
+remstart
 	AttackActive 			- 0 if a unit is walking a "green" path, i.e. unit will pass hostile units without attacking
 								  1 if a unit is walking a "red" path, i.i. unit will attack any hostile units along the path
 	FollowUnit				- Stores the ID of a unit to follow.
