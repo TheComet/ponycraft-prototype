@@ -1,6 +1,6 @@
 version=DBP1.00
 ;--> DarkBASIC Professional Project <--
-;--> Created with Indigo 1.3.3.1 <--
+;--> Created with Indigo 1.3.2.11 <--
 ;--> Basic project details <--
 project name=PonyCraft
 project comments=
@@ -79,7 +79,7 @@ CLI=NO
 ;--> Media Settings <--
 compression=NO
 encryption=NO
-media root path=C:\Program Files (x86)\The Game Creators\Dark Basic Professional Online\Projects\PonyCraft\Project_Online\ponycraft-prototype\
+media root path=C:\Program Files (x86)\The Game Creators\Dark Basic Professional Online\Projects\PonyCraft\Project\ponycraft-prototype\
 
 ;--> Included Media <--
 

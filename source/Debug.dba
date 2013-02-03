@@ -250,13 +250,30 @@ function LoadImage(filename$,forceload)
 
 endfunction img
 
-function LoadSound(filename$,snd)
+function LoadSound(filename$)
+	
+	rem check if sound has been loaded before
+	for n = 0 to uDebug.LoadListCount
+		if filename$ = DebugLoadList( n ).filename$ then exit
+	next n
+	
+	rem not loaded before
+	if n = uDebug.LoadListCount+1
+		snd = find free sound()
+		DebugOutput(0,"Loading Sound "+chr$(34)+filename$+chr$(34)+", index : "+str$(snd),DEBUG_NORMAL)
+		if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
+		load sound filename$,snd
+		inc uDebug.LoadListCount
+		array insert at bottom DebugLoadList()
+		DebugLoadList( n ).filename$ = filename$
+		DebugLoadList( n ).ID = snd
+		
+	rem loaded before
+	else
+		snd = DebugLoadList( n ).ID
+	endif
 
-   DebugOutput(0,"Loading Sound "+chr$(34)+filename$+chr$(34)+", index : "+str$(snd),DEBUG_NORMAL)
-   if file exist(filename$)=0 then DebugOutput(3,"File "+chr$(34)+filename$+chr$(34)+" does not exist!",DEBUG_NORMAL)
-   load sound filename$,snd
-
-endfunction
+endfunction snd
 
 function LoadMusic(filename$,msc)
 

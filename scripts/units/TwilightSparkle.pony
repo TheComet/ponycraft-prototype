@@ -248,6 +248,14 @@ UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_move6.wav" UNITSOUND
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_move7.wav" UNITSOUND_MOVE
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_move8.wav" UNITSOUND_MOVE
 
+// death
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_hit2.wav" UNITSOUND_DIE
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_hit3.wav" UNITSOUND_DIE
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_hit5.wav" UNITSOUND_DIE
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_hit3.wav" UNITSOUND_DIE
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_damaged1.wav" UNITSOUND_DIE
+UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_damaged2.wav" UNITSOUND_DIE
+
 // target
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_target1.wav" UNITSOUND_TARGET
 UnitAddSound unitID "media\sounds\units\TwilightSparkle\twi_target2.wav" UNITSOUND_TARGET

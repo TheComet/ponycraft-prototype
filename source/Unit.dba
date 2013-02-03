@@ -550,11 +550,6 @@ function DestroyUnit( n )
 		if UnitEffectList( n , g ).typ = 1 then Effects_DestroyEyeGlow( UnitEffectList( n , g ).Index )
 	next g
 	
-	rem remove any sounds
-	for g = 0 to Unit( n ).SoundListCount
-		delete sound UnitSoundList( n , g ).SND
-	next g
-	
 	rem destroy portrait
 	GUIDestroyFrame( Unit( n ).PortraitID )
 	
@@ -717,8 +712,7 @@ function UnitAddSound( n , filename$ , typ )
 	endif
 	
 	rem load sound and save
-	UnitSoundList( n , Unit( n ).SoundListCount ).SND = find free sound()
-	load sound filename$ , UnitSoundList( n , Unit( n ).SoundListCount ).SND
+	UnitSoundList( n , Unit( n ).SoundListCount ).SND = LoadSound( filename$ )
 	UnitSoundList( n , Unit( n ).SoundListCount ).typ = typ
 	
 endfunction
@@ -777,7 +771,13 @@ function UnitPlaySound( n , typ )
 	until UnitSoundList( n , s ).typ = typ
 	
 	rem play sound
-	if s > -1 and hitimer(1000) - uUnitSoundPlayer.CoolDown > 3000
+	if s > -1 and (hitimer(1000) - uUnitSoundPlayer.CoolDown > 3000 or typ = UNITSOUND_DIE)
+		if uUnitSoundPlayer.LastSoundIndex > 0
+			if sound exist( uUnitSoundPlayer.LastSoundIndex )
+				if sound playing( uUnitSoundPlayer.LastSoundIndex ) then stop sound uUnitSoundPlayer.LastSoundIndex
+			endif
+		endif
+		AddTextToConsole( 0 , "Playing sound " + str$( UnitSoundList( n , s ).SND ) )
 		uUnitSoundPlayer.CoolDown = hitimer(1000)
 		uUnitSoundPlayer.CurrentSound = UnitSoundList( n , s ).SND
 		uUnitSoundPlayer.LastSoundIndex = s
@@ -1264,6 +1264,9 @@ function ControlUnit()
 				StopObject( Unit( n ).Obj )
 				if Unit( n ).RandomValue = 0 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.GroundDie1.mStart , Unit( n ).Anim.GroundDie1.mEnd , Unit( n ).Anim.GroundDie1.mSpeed# )
 				if Unit( n ).RandomValue = 1 then PlayObject( Unit( n ).Obj , Unit( n ).Anim.GroundDie2.mStart , Unit( n ).Anim.GroundDie2.mEnd , Unit( n ).Anim.GroundDie2.mSpeed# )
+				
+				rem play die sound
+				UnitPlaySound( n , UNITSOUND_DIE )
 				
 				rem next state
 				Unit( n ).Active = 18
