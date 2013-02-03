@@ -760,7 +760,7 @@ function _Unit_Handle_Active_Abilities( n )
 	if Unit( n ).Ability.Active = UNITABILITY_MOVE
 		
 		rem set correct state
-		if Unit( n ).HeightOffset# < 0.222 then Unit( n ).Active = 2
+		if Unit( n ).HeightOffset# < 0.222 and Unit( n ).Active <> 3 and Unit( n ).Active <> 4 and Unit( n ).Active <> 5 and Unit( n ).Active <> 11 and Unit( n ).Active <> 12 then Unit( n ).Active = 2
 		
 		rem check if unit has a target unit
 		if Unit( n ).FollowUnit > -1
