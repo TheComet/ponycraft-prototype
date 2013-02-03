@@ -93,7 +93,7 @@ SetValue Unit.Anim.LandArriveBottom.End 566 n
 // -----------------------------------------------------------------------------------
 
 // ground speeds
-SetValue Unit.Anim.Idle.Speed 0.84 n
+SetValue Unit.Anim.Idle.Speed 0.64 n
 SetValue Unit.Anim.Creep.Speed 0.84 n
 SetValue Unit.Anim.Walk.Speed 0.84 n
 SetValue Unit.Anim.Run.Speed 0.84 n
@@ -155,6 +155,12 @@ UnitAddAbility n UNITABILITY_LAND 10
 GUIBindButtonToUnit 10 n
 UnitSetAbilityGlobal n UNITABILITY_LAND
 UnitLockAbility n UNITABILITY_LAND
+
+// -----------------------------------------------------------------------------------
+// Portrait
+// -----------------------------------------------------------------------------------
+
+UnitAddPortraitFrame unitID media\images\GUI\portDerpy.png
 
 // NEVER forget this
 end

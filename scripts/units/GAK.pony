@@ -121,5 +121,11 @@ UnitAddSound unitID "media\sounds\units\GAK\GAK_move3.wav" UNITSOUND_MOVE
 UnitAddSound unitID "media\sounds\units\GAK\GAK_move4.wav" UNITSOUND_MOVE
 UnitAddSound unitID "media\sounds\units\GAK\GAK_move5.wav" UNITSOUND_MOVE
 
+// -----------------------------------------------------------------------------------
+// Portrait
+// -----------------------------------------------------------------------------------
+
+UnitAddPortraitFrame unitID media\images\GUI\portGAK.png
+
 // NEVER forget
 end

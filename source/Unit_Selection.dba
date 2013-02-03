@@ -33,7 +33,7 @@ function UnitProcessSelectionList()
 	priority = 0
 	for n = 0 to uUnit.CurrentMax
 		if Unit( n ).Active > 1 and Unit( n ).Visible = 1
-				
+			
 			rem reset success
 			success = 0
 			
@@ -92,7 +92,7 @@ function UnitProcessSelectionList()
 						HideUnitPath( n )
 					endif
 				endif
-		
+				
 				rem a box has been dragged (mouse has let go)
 				if GUIDragBox.Active = 2
 					

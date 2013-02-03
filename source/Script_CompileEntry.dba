@@ -506,7 +506,6 @@ function CompileEntry( inString$ , slot , lin )
 		if ConsoleCmd$( n ) = "unitsound_teleport" then ConsoleCmd$( n ) = str$( UNITSOUND_TELEPORT )
 		if ConsoleCmd$( n ) = "unitsound_kill" then ConsoleCmd$( n ) = str$( UNITSOUND_KILL )
 		if ConsoleCmd$( n ) = "unitsound_die" then ConsoleCmd$( n ) = str$( UNITSOUND_DIE )
-		if ConsoleCmd$( n ) = "unitsound_meteorshower" then ConsoleCmd$( n ) = str$( UNITSOUND_METEORSHOWER )
 		if ConsoleCmd$( n ) = "unitsound_forcefield" then ConsoleCmd$( n ) = str$( UNITSOUND_FORCEFIELD )
 		if ConsoleCmd$( n ) = "unitsound_meteor_shower" then ConsoleCmd$( n ) = str$( UNITSOUND_METEOR_SHOWER )
 		

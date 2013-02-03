@@ -47,9 +47,8 @@ rem unit sounds
 #constant UNITSOUND_TELEPORT			5
 #constant UNITSOUND_KILL				6
 #constant UNITSOUND_DIE					7
-#constant UNITSOUND_METEORSHOWER		8
-#constant UNITSOUND_FORCEFIELD		9
-#constant UNITSOUND_METEOR_SHOWER	10
+#constant UNITSOUND_FORCEFIELD		8
+#constant UNITSOUND_METEOR_SHOWER	9
 
 rem ---------------------------------------------------------------------------
 rem User defined types
@@ -321,18 +320,14 @@ function CreateUnit( Filename$ , x# , y# , z# , control )
 			Unit( n ).Obj = find free object()
 			clone object Unit( n ).Obj , UnitSourceModelList( uUnit.CurrentSourceModelListMax ).Obj , 1
 			Unit( n ).SourceModelID = uUnit.CurrentSourceModelListMax
-			
-			DebugOutput( 4 , "Add model to source list: " + Filename$ , DEBUG_NORMAL )
-			
+						
 		else
 		
 			rem clone the object
 			Unit( n ).Obj = find free object()
 			clone object Unit( n ).Obj , UnitSourceModelList( s ).Obj , 1
 			Unit( n ).SourceModelID = s
-			
-			DebugOutput( 4 , "Cloned model from source list" , DEBUG_NORMAL )
-			
+						
 		endif
 	endif
 	

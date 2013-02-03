@@ -127,9 +127,9 @@ function _Process_Command_Allow_Queue( slot , lin )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_PRINT
-		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_STRING then AddTextToConsole( 3 , ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
-		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_FLOAT then AddTextToConsole( 3 , str$(ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat#) )
-		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_INTEGER then AddTextToConsole( 3 , str$(ScriptintegerData( ScriptDataList(slot,lin,0).Index ).dat) )
+		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_STRING then AddTextToConsole( 0 , ScriptStringData( ScriptDataList(slot,lin,0).Index ).dat$ )
+		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_FLOAT then AddTextToConsole( 0 , str$(ScriptFloatData( ScriptDataList(slot,lin,0).Index ).dat#) )
+		if ScriptDataList( slot , lin , 0 ).DatType = SCRIPTDATA_INTEGER then AddTextToConsole( 0 , str$(ScriptintegerData( ScriptDataList(slot,lin,0).Index ).dat) )
 		exitfunction 0
 	endif
 	if Script( slot , lin ).cmd = CMD_RESETGAMETIMER
