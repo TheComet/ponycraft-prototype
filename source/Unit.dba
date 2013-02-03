@@ -748,13 +748,6 @@ function UnitPlaySound( n , typ )
 	else
 		s = uUnitSoundPlayer.LastSoundIndex
 	endif
-		
-	rem make sure no other sound is currently playing
-	if uUnitSoundPlayer.CurrentSound > 0
-		if sound exist( uUnitSoundPlayer.CurrentSound )
-			if sound playing( uUnitSoundPlayer.CurrentSound ) then exitfunction
-		endif
-	endif
 	
 	rem get next index for sound to play
 	r = 0
@@ -772,12 +765,24 @@ function UnitPlaySound( n , typ )
 	
 	rem play sound
 	if s > -1 and (hitimer(1000) - uUnitSoundPlayer.CoolDown > 3000 or typ = UNITSOUND_DIE)
+		
+		rem make sure no other sound is playing
 		if uUnitSoundPlayer.LastSoundIndex > 0
 			if sound exist( uUnitSoundPlayer.LastSoundIndex )
-				if sound playing( uUnitSoundPlayer.LastSoundIndex ) then stop sound uUnitSoundPlayer.LastSoundIndex
+				if sound playing( uUnitSoundPlayer.LastSoundIndex )
+					
+					rem special cases require sounds to play, regardless
+					if typ = UNITSOUND_DIE
+						stop sound uUnitSoundPlayer.LastSoundIndex
+					else
+						exitfunction
+					endif
+					
+				endif
 			endif
 		endif
-		AddTextToConsole( 0 , "Playing sound " + str$( UnitSoundList( n , s ).SND ) )
+		
+		rem play the sound
 		uUnitSoundPlayer.CoolDown = hitimer(1000)
 		uUnitSoundPlayer.CurrentSound = UnitSoundList( n , s ).SND
 		uUnitSoundPlayer.LastSoundIndex = s
@@ -1334,8 +1339,8 @@ function ControlUnit()
 				rem use mana
 				DamageUnit( n , 0.0 , UnitAbility( n , UNITABILITY_TELEPORT ).ManaDrain# )
 				
-				rem reset ability
-				Unit( n ).Ability.Active = -1
+				rem find path to destination
+				UnitCalculatePath( n , x# , z# , Unit( n ).Ability.Destination.x# , Unit( n ).Ability.Destination.z# )
 				
 				rem return to idle
 				Unit( n ).Active = 2
