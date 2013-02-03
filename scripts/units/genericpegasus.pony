@@ -160,7 +160,7 @@ UnitLockAbility n UNITABILITY_LAND
 // Portrait
 // -----------------------------------------------------------------------------------
 
-UnitAddPortraitFrame unitID media\images\GUI\portDerpy.png
+UnitAddPortraitFrame n media\images\GUI\portDerpy.png
 
 // NEVER forget this
 end

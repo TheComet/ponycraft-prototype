@@ -841,6 +841,10 @@ function ControlUnit()
 	local y# as float
 	local z# as float
 	local selectcase as integer
+	local portraitWasShown as integer
+	
+	rem reset values
+	portraitWasShown = 0
 	
 	rem loop through all active units
 	for n = 0 to uUnit.CurrentMax
@@ -903,8 +907,11 @@ function ControlUnit()
 					rotate object Unit( n ).SelectObj , curveangle( 0 , object angle x(Unit( n ).SelectObj) , 7.1 ) , 0 , curveangle( 0 , object angle z(Unit( n ).SelectObj) , 7.1 )
 				endif
 				
-				rem show portrait
-				GUIShowFrame( Unit( n ).PortraitID )
+				rem show portrait with high priority on lower ID values
+				if PortraitWasShown = 0
+					PortraitWasShown = 1
+					GUIShowFrame( Unit( n ).PortraitID )
+				endif
 			else
 			
 				rem hide fully selected object
