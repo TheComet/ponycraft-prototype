@@ -246,7 +246,7 @@ function GUIAddFrame( n , Filename$ , delay )
 	ik resize image GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG , (image width( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG ) * uScreen.sc_wx) / 1600.0 , (image height( GUIFrame( n , GUIFrame( n , 0 ).FrameCount ).IMG) * uScreen.sch) / 1200.0 , 1
 	
 	rem sprite it
-	if GUIFrame( n , 0 ).SPR = 0 then GUIFrame( n , 0 ).SPR = find free sprite()
+	if GUIFrame( n , 0 ).FrameCount = 0 then GUIFrame( n , 0 ).SPR = find free sprite()
 	sprite GUIFrame( n , 0 ).SPR , GUIFrame( n , 0 ).pos.x , GUIFrame( n , 0 ).pos.y , GUIFrame( n , 0 ).IMG
 	
 	rem use default delay if necessary
@@ -267,15 +267,16 @@ function GUIDestroyFrame( n )
 	if n < 0 or n > uGUI.CurrentFrameMax then exitfunction
 	if GUIFrame( n , 0 ).Active < 2 then exitfunction
 	
+	rem destroy
+	if GUIFrame( n , 0 ).SPR > 0
+		if sprite exist( GUIFrame( n , 0 ).SPR ) then delete sprite GUIFrame( n , 0 ).SPR
+	endif
+	
 	rem delete images
 	for s = 0 to GUIFrame( n , 0 ).FrameCount
 		if image exist( GUIFrame( n , s ).IMG ) then delete image GUIFrame( n , s ).IMG
 	next s
 		
-	rem destroy
-	if GUIFrame( n , 0 ).SPR > 0
-		if sprite exist( GUIFrame( n , 0 ).SPR ) then delete sprite GUIFrame( n , 0 ).SPR
-	endif
 	GUIFrame( n , 0 ).Active = 0
 	
 endfunction

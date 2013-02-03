@@ -444,27 +444,6 @@ do
 	rem get screen fps
 	misc.ScreenFPS = screen fps()
 	
-	remstart Unit debug information
-	if uUnit.CurrentMax > -1
-		print "active: ";Unit( 0 ).Active
-		print "ability: ";Unit( 0 ).Ability.Active
-		print "automatic ability: ";Unit( 0 ).Ability.Automatic
-		print "attack: ";Unit( 0 ).AttackActive
-		print "follow: ";Unit( 0 ).FollowUnit
-		print "size: ";Unit( 0 ).Size#
-		print "HeightOffset: ";Unit( 0 ).HeightOffset#
-		print "Source ID: ";Unit( 0 ).SourceModelID
-		print "x: ";Unit( 0 ).pos.x#
-		print "z: ";Unit( 0 ).pos.z#
-		print UnitAbility( 0 , UNITABILITY_FORCE_FIELD ).ManaDrain#
-		print Unit( 0 ).Stats.CurrentMana#
-		print "Command chain: ";UnitCommandChain( 0 , 0 ).Count
-		for n = 0 to UnitCommandChain( 0 , 0 ).Count
-			print "    ability: ";UnitCommandChain( 0 , n ).Ability
-		next n
-	endif
-	remend
-	
 	remstart Script data trackers
 	b = 0
 	for n = 0 to uScript.CurrentIntegerDataMax
@@ -487,6 +466,26 @@ do
 	
 	rem control game elements
    ControlGameElements()
+	
+	rem Unit debug information
+	if uUnit.CurrentMax > -1
+		print "active: ";Unit( 0 ).Active
+		print "ability: ";Unit( 0 ).Ability.Active
+		print "automatic ability: ";Unit( 0 ).Ability.Automatic
+		print "attack: ";Unit( 0 ).AttackActive
+		print "follow: ";Unit( 0 ).FollowUnit
+		print "size: ";Unit( 0 ).Size#
+		print "HeightOffset: ";Unit( 0 ).HeightOffset#
+		print "Source ID: ";Unit( 0 ).SourceModelID
+		print "x: ";Unit( 0 ).pos.x#
+		print "z: ";Unit( 0 ).pos.z#
+		print UnitAbility( 0 , UNITABILITY_FORCE_FIELD ).ManaDrain#
+		print Unit( 0 ).Stats.CurrentMana#
+		print "Command chain: ";UnitCommandChain( 0 , 0 ).Count
+		for n = 0 to UnitCommandChain( 0 , 0 ).Count
+			print "    ability: ";UnitCommandChain( 0 , n ).Ability
+		next n
+	endif
 	
 	remstart primitive world editor
 	if controlkey()

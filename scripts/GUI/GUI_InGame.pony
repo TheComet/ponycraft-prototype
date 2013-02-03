@@ -227,7 +227,7 @@ GUI Background			2400 x  345		-300	 855	Y			Yellow. Cannot get image down to 300
 // UnitAddPortraitFrame unitID media\images\GUI\portTwilight.png
 
 // This will set the global position of all portraits
-	GUISetPortraitPosition 1068, 985
+	GUISetPortraitPosition 1068 985
 
 
 

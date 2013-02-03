@@ -809,6 +809,20 @@ function UnitAddPortraitFrame( n , Filename$ , delay )
 	GUIAddFrame( Unit( n ).PortraitID , Filename$ , delay )
 	GUIHideFrame( Unit( n ).PortraitID )
 	
+	repeat
+		set cursor 0,0
+		if image exist( GUIFrame( Unit( n ).PortraitID ).IMG ) then paste image GUIFrame( Unit( n ).PortraitID ).IMG , 300 , 0 , 1
+		print "adding portrait frame to unit ";n
+		print "file: ";filename$
+		print "frameID: ";Unit( n ).PortraitID
+		print "ImageID: ";GUIFrame( Unit( n ).PortraitID , 0 ).IMG
+		print "posx: ";GUIFrame( Unit( n ).PortraitID , 0 ).pos.x
+		print "posy: ";GUIFrame( Unit( n ).PortraitID , 0 ).pos.y
+		print rnd(100)
+		sync
+	until returnkey()
+	repeat:until returnkey()=0
+	
 endfunction n
 
 function UnitSetPortraitFrameDelayDefault( n , delay )
