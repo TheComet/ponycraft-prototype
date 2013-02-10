@@ -809,6 +809,7 @@ function UnitAddPortraitFrame( n , Filename$ , delay )
 	GUIAddFrame( Unit( n ).PortraitID , Filename$ , delay )
 	GUIHideFrame( Unit( n ).PortraitID )
 	
+	remstart
 	repeat
 		set cursor 0,0
 		if image exist( GUIFrame( Unit( n ).PortraitID ).IMG ) then paste image GUIFrame( Unit( n ).PortraitID ).IMG , 300 , 0 , 1
@@ -822,6 +823,7 @@ function UnitAddPortraitFrame( n , Filename$ , delay )
 		sync
 	until returnkey()
 	repeat:until returnkey()=0
+	remend
 	
 endfunction n
 
