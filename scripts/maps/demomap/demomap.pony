@@ -16,7 +16,7 @@ DestroyWorld
 // load terrain into world
 WorldAddTerrainObject "media\objects\maps\derp\derp.x"
 
-// Add ruins
+// Add Scenery
 RunScript 2
 
 // Create the mini map

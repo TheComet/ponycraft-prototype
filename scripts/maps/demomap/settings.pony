@@ -24,8 +24,8 @@ UnitPosition 2 48.8 0 118.7
 UnitPosition 3 -20.9 0 70.4
 UnitPosition 4 -80.9 0 121.8
 
-// Create 57 enemies
-for i = 1 to 38
+// Create 20 enemies
+for i = 1 to 20
 	RunScript 7
 next i
 
@@ -38,44 +38,26 @@ UnitPosition 9 60 0 59
 UnitPosition 10 61 0 79
 UnitPosition 11 61 0 79
 UnitPosition 12 47 0 5
-UnitPosition 13 47 0 5
-UnitPosition 14 47 0 5
-UnitPosition 15 33 0 50
-UnitPosition 16 24 0 142
-UnitPosition 17 24 0 142
-UnitPosition 18 61 0 136
-UnitPosition 19 61 0 136
-UnitPosition 20 -9 0 110
-UnitPosition 21 -39 0 83
-UnitPosition 22 -39 0 83
-UnitPosition 23 -46 0 82
-UnitPosition 24 -46 0 82
-UnitPosition 25 -44 0 46
-UnitPosition 26 -35 0 49
-UnitPosition 27 -65 0 27
-UnitPosition 28 -65 0 27
-UnitPosition 29 -85 0 56
-UnitPosition 30 -85 0 56
-UnitPosition 31 -86 0 73
-UnitPosition 32 -86 0 73
-UnitPosition 33 -74 0 147
-UnitPosition 34 -74 0 147
-UnitPosition 35 -99 0 122
-UnitPosition 36 -108 0 80
-UnitPosition 37 -108 0 80
-UnitPosition 38 -108 0 80
-UnitPosition 39 -108 0 80
-UnitPosition 40 -11 0 -20
-UnitPosition 41 -11 0 -20
-UnitPosition 42 -11 0 -20
+UnitPosition 13 33 0 50
+UnitPosition 14 24 0 142
+UnitPosition 15 -9 0 110
+UnitPosition 16 -39 0 83
+UnitPosition 17 -35 0 49
+UnitPosition 18 -65 0 27
+UnitPosition 19 -86 0 73
+UnitPosition 20 -74 0 147
+UnitPosition 21 -99 0 122
+UnitPosition 22 -108 0 80
+UnitPosition 23 -108 0 80
+UnitPosition 24 -11 0 -20
 
 // -----------------------------------------------------------------------------------
 // Billboard easter egg
 // -----------------------------------------------------------------------------------
 
 RunScript 20
-UnitPosition 43 71 0 100
-UnitRotate 43 20
+UnitPosition 25 71 -5 100
+UnitRotate 25 20
 
 CreateTrigger 76 -5 103 2 1 "scripts\maps\demomap\triggers\easteregg.pony" 19
 AddTriggerCondition this TRIGGER_JUNCTION_OR TRIGGER_TYPE_UNIT_CONTROL UNITCONTROL_PLAYER
